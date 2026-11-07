@@ -79,6 +79,13 @@ pas drempels aanpassen.
 ## Server
 
 - Map `/home/ubuntu/ctrl-alt-defend-game`, data in `/opt/ctrl-alt-defend-game` (SQLite).
-- Poort uit `.env` (`WEB_PORT`, standaard 8091). game.makkers.net wees in de Godot-tijd naar
-  `office-td` op 8090 (downloadpagina van de .exe).
+- Poort 8090 (`WEB_PORT` in `.env`); Nginx Proxy Manager stuurt game.makkers.net daarheen.
+  Sinds 2026-11-07 live. De oude `office-td` (downloadpagina van de Godot-.exe) is gestopt maar
+  niet verwijderd: terugzetten = `WEB_PORT=8091` in `.env`, `docker compose up -d --no-build`,
+  dan `cd ../office-td && docker compose start`.
+- Feedback gaat naar Mattermost zodra `MATTERMOST_WEBHOOK_URL` in `.env` staat
+  (`docker compose up -d relay` om hem te laden). `curl -s http://127.0.0.1:8090/api/health`
+  laat `"forward": true` zien als dat gelukt is.
+- Auto-deploy uit GitHub Actions werkt zodra de repo-secret `SSH_PRIVATE_KEY` er staat. Tot die
+  tijd: `tools/release.sh --ssh`.
 - SSH-verbindingen bundelen: poort 22 gaat dicht bij te veel losse verbindingen.

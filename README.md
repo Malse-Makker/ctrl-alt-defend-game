@@ -118,10 +118,13 @@ Eerste keer op de server:
 
 ```bash
 git clone https://github.com/Malse-Makker/ctrl-alt-defend-game.git /home/ubuntu/ctrl-alt-defend-game
-cd /home/ubuntu/ctrl-alt-defend-game && cp .env.example .env   # webhook(s) invullen
+cd /home/ubuntu/ctrl-alt-defend-game && cp .env.example .env   # poort en webhook(s) invullen
 sudo mkdir -p /opt/ctrl-alt-defend-game && sudo chown 10001 /opt/ctrl-alt-defend-game   # de relay draait als uid 10001
 GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build
 ```
+
+Feedback naar Mattermost: maak in Mattermost een incoming webhook voor het kanaal, zet de URL als
+`MATTERMOST_WEBHOOK_URL=` in `.env` op de server en laad hem met `docker compose up -d relay`.
 
 Een release: `VERSION` ophogen, bovenaan `CHANGELOG.md` een sectie schrijven, committen, en dan
 `tools/release.sh` (of `tools/release.sh --ssh` zolang de Actions-sleutel er niet is).

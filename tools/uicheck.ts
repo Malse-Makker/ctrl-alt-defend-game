@@ -21,6 +21,14 @@ const CHROME = process.env.CHROME ?? execSync('command -v google-chrome-stable |
 
 mkdirSync(OUT, { recursive: true });
 
+// Runs before the page: tsx (esbuild) wraps functions in __name(), so functions sent to the page
+// need it to exist. And a fresh save with round stats switched off and sound muted, so a check
+// against the live site never ends up in the playtest data.
+const SETUP = `window.__name = (f) => f;
+try {
+  localStorage.setItem('ctrl-alt-defend.save.v1', JSON.stringify({ v: 1, settings: { shareStats: false, volume: 0, sfx: 0, damageNumbers: true } }));
+} catch (e) {}`;
+
 interface Problem {
   kind: string;
   text: string;
@@ -150,8 +158,7 @@ async function run(): Promise<void> {
         if (m.type() === 'error') errors.push(`${size}: ${m.text()}`);
       });
       await page.setViewport({ width: w, height: hgt });
-      // tsx (esbuild) wraps functions in __name(); functions sent to the page need it to exist.
-      await page.evaluateOnNewDocument('window.__name = (f) => f; try { localStorage.clear(); } catch (e) {}');
+      await page.evaluateOnNewDocument(SETUP);
       await page.goto(URL_, { waitUntil: 'networkidle0' });
       await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
       total += await check(page, 'menu', size);
@@ -197,7 +204,7 @@ async function run(): Promise<void> {
     const page = await browser.newPage();
     page.on('pageerror', (e) => errors.push(`${size}: ${String(e)}`));
     await page.setViewport({ width: w, height: hgt });
-    await page.evaluateOnNewDocument('window.__name = (f) => f; try { localStorage.clear(); } catch (e) {}');
+    await page.evaluateOnNewDocument(SETUP);
     await page.goto(URL_, { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
     await clickText(page, 'Clock in');
