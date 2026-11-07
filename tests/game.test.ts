@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
 import { Game, TICK } from '../src/sim/game';
+import { zoneMap, zoneCount, defaultAssignment } from '../src/sim/zones';
+import { applyCommand, parseCommand } from '../src/sim/commands';
 import { corridor } from './helpers';
 
 function placed(g: Game, def: string, tx: number, ty: number) {
@@ -393,9 +395,58 @@ describe('players and wallets', () => {
 
   it('build areas keep players to their own part of the office', () => {
     const g = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false });
-    g.buildAreas = [[{ x: 0, y: 0, w: 10, h: 6 }], [{ x: 10, y: 0, w: 11, h: 6 }]];
-    expect(g.canPlace('autoreply', 12, 1, 0).reason).toMatch(/someone else/);
-    expect(g.canPlace('autoreply', 12, 1, 1).ok).toBe(true);
+    g.setZones(zoneMap(21, 6, 'leftright', 2), [0, 1]);
+    // Screen right grows with x - y: tile (18, 1) is on the right, (2, 4) on the left.
+    expect(g.canPlace('autoreply', 18, 1, 0).reason).toMatch(/someone else/);
+    expect(g.canPlace('autoreply', 18, 1, 1).ok).toBe(true);
+    expect(g.canPlace('autoreply', 2, 3, 0).ok).toBe(true);
+  });
+});
+
+describe('zones', () => {
+  it('top and bottom follow the screen: the far corner is top, the near corner bottom', () => {
+    const m = zoneMap(21, 11, 'topbottom', 2)!;
+    expect(m[0]).toBe(0);
+    expect(m[10 * 21 + 20]).toBe(1);
+  });
+
+  it('quarters and patches make the right number of zones, each one used', () => {
+    for (const [mode, n] of [['quarters', 4], ['own', 5]] as const) {
+      const m = zoneMap(21, 11, mode, 5)!;
+      expect(zoneCount(mode, 5)).toBe(n);
+      expect(new Set(m).size).toBe(n);
+    }
+    expect(defaultAssignment('topbottom', 5)).toEqual([0, 1, 0, 1, 0]);
+    expect(defaultAssignment('own', 3)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('commands and snapshots (multiplayer)', () => {
+  it('rejects junk commands from the network', () => {
+    expect(parseCommand({ c: 'place', def: 'autoreply', tx: 1.5, ty: 2 })).toBeNull();
+    expect(parseCommand({ c: 'upgrade', id: 3, path: 3 })).toBeNull();
+    expect(parseCommand({ c: 'target', id: 3, mode: 'everyone' })).toBeNull();
+    expect(parseCommand({ c: 'nuke' })).toBeNull();
+    expect(parseCommand('place')).toBeNull();
+    expect(parseCommand({ c: 'gift', to: 1, amount: 10 })).toEqual({ c: 'gift', to: 1, amount: 10 });
+  });
+
+  it('a copy fed with snapshots agrees with the real game', () => {
+    const level = LEVELS[1];
+    const server = new Game(level, { seed: 5, players: 2, sharedWallet: false });
+    applyCommand(server, 0, { c: 'place', def: 'autoreply', tx: 6, ty: 3 });
+    applyCommand(server, 1, { c: 'place', def: 'coffee', tx: 4, ty: 9 });
+    applyCommand(server, 0, { c: 'upgrade', id: server.towers[0].id, path: 1 });
+    server.start();
+    server.runFor(30);
+    const copy = new Game(level, { players: 2, sharedWallet: false });
+    copy.applySnapshot(JSON.parse(JSON.stringify(server.toSnapshot())));
+    expect(copy.wallets.map(Math.round)).toEqual(server.wallets.map(Math.round));
+    expect(copy.towers.map((t) => [t.defId, t.owner, t.tiers.join('')])).toEqual(server.towers.map((t) => [t.defId, t.owner, t.tiers.join('')]));
+    expect(copy.enemies.length).toBe(server.enemies.length);
+    expect(copy.canPlace('autoreply', 6, 3, 1).ok).toBe(false);
+    expect(copy.placeCostFor('autoreply', 0)).toBe(server.placeCostFor('autoreply', 0));
+    expect(copy.canUpgrade(copy.towers[0], 0, 1).reason).toMatch(/not your tower/);
   });
 });
 

@@ -15,5 +15,5 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "tools", "vite.config.ts"]
+  "include": ["src", "tests", "tools", "server/mp", "vite.config.ts"]
 }

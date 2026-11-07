@@ -9,17 +9,22 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test",
-    "balance": "tsx tools/balance.ts"
+    "balance": "tsx tools/balance.ts",
+    "mp": "MP_PORT=8098 ALLOWED_ORIGINS= tsx server/mp/main.ts",
+    "build:mp": "esbuild server/mp/main.ts --bundle --platform=node --format=cjs --target=node24 --external:bufferutil --external:utf-8-validate --outfile=dist-server/mp.cjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fortawesome/fontawesome-free": "7.3.1",
-    "three": "0.187.0"
+    "three": "0.187.0",
+    "ws": "8.22.1"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
     "@types/three": "0.187.0",
+    "@types/ws": "8.18.2",
+    "esbuild": "0.28.2",
     "puppeteer-core": "25.16.0",
     "tsx": "4.23.15",
     "typescript": "6.0.3",

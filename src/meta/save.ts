@@ -19,6 +19,8 @@ export interface SaveData {
   seenColleagues: string[];
   hintsDone: string[];
   lastSeenVersion: string;
+  /** Name used in multiplayer lobbies. */
+  mpName: string;
   settings: Settings;
 }
 
@@ -44,6 +46,7 @@ export function defaults(): SaveData {
     seenColleagues: [],
     hintsDone: [],
     lastSeenVersion: '',
+    mpName: '',
     settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true },
   };
 }

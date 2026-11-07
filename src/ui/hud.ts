@@ -19,6 +19,14 @@ export interface HudActions {
   sell(id: number): void;
   target(id: number, mode: TargetMode): void;
   deselect(): void;
+  gift(to: number, amount: number): void;
+}
+
+export interface MpPlayer {
+  index: number;
+  name: string;
+  connected: boolean;
+  color: string;
 }
 
 export interface HudState {
@@ -26,6 +34,8 @@ export interface HudState {
   placing: string | null;
   speed: number;
   paused: boolean;
+  /** Multiplayer: the other players, and whether you are the host. Null in single player. */
+  mp: { players: MpPlayer[]; host: number } | null;
 }
 
 export const SPEEDS = [1, 2, 4, 8];
@@ -73,9 +83,17 @@ export class Hud {
   private lastFocus = -1;
   readonly newBadges = new Set<string>();
 
-  constructor(game: Game, act: HudActions) {
+  /** Which player this screen belongs to (always 0 in single player). */
+  private readonly me: number;
+  private playersBox!: HTMLElement;
+  private playersList!: HTMLElement;
+  private playersKey = '';
+  private walletEls = new Map<number, HTMLElement>();
+
+  constructor(game: Game, act: HudActions, me = 0) {
     this.game = game;
     this.act = act;
+    this.me = me;
     this.root = h('div', { class: 'hud' });
     this.buildTop();
     this.buildLeft();
@@ -131,7 +149,10 @@ export class Hud {
     );
     this.infoCard = h('div', { class: 'info-card panel' });
     this.infoCard.hidden = true;
-    this.left = h('div', { class: 'left' }, floor, this.infoCard);
+    this.playersList = h('div', { class: 'players-list' });
+    this.playersBox = h('div', { class: 'section panel' }, h('div', { class: 'section-head' }, h('span', { class: 'label', text: T.mpPlayers })), this.playersList);
+    this.playersBox.hidden = true;
+    this.left = h('div', { class: 'left' }, this.playersBox, floor, this.infoCard);
     this.root.append(this.left);
   }
 
@@ -194,28 +215,37 @@ export class Hud {
     }
     this.lastFocus = g.focus;
     toggle(this.focusStat, 'low', g.focus <= g.startFocus * 0.25);
-    setText(this.coffeeV, String(Math.floor(g.coffee)));
+    setText(this.coffeeV, String(Math.floor(g.walletOf(this.me))));
     setText(this.waveV, `${g.waveIndex}/${g.totalWaves}`);
     setText(this.waveTimer, g.phase === 'running' && g.waveIndex < g.totalWaves ? `next in ${Math.max(0, Math.ceil(g.nextWaveTimer))}s` : '');
     setText(this.scoreV, String(g.score));
 
+    // In multiplayer only the host runs the clock: waves, speed and pause.
+    const boss = st.mp === null || st.mp.host === this.me;
     if (g.phase === 'plan') {
       setText(this.startLabel, `${T.start}`);
-      this.startBtn.disabled = false;
+      this.startBtn.disabled = !boss;
     } else {
       const pts = earlyCallPoints(g.nextWaveTimer);
       setText(this.startLabel, g.waveIndex < g.totalWaves ? `${T.nextWave} +${pts}` : T.nextWave);
-      this.startBtn.disabled = g.over || g.waveIndex >= g.totalWaves;
+      this.startBtn.disabled = !boss || g.over || g.waveIndex >= g.totalWaves;
     }
-    this.speedBtns.forEach((b, i) => toggle(b, 'active', SPEEDS[i] === st.speed));
+    this.startBtn.title = boss ? T.nextWaveHelp : T.mpHostOnly;
+    this.speedBtns.forEach((b, i) => {
+      toggle(b, 'active', SPEEDS[i] === st.speed);
+      b.disabled = !boss;
+    });
     toggle(this.pauseBtn, 'active', st.paused);
+    this.pauseBtn.disabled = st.mp !== null && !boss;
 
+    const wallet = g.walletOf(this.me);
     for (const s of this.shop) {
-      const cost = g.placeCostFor(s.defId);
+      const cost = g.placeCostFor(s.defId, this.me);
       setText(s.cost, String(cost));
-      toggle(s.el, 'broke', g.coffee < cost);
+      toggle(s.el, 'broke', wallet < cost);
       toggle(s.el, 'selected', st.placing === s.defId);
     }
+    this.updatePlayers(st);
 
     this.updateColleagues();
     this.updateTowerPanel(st.selected);
@@ -224,6 +254,35 @@ export class Hud {
       this.infoTimer -= 1 / 60;
       if (this.infoTimer <= 0) this.infoCard.hidden = true;
     }
+  }
+
+  private updatePlayers(st: HudState): void {
+    if (!st.mp) return;
+    this.playersBox.hidden = false;
+    const g = this.game;
+    const key = st.mp.players.map((p) => `${p.index}${p.name}${p.connected}`).join('|') + st.mp.host;
+    if (key !== this.playersKey) {
+      this.playersKey = key;
+      this.walletEls.clear();
+      this.playersList.replaceChildren(
+        ...st.mp.players.map((p) => {
+          const wallet = h('span', { class: 'mono wallet' });
+          this.walletEls.set(p.index, wallet);
+          const name = h('span', { class: 'name wrap', text: p.name });
+          if (p.index === this.me) name.append(h('span', { class: 'faint', text: ' (you)' }));
+          if (p.index === st.mp!.host) name.prepend(icon('crown', 'host-crown'), ' ');
+          const row = h('div', { class: `player-row${p.connected ? '' : ' offline'}` }, h('span', { class: 'dot', attrs: { style: `background:${p.color}` } }), name, wallet);
+          if (!g.sharedWallet && p.index !== this.me && p.index < g.players) {
+            row.append(
+              h('button', { class: 'btn small gift', title: T.mpGiftHelp, on: { click: (ev) => this.act.gift(p.index, (ev as MouseEvent).shiftKey ? 50 : 10) } }, icon('mug-hot'), h('span', { text: ' +10' })),
+            );
+          }
+          if (!p.connected) row.title = T.mpOffline;
+          return row;
+        }),
+      );
+    }
+    for (const [i, el] of this.walletEls) setText(el, g.sharedWallet ? '' : i < g.players ? String(Math.floor(g.walletOf(i))) : '-');
   }
 
   private updateColleagues(): void {
@@ -329,6 +388,7 @@ export class Hud {
         {},
         h('div', { class: 'tp-name wrap', text: title }),
         h('div', { class: 'tp-sub' }, h('span', { text: def.name }), h('span', { class: 'mono tiers', text: t.tiers.join('-') })),
+        g.players > 1 ? h('div', { class: 'tp-owner', text: t.owner === this.me ? T.mpYourTower : `${T.mpOwnedBy} ${this.ownerName(t.owner)}${g.sharedWallet ? '' : ` (${T.mpReadOnly})`}` }) : null,
       ),
       h('button', { class: 'icon-btn', title: 'Close (Esc)', on: { click: () => this.act.deselect() } }, icon('xmark')),
     );
@@ -411,8 +471,8 @@ export class Hud {
           h('span', { class: 'faint wrap', attrs: { style: 'font-size:12px' }, text: next.desc }),
         );
         dyn.push(() => {
-          btn.disabled = !g.canUpgrade(t, i).ok;
-          toggle(btn, 'broke', g.coffee < cost);
+          btn.disabled = !g.canUpgrade(t, i, this.me).ok;
+          toggle(btn, 'broke', g.walletOf(this.me) < cost);
         });
         card.append(btn);
       }
@@ -436,6 +496,12 @@ export class Hud {
 
     this.towerPanel.replaceChildren(...parts);
     this.towerDyn = () => dyn.forEach((f) => f());
+  }
+
+  /** Owner names come in with the room info; the panel is rebuilt when the tower changes. */
+  ownerNames: string[] = [];
+  private ownerName(i: number): string {
+    return this.ownerNames[i] ?? `Player ${i + 1}`;
   }
 
   private updateBoss(): void {

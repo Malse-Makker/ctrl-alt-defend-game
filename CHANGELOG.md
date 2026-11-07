@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.3.0] - 2026-11-08
+
+### New
+- Play together: host a game, give your colleagues the code or the link, up to 8 players.
+- The host picks the floor, the number of players, and the Coffee: one shared wallet, or everyone their own (income is split between everyone, like Bloons co-op).
+- The host also picks where people can build: anywhere, top and bottom, left and right, four quarters, or a patch each. In the lobby the host puts every player in their part.
+- Every tower shows a ring in its owner's colour. With your own wallets, only the owner upgrades or sells a tower, and you can give Coffee to a colleague (the +10 button, Shift for 50).
+- The host calls the waves, sets the speed and can pause or give up for everyone. Lost your connection? The game keeps going and lets you back into your seat.
+
 ## [0.2.0] - 2026-11-08
 
 ### Changed

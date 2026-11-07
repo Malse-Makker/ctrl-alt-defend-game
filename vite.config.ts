@@ -39,6 +39,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://127.0.0.1:8099',
+      // Multiplayer in dev: npm run mp (server/mp on port 8098).
+      '/mp': { target: 'ws://127.0.0.1:8098', ws: true },
     },
   },
   test: {

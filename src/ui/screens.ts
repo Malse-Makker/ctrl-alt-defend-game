@@ -40,6 +40,7 @@ export function loadingScreen(): { el: HTMLElement; progress(p: number): void; f
 
 export interface MenuActions {
   play(): void;
+  together(): void;
   whatsNew(): void;
   settings(): void;
   howTo(): void;
@@ -61,6 +62,7 @@ export function mainMenu(act: MenuActions, hasNews: boolean): HTMLElement {
         'div',
         { class: 'menu-buttons' },
         h('button', { class: 'btn primary', on: { click: act.play } }, icon('id-badge'), h('span', { text: T.play })),
+        h('button', { class: 'btn', on: { click: act.together } }, icon('people-group'), h('span', { text: T.mpTitle })),
         h('button', { class: 'btn', on: { click: act.howTo } }, icon('circle-question'), h('span', { text: T.howTo })),
         news,
         h('button', { class: 'btn', on: { click: act.settings } }, icon('sliders'), h('span', { text: T.settings })),
@@ -214,23 +216,35 @@ export interface PauseActions {
   quit(): void;
 }
 
-export function pauseOverlay(act: PauseActions): HTMLElement {
+export function pauseOverlay(act: PauseActions, mode: { online: boolean; host: boolean } = { online: false, host: true }): HTMLElement {
   return h(
     'div',
     { class: 'overlay' },
     h(
       'div',
       { class: 'card panel' },
-      h('h2', { text: T.pause.toUpperCase() }),
+      h('h2', { text: (mode.online ? T.menu : T.pause).toUpperCase() }),
+      mode.online ? h('div', { class: 'muted', text: T.mpMenuNote }) : null,
       h(
         'div',
         { class: 'menu-buttons' },
-        h('button', { class: 'btn primary', on: { click: act.resume } }, icon('play'), h('span', { text: T.resume })),
+        h('button', { class: 'btn primary', on: { click: act.resume } }, icon('play'), h('span', { text: mode.online ? T.back : T.resume })),
         h('button', { class: 'btn', on: { click: act.howTo } }, icon('circle-question'), h('span', { text: T.howTo })),
-        h('button', { class: 'btn danger', on: { click: act.giveUp } }, icon('flag'), h('span', { text: T.giveUp })),
-        h('button', { class: 'btn', on: { click: act.quit } }, icon('arrow-left'), h('span', { text: T.quitToCareer })),
+        mode.host ? h('button', { class: 'btn danger', on: { click: act.giveUp } }, icon('flag'), h('span', { text: mode.online ? T.mpGiveUp : T.giveUp })) : null,
+        h('button', { class: 'btn', on: { click: act.quit } }, icon('arrow-left'), h('span', { text: mode.online ? T.mpLeave : T.quitToCareer })),
       ),
     ),
+  );
+}
+
+/** Multiplayer end screen: swap Retry and Career for Back to lobby (host) and Leave. */
+export function mpEndActions(screen: HTMLElement, isHost: boolean, act: { lobby(): void; leave(): void }): void {
+  const rows = screen.querySelectorAll('.row-buttons');
+  const last = rows[rows.length - 1];
+  if (!last) return;
+  last.replaceChildren(
+    isHost ? h('button', { class: 'btn primary', on: { click: act.lobby } }, icon('people-group'), h('span', { text: ` ${T.mpBackToLobby}` })) : h('span', { class: 'muted', text: T.mpWaitHost }),
+    h('button', { class: 'btn', on: { click: act.leave } }, icon('arrow-left'), h('span', { text: ` ${T.mpLeave}` })),
   );
 }
 

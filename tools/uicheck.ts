@@ -140,6 +140,81 @@ type Cad = {
   };
 };
 
+/** Two players: host opens a lobby, guest joins with the link, both build in their own half. */
+async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (multiplayer: host and guest)`);
+  let total = 0;
+  const open = async () => {
+    const p = await browser.newPage();
+    p.on('pageerror', (e) => errors.push(`mp: ${String(e)}`));
+    p.on('console', (m) => {
+      if (m.type() === 'error' && !/502|Bad Gateway/.test(m.text())) errors.push(`mp: ${m.text()}`);
+    });
+    await p.setViewport({ width: 1600, height: 900 });
+    await p.evaluateOnNewDocument(SETUP);
+    return p;
+  };
+  const host = await open();
+  await host.goto(URL_, { waitUntil: 'networkidle0' });
+  await host.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(host, 'Play together');
+  await host.type('#mp-name', 'Hostess');
+  await clickText(host, 'Host a game');
+  await host.waitForFunction(() => document.querySelector('.big-code'), { timeout: 10000 });
+  const code = await host.$eval('.big-code', (el) => el.textContent ?? '');
+  // Split wallets, left and right halves.
+  await host.evaluate(() => {
+    const sels = [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')];
+    const set = (sel: HTMLSelectElement, v: string) => {
+      sel.value = v;
+      sel.dispatchEvent(new Event('change'));
+    };
+    set(sels[2], 'split');
+  });
+  await new Promise((r) => setTimeout(r, 300));
+  await host.evaluate(() => {
+    const sels = [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')];
+    sels[3].value = 'leftright';
+    sels[3].dispatchEvent(new Event('change'));
+  });
+  const guest = await open();
+  await guest.goto(`${URL_}?join=${code}`, { waitUntil: 'networkidle0' });
+  await guest.waitForFunction(() => document.querySelector('#mp-name'), { timeout: 30000 });
+  await guest.type('#mp-name', 'Guest');
+  await clickText(guest, 'Join');
+  await guest.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000 });
+  await host.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000 });
+  total += await check(host, 'mp-lobby-host', size);
+  total += await check(guest, 'mp-lobby-guest', size);
+  await clickText(host, 'Start the day');
+  try {
+    await Promise.all([host, guest].map((p) => p.waitForFunction(() => document.querySelector('.hud'), { timeout: 10000 })));
+  } catch (e) {
+    for (const [name, p] of [['host', host], ['guest', guest]] as const) {
+      await p.screenshot({ path: join(OUT, `mp-stuck-${name}.png`) as `${string}.png` });
+      console.log(`  ${name} sees: ${(await p.evaluate(() => document.getElementById('ui')?.innerText ?? '')).replace(/\s+/g, ' ').slice(0, 300)}`);
+    }
+    throw e;
+  }
+  await new Promise((r) => setTimeout(r, 500));
+  type Remote = { cad: { session: { run(c: unknown): void } } };
+  await host.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 6, ty: 3 }));
+  await guest.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 13, ty: 6 }));
+  await host.keyboard.press('Space');
+  await new Promise((r) => setTimeout(r, 2500));
+  const towers = await guest.evaluate(() => (window as unknown as { cad: { session: { game: { towers: { owner: number }[] } } } }).cad.session.game.towers.map((t) => t.owner));
+  console.log(`  towers seen by the guest, by owner: ${JSON.stringify(towers)}`);
+  if (towers.length !== 2) total += 1;
+  total += await check(host, 'mp-game-host', size);
+  total += await check(guest, 'mp-game-guest', size);
+  await host.close();
+  await guest.close();
+  return total;
+}
+
+class Done extends Error {}
+
 async function run(): Promise<void> {
   const browser = await puppeteer.launch({
     executablePath: CHROME,
@@ -149,6 +224,10 @@ async function run(): Promise<void> {
   let total = 0;
   const errors: string[] = [];
   try {
+    if (args.includes('--mp-only')) {
+      total += await mpFlow(browser, errors);
+      throw new Done();
+    }
     for (const [w, hgt] of SIZES) {
       const size = `${w}x${hgt}`;
       console.log(`\n${size}`);
@@ -259,6 +338,10 @@ async function run(): Promise<void> {
     await page.waitForFunction(() => document.querySelector('.overlay .fun-scale'), { timeout: 10000 });
     total += await check(page, 'won', size);
     await page.close();
+
+    if (args.includes('--mp')) total += await mpFlow(browser, errors);
+  } catch (e) {
+    if (!(e instanceof Done)) throw e;
   } finally {
     await browser.close();
   }

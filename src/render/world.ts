@@ -17,7 +17,7 @@ export class World {
   /** Asset clones share geometry with the loaded models and must survive a retry. */
   private readonly shared = new Set<THREE.Object3D>();
 
-  constructor(level: LevelDef, game: Game, assets: Assets) {
+  constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
     const g = this.group;
 
@@ -89,7 +89,8 @@ export class World {
     const gridMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false });
     const gridGeo = new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2);
     const free: { x: number; y: number }[] = [];
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!game.isPathTile(x, y) && !game.isBlockedTile(x, y)) free.push({ x, y });
+    // Only the tiles this player may build on (multiplayer zones), so the grid shows your patch.
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!game.isPathTile(x, y) && !game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y)) free.push({ x, y });
     this.buildGrid = new THREE.InstancedMesh(gridGeo, gridMat, free.length);
     const m = new THREE.Matrix4();
     free.forEach((c, i) => {

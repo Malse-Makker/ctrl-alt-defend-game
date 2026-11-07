@@ -17,7 +17,7 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.2.0)
+## Wat er nu in zit (v0.3.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en een eindbaas.
 - **Torens**: Coffee Machine (maakt Coffee) en Auto-Reply (schiet).
@@ -37,6 +37,11 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
   Coffee, en **feedback** (hoe leuk was het, 0-10, plus opmerking) met één knop.
 - **Give up** brengt je naar het eindscherm met je cijfers, niet terug naar het menu.
 - **Voortgang** (sterren, Recognition) wordt in je eigen browser bewaard.
+- **Samen spelen** (tot 8 spelers): host een spel en deel de code of de link
+  (`game.makkers.net/?join=CODE`). De host kiest het level, het aantal spelers, gedeeld geld of
+  ieder eigen geld (inkomen gedeeld, Coffee aan elkaar geven), en waar je bouwt: overal, boven en
+  onder, links en rechts, vier kwarten of een eigen stuk. De server draait het spel; je browser
+  laat alleen zien wat er gebeurt.
 
 ## Bediening
 
@@ -62,6 +67,7 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 | `src/sim/data/` | torens, collega's, levels en golven. Hier zitten alle getallen |
 | `src/render/` | Three.js: isometrische camera, kantoor, collega's, effecten |
 | `src/ui/` | HUD en schermen (gewone DOM met CSS grid/flex). Alle spelerstekst staat in `src/ui/text.ts` |
+| `server/mp/` | multiplayer-server (Node + WebSockets): kamers met join-code, draait dezelfde `src/sim` als de browser |
 | `server/relay/` | kleine Flask-service die feedback en rondecijfers opslaat (SQLite) en doorstuurt naar Discord/Mattermost |
 | `art/blender/` | Python-scripts die alle 3D-modellen, icoontjes en previews bouwen in Blender |
 | `public/` | de gebouwde modellen (`.glb`), icoontjes en geluidseffecten |
@@ -80,7 +86,13 @@ npm run dev
 ```
 
 Open http://127.0.0.1:5173. De feedback-relay draait lokaal niet mee; feedback versturen geeft
-dan netjes "Could not send it".
+dan netjes "Could not send it". Multiplayer lokaal testen: start in een tweede terminal
+
+```bash
+npm run mp
+```
+
+en open twee tabbladen.
 
 ### Testen
 
@@ -89,6 +101,7 @@ npm run check          # typecheck + alle tests (regels, economie, content, bala
 npm run balance        # balansrapport: HP per golf en wat vijf bots met level 1 doen
 npx tsx tools/uicheck.ts   # speelt de schermen door in headless Chrome, maakt screenshots in shots/
                            # en meldt tekst die overlapt, uitsteekt of van het scherm valt
+npx tsx tools/uicheck.ts --mp-only   # host en gast in twee browsers: lobby, start, bouwen
 ```
 
 De relay heeft eigen tests:
@@ -112,8 +125,9 @@ Met `-- --only intern,coffee_1` bouw je er een paar.
 ## Uitrollen
 
 De game draait in Docker op de OVH-server (`/home/ubuntu/ctrl-alt-defend-game`), achter Nginx
-Proxy Manager op game.makkers.net. Twee containers: `web` (nginx met de gebouwde game) en `relay`
-(feedback). Tests draaien mee in de Docker-build: een image met falende tests komt er niet.
+Proxy Manager op game.makkers.net. Drie containers: `web` (nginx met de gebouwde game), `mp` (de
+multiplayer-server, via `/mp`) en `relay` (feedback). In NPM moet bij game.makkers.net
+"Websockets Support" aan staan. Tests draaien mee in de Docker-build: een image met falende tests komt er niet.
 
 Elke push naar `main` draait de tests in GitHub Actions en rolt daarna uit, zodra de secret
 `SSH_PRIVATE_KEY` in de repo staat (dezelfde deploy-sleutel als de andere makkers-projecten).

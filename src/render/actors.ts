@@ -88,6 +88,14 @@ export class Actors {
   readonly rangeRing: THREE.Mesh;
   readonly ghostTile: THREE.Mesh;
   private ghost: THREE.Object3D | null = null;
+  /** Multiplayer: a ring in the owner's colour under every tower. Empty in single player. */
+  private ownerColors: string[] = [];
+  private ringGeo = new THREE.RingGeometry(0.4, 0.48, 32).rotateX(-Math.PI / 2);
+  private ringMats = new Map<string, THREE.MeshBasicMaterial>();
+
+  setOwnerColors(colors: string[]): void {
+    this.ownerColors = colors;
+  }
   private ghostKey = '';
 
   /** Screen-right direction in world space, so HP bars line up on screen. */
@@ -254,6 +262,18 @@ export class Actors {
     }
     const angle = Math.atan2(best.x - t.x, best.y - t.y);
     root.rotation.y = Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
+    const color = this.ownerColors[t.owner];
+    if (color) {
+      let mat = this.ringMats.get(color);
+      if (!mat) {
+        mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false });
+        this.ringMats.set(color, mat);
+      }
+      const ring = new THREE.Mesh(this.ringGeo, mat);
+      ring.position.y = 0.012;
+      ring.renderOrder = 1;
+      root.add(ring);
+    }
     this.group.add(root);
     const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0 };
     this.towers.set(t.id, v);

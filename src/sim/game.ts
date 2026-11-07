@@ -182,6 +182,46 @@ export interface GameOptions {
   sharedWallet?: boolean;
 }
 
+/** A tower as the server sends it to the players. */
+export interface TowerSnap {
+  id: number;
+  def: string;
+  owner: number;
+  tx: number;
+  ty: number;
+  tiers: Tiers;
+  target: TargetMode;
+  pot: number;
+  invested: number;
+  dmg: number;
+  kills: number;
+  coffee: number;
+}
+
+/**
+ * Everything a player's screen needs, sent by the multiplayer server about ten times a second.
+ * Colleagues are packed as number arrays to keep it small:
+ * [id, typeIndex, x, y, dirX, dirY, hp, maxHp, shield, maxShield, phase, isAdd, pathIndex, dist]
+ */
+export interface Snapshot {
+  time: number;
+  phase: Phase;
+  endReason: EndReason | null;
+  focus: number;
+  wallets: number[];
+  score: number;
+  waveIndex: number;
+  nextWaveTimer: number;
+  towers: TowerSnap[];
+  enemies: number[][];
+  stats: RoundStats;
+}
+
+/** Fixed order of colleague types, so a snapshot can send a number instead of a name. */
+export const COLLEAGUE_IDS: readonly string[] = Object.keys(COLLEAGUES).sort();
+
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
 interface PendingSpawn {
   at: number;
   seq: number;
@@ -455,13 +495,19 @@ export class Game {
     return { ok: true, cost };
   }
 
-  /** Build areas per player (multiplayer zones). null = anywhere. */
-  buildAreas: ({ x: number; y: number; w: number; h: number }[] | null)[] = [];
+  /** Multiplayer build areas: zone index per tile, and the zone each player may build in. */
+  zones: Uint8Array | null = null;
+  playerZone: number[] = [];
+
+  setZones(map: Uint8Array | null, playerZone: number[]): void {
+    this.zones = map;
+    this.playerZone = [...playerZone];
+  }
 
   mayBuildAt(player: number, tx: number, ty: number): boolean {
-    const areas = this.buildAreas[player];
-    if (!areas) return true;
-    return areas.some((r) => tx >= r.x && ty >= r.y && tx < r.x + r.w && ty < r.y + r.h);
+    if (!this.zones || !this.inBounds(tx, ty)) return true;
+    const z = this.playerZone[player];
+    return z === undefined || z < 0 || this.zones[ty * this.level.size.w + tx] === z;
   }
 
   place(defId: string, tx: number, ty: number, player = 0): Check & { tower?: Tower } {
@@ -598,6 +644,126 @@ export class Game {
 
   enemy(id: number): Enemy | undefined {
     return this.enemies.find((e) => e.id === id);
+  }
+
+  // ------------------------------------------------------------------ multiplayer snapshots
+
+  toSnapshot(): Snapshot {
+    return {
+      time: r3(this.time),
+      phase: this.phase,
+      endReason: this.endReason,
+      focus: this.focus,
+      wallets: this.wallets.map(r3),
+      score: this.score,
+      waveIndex: this.waveIndex,
+      nextWaveTimer: r3(this.nextWaveTimer),
+      towers: this.towers.map((t) => ({
+        id: t.id,
+        def: t.defId,
+        owner: t.owner,
+        tx: t.tx,
+        ty: t.ty,
+        tiers: [...t.tiers] as Tiers,
+        target: t.target,
+        pot: r3(t.pot),
+        invested: t.invested,
+        dmg: Math.round(t.stats.damage),
+        kills: t.stats.kills,
+        coffee: r3(t.stats.coffee),
+      })),
+      enemies: this.enemies.map((e) => [
+        e.id,
+        COLLEAGUE_IDS.indexOf(e.type),
+        r3(e.x),
+        r3(e.y),
+        r3(e.dirX),
+        r3(e.dirY),
+        r3(e.hp),
+        e.maxHp,
+        r3(e.shield),
+        e.maxShield,
+        e.phase,
+        e.isAdd ? 1 : 0,
+        e.pathIndex,
+        r3(e.dist),
+      ]),
+      stats: this.stats,
+    };
+  }
+
+  /** A player's copy of the game: take over the server's state. Never stepped locally. */
+  applySnapshot(s: Snapshot): void {
+    this.time = s.time;
+    this.phase = s.phase;
+    this.endReason = s.endReason;
+    this.focus = s.focus;
+    this.wallets = [...s.wallets];
+    this.score = s.score;
+    this.waveIndex = s.waveIndex;
+    this.nextWaveTimer = s.nextWaveTimer;
+    this.stats = s.stats;
+    const old = new Map(this.towers.map((t) => [t.id, t]));
+    this.towers = s.towers.map((ts) => {
+      const def = TOWERS[ts.def];
+      const t: Tower = old.get(ts.id) ?? {
+        id: ts.id,
+        defId: ts.def,
+        def,
+        owner: ts.owner,
+        tx: ts.tx,
+        ty: ts.ty,
+        x: ts.tx + 0.5,
+        y: ts.ty + 0.5,
+        tiers: [0, 0, 0],
+        target: 'first',
+        cooldown: 0,
+        coffeeTimer: 0,
+        abilityTimer: 0,
+        pot: 0,
+        invested: 0,
+        placedAtWave: s.waveIndex,
+        stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
+      };
+      t.tiers = [...ts.tiers] as Tiers;
+      t.target = ts.target;
+      t.pot = ts.pot;
+      t.invested = ts.invested;
+      t.owner = ts.owner;
+      t.stats.damage = ts.dmg;
+      t.stats.kills = ts.kills;
+      t.stats.coffee = ts.coffee;
+      return t;
+    });
+    this.enemies = s.enemies.map((a) => {
+      const type = COLLEAGUE_IDS[a[1]];
+      const def = COLLEAGUES[type];
+      return {
+        id: a[0],
+        type,
+        def,
+        x: a[2],
+        y: a[3],
+        dirX: a[4],
+        dirY: a[5],
+        hp: a[6],
+        maxHp: a[7],
+        shield: a[8],
+        maxShield: a[9],
+        phase: a[10] as 1 | 2 | 3,
+        isAdd: a[11] === 1,
+        pathIndex: a[12],
+        dist: a[13],
+        alive: true,
+        slowMult: 1,
+        slowTime: 0,
+        stunTime: 0,
+        aura: 1,
+        revealed: false,
+        addTimer: 0,
+        spawnedAt: 0,
+      };
+    });
   }
 
   // ------------------------------------------------------------------ the loop

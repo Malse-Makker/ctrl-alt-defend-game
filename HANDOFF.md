@@ -3,12 +3,28 @@
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
 
-## Stand: v0.2.0 (2026-11-08)
+## Stand: v0.3.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
-rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. Zie CHANGELOG.md.
+rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
+multiplayer. Zie CHANGELOG.md.
 
-**Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer -> levels 2-15.**
+**Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15.**
+
+### Hoe multiplayer werkt
+- `server/mp/rooms.ts` (kamers, pure logica) + `server/mp/server.ts` (WebSockets op `/mp`). De server
+  draait dezelfde `src/sim/Game`; browsers sturen `Command`s (`src/sim/commands.ts`, gedeeld met
+  singleplayer) en krijgen 10x per seconde een `Snapshot` + events. De browser voedt daarmee een
+  kopie van `Game` (`applySnapshot`) en stapt die nooit zelf; posities worden tussen snapshots
+  gladgestreken.
+- Spelersstoel = token in sessionStorage: na een haperende verbinding komt je browser vanzelf terug.
+- Alleen de host: golf oproepen, snelheid, pauze, opgeven, terug naar lobby. Sterren en Recognition
+  alleen in singleplayer; het rondeverslag naar de relay stuurt alleen de host.
+- Origin-controle op de socket (`ALLOWED_ORIGINS`), max 8 KB per bericht, 30 berichten/s per
+  verbinding, kamers opgeruimd na 2 min zonder spelers.
+- Valkuil: de server wordt gebundeld met esbuild als **CommonJS** (`npm run build:mp`); als ESM
+  crasht `ws` op "Dynamic require of events".
+- In NPM moet "Websockets Support" aan staan voor game.makkers.net (staat aan sinds 2026-11-08).
 Multiplayer-besluiten: de server draait de simulatie (WebSocket-container), join-code + link, tot 8
 spelers, de host kiest het aantal spelers, gedeeld geld of ieder eigen geld (inkomen gedeeld door het
 aantal spelers, Coffee geven aan elkaar), en waar je bouwt: overal, of vakken (boven/onder,
