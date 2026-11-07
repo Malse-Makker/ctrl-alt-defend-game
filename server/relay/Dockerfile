@@ -8,7 +8,8 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY app.py report.py test_app.py ./
 # The image does not build if the relay's own tests fail.
 RUN python -m pytest -q test_app.py && pip uninstall -y pytest
-RUN adduser -D -H -u 10001 relay && mkdir -p /data && chown relay /data
+# A real home directory: gunicorn keeps its control socket there.
+RUN adduser -D -u 10001 relay && mkdir -p /data && chown relay /data
 USER relay
 ENV RELAY_DB=/data/relay.sqlite3
 EXPOSE 8000

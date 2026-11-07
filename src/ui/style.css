@@ -969,9 +969,12 @@ button:disabled {
 }
 
 .banner .small {
-  margin-top: 6px;
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(14, 16, 20, 0.78);
   font-size: 15px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
 }
 
 @keyframes banner {

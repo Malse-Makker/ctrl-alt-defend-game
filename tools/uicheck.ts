@@ -190,6 +190,59 @@ async function run(): Promise<void> {
       total += await check(page, 'end', size);
       await page.close();
     }
+    // Second flow, largest size only: fast-forward to the boss, then win.
+    const [w, hgt] = SIZES[0];
+    const size = `${w}x${hgt}`;
+    console.log(`\n${size} (boss and win)`);
+    const page = await browser.newPage();
+    page.on('pageerror', (e) => errors.push(`${size}: ${String(e)}`));
+    await page.setViewport({ width: w, height: hgt });
+    await page.evaluateOnNewDocument('window.__name = (f) => f; try { localStorage.clear(); } catch (e) {}');
+    await page.goto(URL_, { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+    await clickText(page, 'Clock in');
+    await clickText(page, 'Open-Plan Office');
+    await page.waitForFunction(() => document.querySelector('.hud'));
+    // Fast-forward in the simulation itself; keep only the events the screens react to, so a
+    // whole level of shots does not land on the renderer in one frame.
+    const ff = (untilBoss: boolean) =>
+      page.evaluate((boss) => {
+        const g = (window as unknown as { cad: Cad }).cad.session.game as unknown as Cad['session']['game'] & {
+          start(): void;
+          step(): void;
+          enemies: { def: { boss?: unknown } }[];
+          events: { t: string }[];
+          drainEvents(): { t: string }[];
+          time: number;
+        };
+        if (g.phase === 'plan') {
+          g.coffee = 2000;
+          const spots = [[6, 3], [8, 6], [13, 6], [15, 4], [6, 1], [9, 8], [16, 6], [12, 8]];
+          for (const [x, y] of spots) g.place('autoreply', x, y);
+          for (const t of g.towers) {
+            g.upgrade(t.id);
+            g.upgrade(t.id);
+            g.buySide(t.id, 'escalation');
+            g.buySide(t.id, 'escalation');
+          }
+          g.start();
+        }
+        const end = g.time + 900;
+        while (g.phase === 'running' && g.time < end) {
+          g.step();
+          if (boss && g.enemies.some((e) => e.def.boss)) break;
+        }
+        const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave');
+        g.events.push(...keep.slice(-3));
+        return g.phase;
+      }, untilBoss);
+    await ff(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    total += await check(page, 'boss', size);
+    await ff(false);
+    await page.waitForFunction(() => document.querySelector('.overlay .fun-scale'), { timeout: 10000 });
+    total += await check(page, 'won', size);
+    await page.close();
   } finally {
     await browser.close();
   }
