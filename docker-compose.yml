@@ -1,0 +1,28 @@
+# CTRL-ALT-DEFEND on the OVH server. Nginx Proxy Manager points game.makkers.net at WEB_PORT.
+# Data (SQLite with playtest rounds and feedback) lives outside the repo in DATA_PATH.
+# Deploy: GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build --force-recreate
+services:
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    container_name: ctrl-alt-defend-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8091}:80"
+    depends_on:
+      - relay
+
+  relay:
+    build: ./server/relay
+    container_name: ctrl-alt-defend-relay
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      RELAY_DB: /data/relay.sqlite3
+    volumes:
+      - ${DATA_PATH:-/opt/ctrl-alt-defend-game}:/data

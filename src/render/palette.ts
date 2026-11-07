@@ -1,0 +1,22 @@
+// Colours for things drawn in code. Keep in sync with art/blender/kit.py PALETTE.
+export const PAL = {
+  slab: '#b4ac9f',
+  carpet: '#8f96a0',
+  carpetDark: '#858c96',
+  walkway: '#d8c9ab',
+  walkwayEdge: '#b9a888',
+  wall: '#e6e1d8',
+  wallTrim: '#b4ac9f',
+  window: '#9fc4dd',
+  ok: '#6fcf7f',
+  bad: '#e5534b',
+  coffee: '#d9a05b',
+  focus: '#7fb6e3',
+  hpBack: '#1d2026',
+  hpFill: '#7ad17f',
+  hpLow: '#e5a04b',
+  hpCrit: '#e5534b',
+  shield: '#b9c3d0',
+  envelope: '#f6f3ea',
+  envelopeFlap: '#3e7cc9',
+} as const;

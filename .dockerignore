@@ -1,0 +1,8 @@
+node_modules
+dist
+shots
+.git
+.env
+art/previews
+server/relay/__pycache__
+**/.pytest_cache

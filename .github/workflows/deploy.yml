@@ -1,0 +1,47 @@
+name: Test and deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Relay tests
+        working-directory: server/relay
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest -q test_app.py
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
+    steps:
+      - name: Deploy via SSH
+        if: env.HAS_KEY == 'true'
+        run: |
+          KEY_FILE="$(mktemp)"
+          trap 'rm -f "$KEY_FILE"' EXIT
+          chmod 600 "$KEY_FILE"
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_FILE"
+          ssh -i "$KEY_FILE" -o StrictHostKeyChecking=no ubuntu@makkers.net \
+            'cd /home/ubuntu/ctrl-alt-defend-game && git pull --ff-only origin main && GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build --force-recreate'
+      - name: No deploy key yet
+        if: env.HAS_KEY != 'true'
+        run: echo "SSH_PRIVATE_KEY is not set for this repo; tests passed, deploy skipped. See README."

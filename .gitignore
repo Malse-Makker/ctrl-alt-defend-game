@@ -1,0 +1,8 @@
+node_modules/
+dist/
+shots/
+.env
+*.log
+__pycache__/
+.pytest_cache/
+.claude/

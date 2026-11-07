@@ -1,0 +1,136 @@
+# CTRL-ALT-DEFEND
+
+*"I'll put this with the rest of the focus."*
+
+Een tower defense in de browser over het verdedigen van je werkdag tegen je collega's. Je houdt
+ze tegen met wat er op je bureau staat: een koffiezetapparaat, een auto-reply, en later een
+koptelefoon, een nietmachine en een versnipperaar. Torens zijn voorwerpen, vijanden zijn mensen.
+
+Speel: **https://game.makkers.net** (geen download, geen installatie).
+
+Dit is de remake van de Godot-versie
+([Malse-Makker/CTRL-ALT-DEFEND](https://github.com/Malse-Makker/CTRL-ALT-DEFEND)). Alle ideeën
+komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
+
+> **Over dit project:** CTRL-ALT-DEFEND is gemaakt met hulp van AI (Claude), als persoonlijk
+> speel- en leerproject om meer te leren over AI, over gamedesign en over 3D in de browser. Ook
+> het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
+> Niet-commercieel, onderdeel van de makkers-collectie.
+
+## Wat er nu in zit (v0.1.0)
+
+- **Level 1, Open-Plan Office**: 21 golven en een eindbaas.
+- **Torens**: Coffee Machine (maakt Coffee) en Auto-Reply (schiet), elk met drie upgrades.
+- **Zijsporen** op Auto-Reply: OVERTIME (sneller, dan meer bereik) of ESCALATION (extra doelwit,
+  dan meer schade). Kies er een, de ander gaat op slot.
+- **Collega's**: The Intern, The New Hire, The Requester (splitst in twee Chasers) en The Chaser.
+- **Boss**: The Head of Comms. Zijn Interns lopen voor hem uit en vangen je schoten op; zet een
+  paar torens op Most HP.
+- **Targeting** per toren (First, Last, Closest, Farthest, Most HP, Least HP).
+- **Snelheden** 1x, 2x, 4x, 8x, pauze, en golven vroeg oproepen voor punten.
+- **Zichtbare feedback** op elke treffer: vliegende mails, schadegetallen, BLOCKED/IMMUNE.
+- **Nieuwe collega's stellen zich voor** met wat je ertegen bouwt.
+- **Eindscherm** met WHAT HURT YOU (gesorteerd op Focus-verlies), je torens met schade per
+  Coffee, en **feedback** (hoe leuk was het, 0-10, plus opmerking) met één knop.
+- **Give up** brengt je naar het eindscherm met je cijfers, niet terug naar het menu.
+- **Voortgang** (sterren, Recognition) wordt in je eigen browser bewaard.
+
+## Bediening
+
+| Toets / muis | Wat |
+|---|---|
+| Linkermuis | toren plaatsen of selecteren |
+| Shift + klik | meerdere van dezelfde toren achter elkaar plaatsen |
+| Rechtermuis | annuleren; slepen = rondkijken |
+| Scrollwiel | zoomen |
+| Spatie | dag starten / volgende golf |
+| 1-9 | toren uit de winkel kiezen |
+| U | geselecteerde toren upgraden |
+| F | snelheid wisselen |
+| P / Esc | pauze |
+| R | camera terugzetten |
+
+## Hoe het in elkaar zit
+
+| Map | Wat |
+|---|---|
+| `src/sim/` | de spelregels: pure TypeScript, geen browser nodig. Vaste tijdstap, seeded random, dus elke ronde is reproduceerbaar |
+| `src/sim/data/` | torens, collega's, levels en golven. Hier zitten alle getallen |
+| `src/render/` | Three.js: isometrische camera, kantoor, collega's, effecten |
+| `src/ui/` | HUD en schermen (gewone DOM met CSS grid/flex). Alle spelerstekst staat in `src/ui/text.ts` |
+| `server/relay/` | kleine Flask-service die feedback en rondecijfers opslaat (SQLite) en doorstuurt naar Discord/Mattermost |
+| `art/blender/` | Python-scripts die alle 3D-modellen, icoontjes en previews bouwen in Blender |
+| `public/` | de gebouwde modellen (`.glb`), icoontjes en geluidseffecten |
+| `tools/` | balansrapport, bots, UI-controle in een echte browser, releasescript |
+
+Meer achtergrond, beslissingen en valkuilen: [HANDOFF.md](HANDOFF.md). Het bouwplan per fase:
+[docs/BOUWPLAN.md](docs/BOUWPLAN.md).
+
+## Lokaal draaien
+
+Nodig: Node.js 24.
+
+```bash
+npm install
+npm run dev
+```
+
+Open http://127.0.0.1:5173. De feedback-relay draait lokaal niet mee; feedback versturen geeft
+dan netjes "Could not send it".
+
+### Testen
+
+```bash
+npm run check          # typecheck + alle tests (regels, economie, content, balans-bots)
+npm run balance        # balansrapport: HP per golf en wat vijf bots met level 1 doen
+npx tsx tools/uicheck.ts   # speelt de schermen door in headless Chrome, maakt screenshots in shots/
+                           # en meldt tekst die overlapt, uitsteekt of van het scherm valt
+```
+
+De relay heeft eigen tests:
+
+```bash
+cd server/relay && pip install -r requirements-dev.txt && python -m pytest -q
+```
+
+### Modellen en icoontjes opnieuw bouwen
+
+Nodig: Blender 5.x.
+
+```bash
+blender -b --python art/blender/build_models.py      # alle modellen naar public/models
+blender -b --python art/blender/icons.py             # icoontjes naar public/icons
+blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
+```
+
+Met `-- --only intern,coffee_1` bouw je er een paar.
+
+## Uitrollen
+
+De game draait in Docker op de OVH-server (`/home/ubuntu/ctrl-alt-defend-game`), achter Nginx
+Proxy Manager op game.makkers.net. Twee containers: `web` (nginx met de gebouwde game) en `relay`
+(feedback). Tests draaien mee in de Docker-build: een image met falende tests komt er niet.
+
+Elke push naar `main` draait de tests in GitHub Actions en rolt daarna uit, zodra de secret
+`SSH_PRIVATE_KEY` in de repo staat (dezelfde deploy-sleutel als de andere makkers-projecten).
+
+Eerste keer op de server:
+
+```bash
+git clone https://github.com/Malse-Makker/ctrl-alt-defend-game.git /home/ubuntu/ctrl-alt-defend-game
+cd /home/ubuntu/ctrl-alt-defend-game && cp .env.example .env   # webhook(s) invullen
+sudo mkdir -p /opt/ctrl-alt-defend-game && sudo chown 10001 /opt/ctrl-alt-defend-game   # de relay draait als uid 10001
+GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build
+```
+
+Een release: `VERSION` ophogen, bovenaan `CHANGELOG.md` een sectie schrijven, committen, en dan
+`tools/release.sh` (of `tools/release.sh --ssh` zolang de Actions-sleutel er niet is).
+
+### Speeldata lezen
+
+```bash
+ssh ubuntu@makkers.net 'cd /home/ubuntu/ctrl-alt-defend-game && docker compose exec relay python report.py'
+```
+
+Er wordt geen IP-adres opgeslagen. De speler-id is een willekeurige code uit de browser van de
+speler. Rondecijfers delen kan uit in Settings.
