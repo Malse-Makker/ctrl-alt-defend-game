@@ -35,6 +35,8 @@ export interface ColleagueDef {
   /** Hits below this bounce off the shield and do nothing. */
   shieldMinHit?: number;
   immune?: DamageClass;
+  /** Cannot be targeted until revealed, unless the tower can see hidden colleagues. */
+  invisible?: boolean;
   split?: { into: string; count: number };
   boss?: BossDef;
   /** Visual scale and the one loud colour that makes him readable on a busy floor. */

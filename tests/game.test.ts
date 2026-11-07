@@ -41,31 +41,36 @@ describe('placing towers', () => {
     expect(g.canPlace('autoreply', 4, 1).reason).toMatch(/Not enough Coffee/);
   });
 
-  it('upgrades, side paths lock each other, and selling refunds 60%', () => {
+  it('upgrades follow the 4-2-0 rule, and selling refunds 60% of everything paid', () => {
     const g = new Game(corridor(['intern:1@1']));
-    g.coffee = 500;
+    g.coffee = 1000;
     const t = placed(g, 'autoreply', 2, 1);
-    expect(g.upgrade(t.id).ok).toBe(true);
-    expect(g.upgrade(t.id).ok).toBe(true);
-    expect(g.upgrade(t.id).reason).toMatch(/Fully/);
-    expect(g.buySide(t.id, 'overtime').ok).toBe(true);
-    expect(g.buySide(t.id, 'escalation').reason).toMatch(/other path/);
-    expect(g.buySide(t.id, 'overtime').ok).toBe(true);
-    expect(g.buySide(t.id, 'overtime').reason).toMatch(/complete/);
-    expect(t.invested).toBe(14 + 12 + 25 + 7 + 14);
-    const s = g.liveStats(t);
-    expect(s.interval).toBeCloseTo(0.32 * 0.8);
-    expect(s.range).toBeCloseTo(3.75 * 1.2);
+    for (let i = 0; i < 4; i++) expect(g.upgrade(t.id, 0).ok).toBe(true);
+    expect(g.upgrade(t.id, 0).reason).toMatch(/complete/);
+    expect(g.upgrade(t.id, 1).ok).toBe(true);
+    expect(g.upgrade(t.id, 1).ok).toBe(true);
+    expect(g.upgrade(t.id, 1).reason).toMatch(/Only one path/);
+    expect(g.upgrade(t.id, 2).reason).toMatch(/Two paths/);
+    expect(t.tiers).toEqual([4, 2, 0]);
+    const paid = 14 + [0, 1, 2, 3].reduce((s, i) => s + t.def.paths[0].tiers[i].cost, 0) + t.def.paths[1].tiers[0].cost + t.def.paths[1].tiers[1].cost;
+    expect(t.invested).toBe(paid);
     const before = g.coffee;
     g.sell(t.id);
-    expect(g.coffee - before).toBe(Math.floor(72 * 0.6));
+    expect(g.coffee - before).toBe(Math.floor(paid * 0.6));
     expect(g.towers.length).toBe(0);
   });
 
-  it('coffee machines and the economy tower have no side paths', () => {
+  it('upgrades change the live stats', () => {
     const g = new Game(corridor(['intern:1@1']));
-    const t = placed(g, 'coffee', 2, 0);
-    expect(g.buySide(t.id, 'overtime').ok).toBe(false);
+    g.coffee = 1000;
+    const t = placed(g, 'autoreply', 2, 1);
+    g.upgrade(t.id, 1);
+    g.upgrade(t.id, 1);
+    g.upgrade(t.id, 1);
+    const s = g.liveStats(t);
+    expect(s.interval).toBeCloseTo(0.45 * 0.7 * 0.7 * 0.75);
+    expect(s.targets).toBe(2);
+    expect(s.damage).toBeCloseTo(2.4);
   });
 });
 
@@ -172,11 +177,11 @@ describe('towers in action', () => {
     expect(pick('weakest')).toBe(ahead.id);
   });
 
-  it('ESCALATION fires at one extra colleague per shot', () => {
+  it('Auto-Forward fires at one extra colleague per shot', () => {
     const g = new Game(corridor(['intern:1@1']));
-    g.coffee = 100;
+    g.coffee = 200;
     const t = placed(g, 'autoreply', 8, 1);
-    g.buySide(t.id, 'escalation');
+    for (let i = 0; i < 3; i++) g.upgrade(t.id, 1);
     g.phase = 'running';
     g.spawn('newhire', 0, 9, false);
     g.spawn('newhire', 0, 10, false);
@@ -238,6 +243,162 @@ describe('towers in action', () => {
   });
 });
 
+describe('upgrade behaviours', () => {
+  function setup(tiers: [number, number, number], def = 'autoreply') {
+    const g = new Game(corridor(['intern:1@1']));
+    g.coffee = 5000;
+    const t = placed(g, def, 8, 1);
+    tiers.forEach((n, p) => {
+      for (let i = 0; i < n; i++) expect(g.upgrade(t.id, p).ok).toBe(true);
+    });
+    g.phase = 'running';
+    g.drainEvents();
+    return { g, t };
+  }
+  const still = (g: Game, type: string, d: number, hp = 1000) => {
+    const e = g.spawn(type, 0, d, false);
+    e.hp = e.maxHp = hp;
+    e.stunTime = 1e9;
+    return e;
+  };
+
+  it('Mail Merge also hits one colleague standing next to the target', () => {
+    const { g } = setup([2, 0, 0]);
+    const a = still(g, 'newhire', 9.5);
+    const b = still(g, 'newhire', 9.0);
+    g.step(TICK);
+    expect(a.hp).toBeLessThan(1000);
+    expect(b.hp).toBeLessThan(1000);
+  });
+
+  it('Out of Office bounces on to two more colleagues', () => {
+    const { g } = setup([3, 0, 0]);
+    const es = [9.5, 8.3, 7.1, 5.9].map((d) => still(g, 'newhire', d));
+    g.step(TICK);
+    const hit = es.filter((e) => e.hp < 1000).length;
+    // Standing 1.2 apart: too far for the splash, so the target plus two bounces.
+    expect(hit).toBe(3);
+  });
+
+  it('Inbox Zero takes half the HP of everyone in range every 8 seconds, bosses 10%', () => {
+    const { g, t } = setup([4, 0, 0]);
+    t.cooldown = 1e9; // only the ability
+    const n = still(g, 'newhire', 9, 100);
+    const boss = still(g, 'headofcomms', 10, 600);
+    boss.addTimer = 1e9;
+    t.abilityTimer = 7.99;
+    g.step(TICK);
+    expect(n.hp).toBeCloseTo(50);
+    expect(boss.hp).toBeCloseTo(540);
+    expect(g.drainEvents().some((e) => e.t === 'ability')).toBe(true);
+  });
+
+  it('CC Your Manager triples damage against bosses', () => {
+    const { g, t } = setup([0, 0, 3]);
+    const boss = still(g, 'headofcomms', 9, 600);
+    boss.addTimer = 1e9;
+    g.step(TICK);
+    expect(600 - boss.hp).toBeCloseTo(g.liveStats(t).damage * 3);
+  });
+
+  it('Legal Hold slows everyone in range by 30%', () => {
+    const { g } = setup([0, 0, 4]);
+    const e = g.spawn('newhire', 0, 9, false);
+    e.hp = e.maxHp = 1e9;
+    const d0 = e.dist;
+    g.step(TICK);
+    expect(e.dist - d0).toBeCloseTo(e.def.speed * 0.7 * TICK);
+  });
+
+  it('hidden colleagues need a tower that can see them (Tracking Pixel)', () => {
+    const blind = setup([0, 0, 0]);
+    const e1 = still(blind.g, 'newhire', 9);
+    e1.def = { ...e1.def, invisible: true };
+    expect(blind.g.pickTargets(blind.t, 5, 1).length).toBe(0);
+    const seeing = setup([0, 0, 2]);
+    const e2 = still(seeing.g, 'newhire', 9);
+    e2.def = { ...e2.def, invisible: true };
+    expect(seeing.g.pickTargets(seeing.t, 5, 1, true).length).toBe(1);
+  });
+
+  it('Expense Claim: brews go into a pot with interest, up to the cap, and claiming pays it out', () => {
+    const g = new Game(corridor(['intern:1@1', 'intern:1@1', 'intern:1@1', 'intern:1@1']));
+    g.coffee = 500;
+    const m = placed(g, 'coffee', 2, 0);
+    g.upgrade(m.id, 1);
+    g.start();
+    const before = g.coffee;
+    g.runFor(10.01);
+    // Two brews of 1 went into the pot, not into the wallet.
+    expect(m.pot).toBe(2);
+    expect(g.stats.coffeeFromMachines).toBe(0);
+    m.pot = 50;
+    g.callNextWave();
+    // +3 deposit, then 10% interest, capped at 60.
+    expect(m.pot).toBeCloseTo(Math.min(60, (50 + 3) * 1.1));
+    const c = g.coffee;
+    expect(g.claim(m.id).ok).toBe(true);
+    expect(g.coffee - c).toBe(58);
+    expect(m.pot).toBeLessThan(1);
+    expect(before).toBeGreaterThan(0);
+  });
+
+  it('selling an Expense Claim machine pays out the pot too', () => {
+    const g = new Game(corridor(['intern:1@1']));
+    g.coffee = 500;
+    const m = placed(g, 'coffee', 2, 0);
+    g.upgrade(m.id, 1);
+    m.pot = 40;
+    const c = g.coffee;
+    g.sell(m.id);
+    expect(g.coffee - c).toBe(Math.floor((20 + 25) * 0.6) + 40);
+  });
+
+  it('a tip jar makes colleagues dealt with in its range pay more', () => {
+    const g = new Game(corridor(['intern:1@1']));
+    g.coffee = 500;
+    const m = placed(g, 'coffee', 8, 1);
+    g.upgrade(m.id, 2);
+    expect(g.tipBonusAt(8.5, 2.5)).toBeCloseTo(0.25);
+    expect(g.tipBonusAt(18, 2.5)).toBe(0);
+  });
+});
+
+describe('players and wallets', () => {
+  it('a split game divides income between players and lets them gift Coffee', () => {
+    const g = new Game(corridor(['intern:1@1', 'intern:1@1']), { players: 4, sharedWallet: false });
+    expect(g.wallets).toEqual([40, 40, 40, 40]);
+    g.start();
+    g.callNextWave();
+    // Salary 5 split four ways.
+    expect(g.wallets[0]).toBeCloseTo(41.25);
+    expect(g.gift(0, 1, 10).ok).toBe(true);
+    expect(g.wallets[1]).toBeCloseTo(51.25);
+    expect(g.gift(0, 0, 1).ok).toBe(false);
+  });
+
+  it('only the owner touches a tower in a split game; everyone in a shared game', () => {
+    const split = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false });
+    const t = split.place('autoreply', 2, 1, 1).tower!;
+    expect(t.owner).toBe(1);
+    expect(split.wallets[1]).toBe(26);
+    expect(split.wallets[0]).toBe(40);
+    expect(split.upgrade(t.id, 0, 0).reason).toMatch(/not your tower/);
+    expect(split.upgrade(t.id, 0, 1).ok).toBe(true);
+    const shared = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: true });
+    const t2 = shared.place('autoreply', 2, 1, 1).tower!;
+    expect(shared.upgrade(t2.id, 0, 0).ok).toBe(true);
+    expect(shared.wallets.length).toBe(1);
+  });
+
+  it('build areas keep players to their own part of the office', () => {
+    const g = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false });
+    g.buildAreas = [[{ x: 0, y: 0, w: 10, h: 6 }], [{ x: 10, y: 0, w: 11, h: 6 }]];
+    expect(g.canPlace('autoreply', 12, 1, 0).reason).toMatch(/someone else/);
+    expect(g.canPlace('autoreply', 12, 1, 1).ok).toBe(true);
+  });
+});
+
 describe('the Head of Comms', () => {
   it('keeps calling Interns in, and calls a crowd at 66% and 33%', () => {
     const g = new Game(corridor(['headofcomms:1@1']));
@@ -275,8 +436,8 @@ describe('determinism', () => {
       g.start();
       g.runFor(400, (gg) => {
         if (gg.coffee > 30) {
-          const t = gg.towers.find((x) => x.level < 3);
-          if (t) gg.upgrade(t.id);
+          const t = gg.towers.find((x) => x.tiers[0] < 4);
+          if (t) gg.upgrade(t.id, 0);
         }
       });
       return JSON.stringify({ s: g.stats, f: g.focus, c: g.coffee, p: g.phase, w: g.waveIndex });

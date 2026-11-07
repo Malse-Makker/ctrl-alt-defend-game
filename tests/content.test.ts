@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS, LEVEL_NAMES } from '../src/sim/data/levels';
-import { SIDE_PATHS, TARGET_HELP, TARGET_LABELS, TOWERS } from '../src/sim/data/towers';
+import { TARGET_HELP, TARGET_LABELS, TOWERS } from '../src/sim/data/towers';
 import { Game } from '../src/sim/game';
 import { Path } from '../src/sim/geometry';
 import { parseWave } from '../src/sim/waves';
@@ -17,7 +17,7 @@ function allStrings(v: unknown, out: string[] = []): string[] {
 }
 
 describe('player-facing text', () => {
-  const texts = allStrings([TOWERS, COLLEAGUES, LEVELS, LEVEL_NAMES, SIDE_PATHS, TARGET_LABELS, TARGET_HELP, UI_TEXT]);
+  const texts = allStrings([TOWERS, COLLEAGUES, LEVELS, LEVEL_NAMES, TARGET_LABELS, TARGET_HELP, UI_TEXT]);
 
   it('has no em-dashes or en-dashes', () => {
     const bad = texts.filter((t) => /[–—]/.test(t));

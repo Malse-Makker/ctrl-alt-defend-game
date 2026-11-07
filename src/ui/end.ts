@@ -65,7 +65,7 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
       h(
         'tr',
         {},
-        h('td', { text: `${t.def.levels[t.level - 1].name}${t.side ? ` (${t.side === 'overtime' ? 'OT' : 'ESC'} ${t.sideStep})` : ''}` }),
+        h('td', { text: `${t.def.name} ${t.tiers.join('-')}` }),
         h('td', { text: String(Math.round(t.stats.damage)) }),
         h('td', { text: String(t.stats.kills) }),
         h('td', { text: String(t.invested) }),

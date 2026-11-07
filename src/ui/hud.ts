@@ -2,7 +2,7 @@
 // Built once, then updated in place every frame (only changed text is written).
 
 import { COLLEAGUES, type ColleagueDef } from '../sim/data/colleagues';
-import { SIDE_PATHS, TARGET_HELP, TARGET_LABELS, TARGET_MODES, TOWERS, UPCOMING_TOWERS, type SidePath, type TargetMode } from '../sim/data/towers';
+import { MAX_TIER, TARGET_HELP, TARGET_LABELS, TARGET_MODES, TOWERS, UPCOMING_TOWERS, modelFor, pathBlock, type TargetMode } from '../sim/data/towers';
 import { earlyCallPoints } from '../sim/economy';
 import type { Game, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
@@ -14,8 +14,8 @@ export interface HudActions {
   startOrNext(): void;
   setSpeed(s: number): void;
   togglePause(): void;
-  upgrade(id: number): void;
-  side(id: number, path: SidePath): void;
+  upgrade(id: number, path: number): void;
+  claim(id: number): void;
   sell(id: number): void;
   target(id: number, mode: TargetMode): void;
   deselect(): void;
@@ -298,7 +298,7 @@ export class Hud {
       }
       return;
     }
-    const key = `${t.id}:${t.level}:${t.side}:${t.sideStep}:${t.target}`;
+    const key = `${t.id}:${t.tiers.join('')}:${t.target}`;
     if (key !== this.towerKey) {
       this.towerKey = key;
       this.buildTowerPanel(t);
@@ -310,21 +310,34 @@ export class Hud {
   private buildTowerPanel(t: Tower): void {
     const g = this.game;
     const def = t.def;
-    const lv = def.levels[t.level - 1];
     const s = g.liveStats(t);
-    const pips = h('div', { class: 'level-pips', title: `Level ${t.level} of 3` }, ...[1, 2, 3].map((i) => h('span', { class: i <= t.level ? 'on' : '' })));
+    // Named after the highest upgrade bought, like Bloons; the base name until then.
+    let title = def.name;
+    let best = 0;
+    def.paths.forEach((p, i) => {
+      if (t.tiers[i] > best) {
+        best = t.tiers[i];
+        title = p.tiers[t.tiers[i] - 1].name;
+      }
+    });
     const head = h(
       'div',
       { class: 'tp-head' },
-      img(`icons/${def.models[t.level - 1]}.png`, lv.name),
-      h('div', {}, h('div', { class: 'tp-name wrap', text: lv.name }), h('div', { class: 'tp-flavour wrap', text: `"${lv.flavour}"` }), pips),
+      img(`icons/${modelFor(def, t.tiers)}.png`, title),
+      h(
+        'div',
+        {},
+        h('div', { class: 'tp-name wrap', text: title }),
+        h('div', { class: 'tp-sub' }, h('span', { text: def.name }), h('span', { class: 'mono tiers', text: t.tiers.join('-') })),
+      ),
       h('button', { class: 'icon-btn', title: 'Close (Esc)', on: { click: () => this.act.deselect() } }, icon('xmark')),
     );
-    const parts: HTMLElement[] = [head, h('div', { class: 'wrap muted', attrs: { style: 'font-size:12px' }, text: def.verb })];
+    const parts: HTMLElement[] = [head];
+    const dyn: (() => void)[] = [];
 
     const stats = h('div', { class: 'kv' });
-    const dyn: (() => void)[] = [];
     if (def.role === 'damage') {
+      const extra = [s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
       stats.append(
         h('span', { class: 'k', text: T.damage }),
         h('span', { class: 'v', text: fmt(s.damage, 1) }),
@@ -332,81 +345,79 @@ export class Hud {
         h('span', { class: 'v', text: fmt(1 / s.interval, 2) }),
         h('span', { class: 'k', text: T.range }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
-        h('span', { class: 'k', text: T.targets }),
-        h('span', { class: 'v', text: String(s.targets) }),
       );
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
-      const kills = h('span', { class: 'v' });
       const per = h('span', { class: 'v' });
-      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt, h('span', { class: 'k', text: T.kills }), kills, h('span', { class: 'k', text: T.perCoffee }), per);
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt, h('span', { class: 'k', text: T.perCoffee }), per);
       dyn.push(() => {
-        setText(dealt, String(Math.round(t.stats.damage)));
-        setText(kills, String(t.stats.kills));
+        setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`);
         setText(per, fmt(t.stats.damage / Math.max(1, t.invested), 1));
       });
     } else {
-      stats.append(h('span', { class: 'k', text: 'Makes' }), h('span', { class: 'v', text: `${s.coffeeAmount} per ${s.coffeeInterval}s` }));
+      stats.append(h('span', { class: 'k', text: s.bank ? 'Brews into the pot' : 'Makes' }), h('span', { class: 'v', text: `${fmt(s.coffeeAmount, 0)} per ${fmt(s.coffeeInterval, 1)}s` }));
+      if (s.tip > 0) stats.append(h('span', { class: 'k', text: 'Tips in range' }), h('span', { class: 'v', text: `+${Math.round(s.tip * 100)}%` }));
+      if (s.tipEverywhere > 0) stats.append(h('span', { class: 'k', text: 'Tips everywhere' }), h('span', { class: 'v', text: `+${Math.round(s.tipEverywhere * 100)}%` }));
       const made = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.coffeeMade }), made);
-      dyn.push(() => setText(made, String(t.stats.coffee)));
+      dyn.push(() => setText(made, String(Math.floor(t.stats.coffee))));
     }
     parts.push(stats);
 
-    // Upgrade
-    if (t.level < 3) {
-      const next = def.levels[t.level as 1 | 2];
-      const cost = g.upgradeCostFor(t)!;
-      const preview = def.role === 'damage' ? `${fmt(next.damage!, 1)} dmg, ${fmt(1 / next.interval!, 2)}/s, range ${fmt(next.range!, 2)}` : `${next.coffeeAmount} Coffee per ${next.coffeeInterval}s`;
-      const btn = h(
-        'button',
-        { class: 'btn upgrade-btn', title: 'Upgrade (U)', on: { click: () => this.act.upgrade(t.id) } },
-        h('span', { class: 'row' }, h('span', {}, icon('arrow-up'), ` ${T.upgrade}: ${next.name}`), h('span', { class: 'price', text: String(cost) })),
-        h('span', { class: 'faint wrap', attrs: { style: 'font-size:12px' }, text: preview }),
+    // Expense Claim: the pot and the button that makes this machine something to do.
+    if (s.bank) {
+      const bank = s.bank;
+      const potText = h('span', { class: 'mono' });
+      const fill = h('div', { class: 'pot-fill' });
+      const claim = h('button', { class: 'btn primary small', title: 'Claim the pot (C)', on: { click: () => this.act.claim(t.id) } });
+      const box = h(
+        'div',
+        { class: 'pot' },
+        h('div', { class: 'row' }, h('span', { class: 'label', text: 'Pot' }), potText),
+        h('div', { class: 'pot-track' }, fill),
+        h('div', { class: 'faint', attrs: { style: 'font-size:11px' }, text: `+${bank.perWave} and ${Math.round(bank.interest * 100)}% interest every wave. Full = no more growth.` }),
+        claim,
       );
       dyn.push(() => {
-        const ok = g.canUpgrade(t).ok;
-        btn.disabled = !ok;
-        toggle(btn, 'broke', g.coffee < cost);
+        setText(potText, `${Math.floor(t.pot)} / ${bank.cap}`);
+        fill.style.width = `${Math.min(100, (t.pot / bank.cap) * 100).toFixed(1)}%`;
+        toggle(fill, 'full', t.pot >= bank.cap - 0.01);
+        setText(claim, `Claim ${Math.floor(t.pot)}`);
+        claim.disabled = Math.floor(t.pot) <= 0;
       });
-      parts.push(btn);
-    } else {
-      parts.push(h('div', { class: 'muted', attrs: { style: 'font-size:12px' } }, icon('check'), ` ${T.maxed}`));
+      parts.push(box);
     }
 
-    // Side paths
-    if (def.sidePaths) {
-      const wrap = h('div', { class: 'side-paths' });
-      for (const path of ['overtime', 'escalation'] as SidePath[]) {
-        const info = SIDE_PATHS[path];
-        const locked = t.side !== null && t.side !== path;
-        const steps = t.side === path ? t.sideStep : 0;
-        const box = h(
-          'div',
-          { class: `side${locked ? ' locked' : ''}` },
-          h('span', { class: 'side-name', text: info.label }),
-          h('span', { class: 'quote wrap', text: `"${info.quote}"` }),
-          h('div', { class: 'pips' }, h('span', { class: `pip${steps >= 1 ? ' on' : ''}` }), h('span', { class: `pip${steps >= 2 ? ' on' : ''}` })),
+    // The three paths.
+    parts.push(h('div', { class: 'label', text: 'Upgrades' }), h('div', { class: 'faint', attrs: { style: 'font-size:11px' }, text: T.pathRule }));
+    const keys = [',', '.', '/'];
+    def.paths.forEach((path, i) => {
+      const tier = t.tiers[i];
+      const pips = h('div', { class: 'pips' }, ...Array.from({ length: MAX_TIER }, (_, k) => h('span', { class: `pip${k < tier ? ' on' : ''}`, attrs: { style: k < tier ? `background:${path.color}` : '' } })));
+      const card = h('div', { class: 'path', attrs: { style: `border-left-color:${path.color}` } }, h('div', { class: 'row' }, h('span', { class: 'path-name', text: path.name }), pips));
+      const block = pathBlock(t.tiers, i);
+      if (tier >= MAX_TIER) {
+        card.append(h('div', { class: 'faint', attrs: { style: 'font-size:11px' }, text: 'Complete.' }));
+      } else if (block) {
+        card.classList.add('locked');
+        card.append(h('div', { class: 'faint wrap', attrs: { style: 'font-size:11px' } }, icon('lock'), ` ${block}`));
+      } else {
+        const next = path.tiers[tier];
+        const cost = g.pathCostFor(t, i)!;
+        const btn = h(
+          'button',
+          { class: 'btn upgrade-btn', title: `${next.desc} (key ${keys[i]})`, on: { click: () => this.act.upgrade(t.id, i) } },
+          h('span', { class: 'row' }, h('span', { class: 'wrap' }, h('span', { class: 'faint mono', text: `${tier + 1} ` }), next.name), h('span', { class: 'price', text: String(cost) })),
+          h('span', { class: 'faint wrap', attrs: { style: 'font-size:12px' }, text: next.desc }),
         );
-        if (!locked && steps < 2) {
-          const cost = g.sideCostFor(t, path)!;
-          const b = h(
-            'button',
-            { class: 'btn small', title: info.steps[steps as 0 | 1], on: { click: () => this.act.side(t.id, path) } },
-            h('span', { class: 'wrap', text: info.steps[steps as 0 | 1] }),
-            h('span', { class: 'price', text: String(cost) }),
-          );
-          dyn.push(() => {
-            b.disabled = !g.canBuySide(t, path).ok;
-            toggle(b, 'broke', g.coffee < cost);
-          });
-          box.append(b);
-        } else {
-          box.append(h('span', { class: 'faint', attrs: { style: 'font-size:11px' }, text: locked ? T.locked : 'Done' }));
-        }
-        wrap.append(box);
+        dyn.push(() => {
+          btn.disabled = !g.canUpgrade(t, i).ok;
+          toggle(btn, 'broke', g.coffee < cost);
+        });
+        card.append(btn);
       }
-      parts.push(h('div', { class: 'label', text: 'Side paths' }), h('div', { class: 'faint', attrs: { style: 'font-size:11px' }, text: T.chooseOne }), wrap);
-    }
+      parts.push(card);
+    });
 
     // Targeting
     if (def.role === 'damage') {

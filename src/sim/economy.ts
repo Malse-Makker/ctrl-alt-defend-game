@@ -45,15 +45,12 @@ export function duplicateMult(copiesStanding: number): number {
 }
 
 export function placeCost(def: TowerDef, copiesStanding: number, costMult = 1): number {
-  return Math.round(def.levels[0].cost * costMult * duplicateMult(copiesStanding));
+  return Math.round(def.base.cost * costMult * duplicateMult(copiesStanding));
 }
 
-export function upgradeCost(def: TowerDef, toLevel: 2 | 3, costMult = 1): number {
-  return Math.round(def.levels[toLevel - 1].cost * costMult);
-}
-
-export function sideCost(def: TowerDef, step: 1 | 2, costMult = 1): number {
-  return Math.round(def.levels[0].cost * (step === 1 ? 0.5 : 1) * costMult);
+/** Price of the next tier on a path (tier is 1-based: the one you are about to buy). */
+export function pathCost(def: TowerDef, path: number, tier: number, costMult = 1): number {
+  return Math.round(def.paths[path].tiers[tier - 1].cost * costMult);
 }
 
 export function sellValue(invested: number): number {

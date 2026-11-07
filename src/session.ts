@@ -13,7 +13,7 @@ import { World } from './render/world';
 import { solidBot, type Bot } from './sim/bots';
 import { COLLEAGUES } from './sim/data/colleagues';
 import { LEVELS } from './sim/data/levels';
-import { TOWERS, type SidePath, type TargetMode } from './sim/data/towers';
+import { TOWERS, type TargetMode } from './sim/data/towers';
 import { Game, TICK, type GameEvent } from './sim/game';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
@@ -88,8 +88,8 @@ export class Session {
       startOrNext: () => this.startOrNext(),
       setSpeed: (s) => this.setSpeed(s),
       togglePause: () => this.togglePause(),
-      upgrade: (id) => this.upgrade(id),
-      side: (id, p) => this.side(id, p),
+      upgrade: (id, p) => this.upgrade(id, p),
+      claim: (id) => this.claim(id),
       sell: (id) => this.sell(id),
       target: (id, m) => this.target(id, m),
       deselect: () => this.select(null),
@@ -172,8 +172,12 @@ export class Session {
         break;
       }
       case 'coffee': {
-        sfx.play('coffee');
-        this.popups.spawn(`+${ev.amount}`, ev.x, ev.y, 1.2, 'coffee', { icon: 'fa-solid fa-mug-hot' });
+        if (ev.toPot) {
+          this.popups.spawn(`+${ev.amount}`, ev.x, ev.y, 1.2, 'info', { icon: 'fa-solid fa-piggy-bank', life: 0.7 });
+        } else {
+          sfx.play('coffee');
+          this.popups.spawn(`+${ev.amount}`, ev.x, ev.y, 1.2, 'coffee', { icon: 'fa-solid fa-mug-hot' });
+        }
         break;
       }
       case 'salary':
@@ -226,8 +230,14 @@ export class Session {
         }
         break;
       case 'upgraded':
-      case 'side':
         sfx.play('upgrade');
+        break;
+      case 'claim':
+        sfx.play('coffee', { pitch: 0.8, gain: 1.6 });
+        this.popups.spawn(`+${ev.amount}`, ev.x, ev.y, 1.4, 'coffee', { icon: 'fa-solid fa-sack-dollar', life: 1.4 });
+        break;
+      case 'ability':
+        sfx.play('bossphase', { pitch: 1.6, gain: 0.6 });
         break;
       case 'sold':
         sfx.play('sell');
@@ -348,13 +358,13 @@ export class Session {
     this.paused = false;
   }
 
-  private upgrade(id: number): void {
-    const r = this.game.upgrade(id);
+  private upgrade(id: number, path: number): void {
+    const r = this.game.upgrade(id, path);
     if (!r.ok) this.refuse(r.reason);
   }
 
-  private side(id: number, path: SidePath): void {
-    const r = this.game.buySide(id, path);
+  private claim(id: number): void {
+    const r = this.game.claim(id);
     if (!r.ok) this.refuse(r.reason);
   }
 
@@ -479,8 +489,12 @@ export class Session {
       this.togglePause();
     } else if (k === 'f' || k === 'F') {
       this.setSpeed(SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length]);
-    } else if (k === 'u' || k === 'U') {
-      if (this.selected !== null) this.upgrade(this.selected);
+    } else if (k === ',' || k === '.' || k === '/') {
+      // The Bloons keys for the three upgrade paths.
+      if (this.selected !== null) this.upgrade(this.selected, [',', '.', '/'].indexOf(k));
+      e.preventDefault();
+    } else if (k === 'c' || k === 'C') {
+      if (this.selected !== null) this.claim(this.selected);
     } else if (k === 'r' || k === 'R' || k === 'Home') {
       this.host.view.resetView();
     } else if (/^[1-9]$/.test(k)) {
@@ -499,15 +513,17 @@ export class Session {
       const def = TOWERS[this.placing];
       const check = g.canPlace(this.placing, this.hover.tx, this.hover.ty);
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
-      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, def.levels[0].range ?? 0);
-      if (!placeable) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, def.levels[0].range ?? 0, '#e5534b');
+      const range = def.role === 'damage' ? def.base.range : 0;
+      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range);
+      if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
       return;
     }
     this.actors.showGhost(null, 0, 0, false, 0);
     const sel = this.selected !== null ? g.tower(this.selected) : undefined;
     const hov = this.hover ? g.towerAt(this.hover.tx, this.hover.ty) : undefined;
     const t = sel ?? hov;
-    if (t && t.def.role === 'damage') this.actors.showRange(t.x, t.y, g.liveStats(t).range);
+    const tipRange = t && t.def.role === 'economy' && g.liveStats(t).tip > 0;
+    if (t && (t.def.role === 'damage' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
     else this.actors.showRange(null, 0, 0);
   }
 

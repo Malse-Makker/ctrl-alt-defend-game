@@ -2,6 +2,7 @@
 // simulation state every frame and turns simulation events into something you can see.
 
 import * as THREE from 'three';
+import { modelFor } from '../sim/data/towers';
 import type { Enemy, Game, GameEvent, Tower } from '../sim/game';
 import { part, type Assets } from './assets';
 import { PAL } from './palette';
@@ -38,7 +39,7 @@ interface TowerView {
   id: number;
   root: THREE.Group;
   model: THREE.Object3D;
-  level: number;
+  modelKey: string;
   pop: number;
   recoil: number;
 }
@@ -177,7 +178,7 @@ export class Actors {
     for (const t of game.towers) {
       let v = this.towers.get(t.id);
       if (!v) v = this.addTower(t, game);
-      if (v.level !== t.level) this.swapModel(v, t);
+      if (v.modelKey !== modelFor(t.def, t.tiers)) this.swapModel(v, t);
       v.pop = Math.max(0, v.pop - dt * 4);
       v.recoil = Math.max(0, v.recoil - dt * 6);
       const s = 1 + Math.sin(v.pop * Math.PI) * 0.18;
@@ -191,6 +192,7 @@ export class Actors {
     }
     this.updateShots(dt);
     this.updateScraps(dt);
+    this.updatePulses(dt);
   }
 
   onEvent(ev: GameEvent, game: Game): void {
@@ -217,9 +219,11 @@ export class Actors {
         if (v && v.dieIn === null) v.dieIn = ev.delay;
         break;
       }
+      case 'ability':
+        this.pulse(ev.x, ev.y, ev.range);
+        break;
       case 'placed':
-      case 'upgraded':
-      case 'side': {
+      case 'upgraded': {
         const t = game.tower(ev.towerId);
         if (!t) break;
         const v = this.towers.get(t.id) ?? this.addTower(t, game);
@@ -236,7 +240,8 @@ export class Actors {
   private addTower(t: Tower, game: Game): TowerView {
     const root = new THREE.Group();
     root.position.set(t.x, 0, t.y);
-    const model = this.assets.clone(t.def.models[t.level - 1]);
+    const modelKey = modelFor(t.def, t.tiers);
+    const model = this.assets.clone(modelKey);
     root.add(model);
     // Face the nearest bit of walkway, snapped to a quarter turn so desks line up with the grid.
     let best = { d: Infinity, x: t.x, y: t.y + 1 };
@@ -250,16 +255,16 @@ export class Actors {
     const angle = Math.atan2(best.x - t.x, best.y - t.y);
     root.rotation.y = Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
     this.group.add(root);
-    const v: TowerView = { id: t.id, root, model, level: t.level, pop: 1, recoil: 0 };
+    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0 };
     this.towers.set(t.id, v);
     return v;
   }
 
   private swapModel(v: TowerView, t: Tower): void {
     v.root.remove(v.model);
-    v.model = this.assets.clone(t.def.models[t.level - 1]);
+    v.modelKey = modelFor(t.def, t.tiers);
+    v.model = this.assets.clone(v.modelKey);
     v.root.add(v.model);
-    v.level = t.level;
     v.pop = 1;
   }
 
@@ -418,6 +423,36 @@ export class Actors {
   }
 
   // ------------------------------------------------------------- shots and scraps
+
+  private pulses: { mesh: THREE.Mesh; t: number; r: number }[] = [];
+
+  /** Inbox Zero: a ring that sweeps out over everyone it just hit. */
+  private pulse(x: number, y: number, r: number): void {
+    const mesh = new THREE.Mesh(
+      new THREE.RingGeometry(0.85, 1, 64).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: '#bfe2ff', transparent: true, opacity: 0.9, depthWrite: false }),
+    );
+    mesh.position.set(x, 0.05, y);
+    mesh.renderOrder = 4;
+    this.group.add(mesh);
+    this.pulses.push({ mesh, t: 0, r });
+  }
+
+  private updatePulses(dt: number): void {
+    const keep: typeof this.pulses = [];
+    for (const p of this.pulses) {
+      p.t += dt;
+      const k = Math.min(1, p.t / 0.45);
+      p.mesh.scale.setScalar(0.2 + k * p.r);
+      (p.mesh.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k);
+      if (k >= 1) {
+        this.group.remove(p.mesh);
+        p.mesh.geometry.dispose();
+        (p.mesh.material as THREE.Material).dispose();
+      } else keep.push(p);
+    }
+    this.pulses = keep;
+  }
 
   private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number): void {
     let mesh = this.shotPool.pop();

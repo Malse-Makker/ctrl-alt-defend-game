@@ -3,6 +3,19 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.2.0] - 2026-11-08
+
+### Changed
+- Tower upgrades now work like Bloons TD 6: every tower has three paths of four tiers. Take one path to tier 4 and a second to tier 2. The third stays shut.
+- Auto-Reply: TEMPLATES (more per reply, a splash, bounces, and Inbox Zero, which takes half the HP of everyone in range every 8 seconds), RULES (faster, then several colleagues at once) and READ RECEIPTS (range, sees hidden colleagues, extra damage against bosses, and Legal Hold, which slows everyone in range).
+- Coffee Machine: BREWING (more Coffee), EXPENSE CLAIM (Coffee goes into a pot with interest; you decide when to claim it, but a full pot stops growing) and VENDING (tip jars: colleagues dealt with nearby pay more).
+- OVERTIME and ESCALATION are gone. Their ideas live on in the new paths.
+- The tower panel shows all three paths, what the next tier does, and why a path is locked. A tower is named after its highest upgrade.
+- Keys , . and / buy the next tier of path 1, 2 or 3, like in Bloons. C claims an Expense Claim pot.
+
+### Balance
+- Measured with bots: putting your Coffee into one tower's upgrades now clearly beats buying more copies. A first-time player still wins with some Focus lost; good play is flawless.
+
 ## [0.1.0] - 2026-11-07
 
 ### New

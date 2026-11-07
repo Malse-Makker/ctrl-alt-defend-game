@@ -20,18 +20,18 @@ def sample_round(**over):
         "simSeconds": 400,
         "realSeconds": 300,
         "score": 900,
-        "coffee": {"kills": 300.5, "salary": 290, "machines": 40, "sales": 0, "spent": 600, "end": 30.5},
+        "coffee": {"kills": 300.5, "bank": 0, "salary": 290, "machines": 40, "sales": 0, "spent": 600, "end": 30.5},
         "kills": {"intern": 300},
         "leaks": {},
         "leakFocus": {},
         "built": {"autoreply": 7},
         "upgrades": 14,
-        "sidePaths": {"escalation": 6},
+        "pathTiers": {"autoreply_0": 3, "autoreply_1": 2},
         "sold": 0,
         "earlyCalls": 2,
         "firstLeakWave": 0,
         "peakOnFloor": 30,
-        "towers": [{"type": "autoreply", "level": 3, "side": "escalation", "step": 2, "damage": 900, "kills": 80, "invested": 72}],
+        "towers": [{"type": "autoreply", "tiers": [3, 2, 0], "owner": 0, "damage": 900, "kills": 80, "invested": 120}],
         "speedUse": {"1x": 120.5, "2x": 30},
     }
     r.update(over)
@@ -76,7 +76,8 @@ def test_round_is_stored(relay):
         {"stars": 4},
         {"level": "1"},
         {"kills": {"<script>": 1}},
-        {"towers": [{"type": "autoreply", "level": 9, "side": None, "step": 0, "damage": 1, "kills": 0, "invested": 1}]},
+        {"towers": [{"type": "autoreply", "tiers": [4, 4, 0], "owner": 0, "damage": 1, "kills": 0, "invested": 1}]},
+        {"towers": [{"type": "autoreply", "tiers": [1, 1, 1], "owner": 0, "damage": 1, "kills": 0, "invested": 1}]},
     ],
 )
 def test_round_rejects_bad_fields(relay, bad):
@@ -94,6 +95,7 @@ def test_feedback_is_stored_and_forwarded_without_pings(relay):
     assert payload["allowed_mentions"] == {"parse": []}
     assert "@everyone" not in payload["content"]
     assert "8/10" in payload["content"]
+    assert "autoreply 3-2-0" in payload["content"]
     with mod.app.app_context():
         row = mod.db().execute("SELECT * FROM feedback").fetchone()
         assert row["fun"] == 8 and row["forwarded"] == 1 and row["name"] == "Tester"

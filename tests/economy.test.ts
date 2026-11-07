@@ -1,18 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { COLLEAGUES, hpEquivalent, killReward } from '../src/sim/data/colleagues';
 import { startCoffee } from '../src/sim/data/levels';
-import { TOWERS } from '../src/sim/data/towers';
+import { TOWERS, pathBlock, type Tiers } from '../src/sim/data/towers';
 import {
   duplicateMult,
   earlyCallPoints,
   killIncomeMult,
+  pathCost,
   placeCost,
   recognitionForStars,
   salaryFor,
   sellValue,
-  sideCost,
   starsFor,
 } from '../src/sim/economy';
+import { computeStats } from '../src/sim/game';
 
 describe('economy rules from the design bible', () => {
   it('start Coffee is 40 + 5 per level', () => {
@@ -41,9 +42,9 @@ describe('economy rules from the design bible', () => {
     expect(duplicateMult(10)).toBe(2);
   });
 
-  it('side paths cost half and then the full entry price', () => {
-    expect(sideCost(TOWERS.autoreply, 1)).toBe(7);
-    expect(sideCost(TOWERS.autoreply, 2)).toBe(14);
+  it('path prices come from the tier you are about to buy', () => {
+    expect(pathCost(TOWERS.autoreply, 0, 1)).toBe(TOWERS.autoreply.paths[0].tiers[0].cost);
+    expect(pathCost(TOWERS.autoreply, 2, 4, 0.9)).toBe(Math.round(TOWERS.autoreply.paths[2].tiers[3].cost * 0.9));
   });
 
   it('selling returns 60%, rounded down', () => {
@@ -84,39 +85,76 @@ describe('economy rules from the design bible', () => {
   });
 });
 
+describe('upgrade paths (Bloons rule: 4-2-0)', () => {
+  const ok = (t: Tiers, p: number) => pathBlock(t, p) === null;
+
+  it('allows one path to 4 and a second to 2', () => {
+    expect(ok([0, 0, 0], 0)).toBe(true);
+    expect(ok([3, 2, 0], 0)).toBe(true);
+    expect(ok([4, 1, 0], 1)).toBe(true);
+    expect(ok([0, 2, 3], 2)).toBe(true);
+  });
+
+  it('refuses a third path, two paths past 2, and tier 5', () => {
+    expect(pathBlock([2, 2, 0], 2)).toMatch(/Two paths/);
+    expect(pathBlock([3, 2, 0], 1)).toMatch(/Only one path/);
+    expect(pathBlock([2, 3, 0], 0)).toMatch(/Only one path/);
+    expect(pathBlock([4, 0, 0], 0)).toMatch(/complete/);
+  });
+});
+
 describe('tower balance rule', () => {
-  it('damage per Coffee rises with every upgrade level', () => {
+  const crowdDps = (def: (typeof TOWERS)[string], tiers: Tiers) => {
+    const s = computeStats(def, tiers);
+    return (s.damage / s.interval) * Math.min(5, s.targets + s.splash + s.bounce);
+  };
+  const copiesDps = (def: (typeof TOWERS)[string], coffee: number) => {
+    const b = computeStats(def, [0, 0, 0]);
+    let n = 0;
+    let spent = 0;
+    while (spent + placeCost(def, n) <= coffee) spent += placeCost(def, n++);
+    return n * (b.damage / b.interval);
+  };
+
+  it('the first tier of a damage path beats buying a third copy', () => {
     for (const def of Object.values(TOWERS)) {
       if (def.role !== 'damage') continue;
-      let spent = 0;
-      let prev = 0;
-      def.levels.forEach((lv) => {
-        spent += lv.cost;
-        const dpsPerCoffee = (lv.damage! / lv.interval!) / spent;
-        expect(dpsPerCoffee, `${def.id} ${lv.name}`).toBeGreaterThan(prev);
-        prev = dpsPerCoffee;
-      });
+      const b = computeStats(def, [0, 0, 0]);
+      const copy = b.damage / b.interval / placeCost(def, 2);
+      for (const p of [0, 1]) {
+        const tiers: Tiers = [0, 0, 0];
+        tiers[p] = 1;
+        const s = computeStats(def, tiers);
+        const gain = (s.damage / s.interval - b.damage / b.interval) / def.paths[p].tiers[0].cost;
+        expect(gain, `${def.id} path ${p}`).toBeGreaterThan(copy);
+      }
     }
   });
 
-  it('upgrading beats a second copy at the duplicate price', () => {
-    const def = TOWERS.autoreply;
-    const l1 = def.levels[0];
-    const l2 = def.levels[1];
-    const twoCopies = (2 * l1.damage!) / l1.interval! / (placeCost(def, 0) + placeCost(def, 1));
-    const upgraded = l2.damage! / l2.interval! / (l1.cost + l2.cost);
-    expect(upgraded).toBeGreaterThan(twoCopies);
+  it('against a crowd, tier 3 and 4 beat spending the same Coffee on copies', () => {
+    for (const def of Object.values(TOWERS)) {
+      if (def.role !== 'damage') continue;
+      for (const p of [0, 1]) {
+        let spent = def.base.cost;
+        for (let t = 1; t <= 4; t++) {
+          spent += def.paths[p].tiers[t - 1].cost;
+          if (t < 3) continue;
+          const tiers: Tiers = [0, 0, 0];
+          tiers[p] = t;
+          expect(crowdDps(def, tiers), `${def.id} path ${p} tier ${t}`).toBeGreaterThan(copiesDps(def, spent));
+        }
+      }
+    }
   });
 
-  it('coffee machine income per Coffee rises with every level', () => {
+  it('every Coffee Machine brewing upgrade pays for itself within four minutes', () => {
     const def = TOWERS.coffee;
-    let spent = 0;
-    let prev = 0;
-    for (const lv of def.levels) {
-      spent += lv.cost;
-      const rate = lv.coffeeAmount! / lv.coffeeInterval! / spent;
-      expect(rate).toBeGreaterThanOrEqual(prev);
-      prev = rate;
+    let prev = computeStats(def, [0, 0, 0]);
+    for (let t = 1; t <= 4; t++) {
+      const s = computeStats(def, [t, 0, 0]);
+      const gain = s.coffeeAmount / s.coffeeInterval - prev.coffeeAmount / prev.coffeeInterval;
+      expect(def.paths[0].tiers[t - 1].cost / gain, `tier ${t}`).toBeLessThan(240);
+      prev = s;
     }
   });
 });

@@ -3,10 +3,17 @@
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
 
-## Stand: v0.1.0 (2026-11-07)
+## Stand: v0.2.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
-rondecijfers via de relay. Zie CHANGELOG.md.
+rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. Zie CHANGELOG.md.
+
+**Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer -> levels 2-15.**
+Multiplayer-besluiten: de server draait de simulatie (WebSocket-container), join-code + link, tot 8
+spelers, de host kiest het aantal spelers, gedeeld geld of ieder eigen geld (inkomen gedeeld door het
+aantal spelers, Coffee geven aan elkaar), en waar je bouwt: overal, of vakken (boven/onder,
+links/rechts, 4 delen) waarbij de host spelers indeelt (bijv. 1, 2, 5, 6 onder). De simulatie heeft
+portemonnees, eigenaar per toren, `gift()` en `buildAreas` al.
 
 ## Besluiten (van de maker, 2026-11-07)
 
@@ -16,6 +23,7 @@ rondecijfers via de relay. Zie CHANGELOG.md.
 | Art | isometrisch kantoor-diorama, orthografische camera, low-poly flat-shaded, rustig kantoorpalet, één felle kleur per collega |
 | Feedback | eigen relay in dezelfde docker-compose; webhook alleen in `.env` op de server |
 | Repo | publiek |
+| Upgrades | 3 paden x 4 tiers, regel 4-2-0 (Bloons), tier 3 verandert gedrag, tier 4 paradepaardje |
 | Hosting | Docker op de OVH-server, game.makkers.net |
 
 ## Werkwijze
@@ -27,17 +35,22 @@ rondecijfers via de relay. Zie CHANGELOG.md.
   `npx tsx tools/uicheck.ts` en de screenshots echt bekijken.
 - VERSION + CHANGELOG.md bijwerken, dan `tools/release.sh`.
 
-## Balans (gemeten met tools/balance.ts, v0.1.0)
+## Balans (gemeten met tools/balance.ts, v0.2.0)
 
 Level 1, totaal HP-equivalent 4234, golven stijgen vloeiend 10-20% per golf (geen zaagtand meer).
 
 | Bot | Uitkomst |
 |---|---|
 | idle (één toren) | verliest op golf 11 |
-| beginner (6 Auto-Replies, max lvl 2) | wint, 74 Focus, 2 sterren (boss lekt) |
-| spam (alleen lvl 1-torens) | wint, 80 Focus, 2 sterren (boss lekt) |
-| solid (upgraden, ESCALATION, half op Most HP bij de boss) | foutloos, verste collega op 47% van de route |
-| greedy (eerst koffie) | foutloos |
+| beginner (6 Auto-Replies, elk tier 1) | wint, 73 Focus, 2 sterren (boss lekt) |
+| spam (alleen kale torens) | wint, 80 Focus, 2 sterren (boss lekt) |
+| solid (4 torens naar 3-2-0, half op Most HP bij de boss) | foutloos, verste collega op 44% |
+| greedy (koffie + Expense Claim, twee torens naar 4-2-0) | foutloos, meeste Coffee (736) |
+
+Prijsregels in `tests/economy.test.ts`: tier 1 van een schadepad is beter dan een derde kopie, tier 3
+en 4 zijn tegen een groep beter dan hetzelfde geld in kopieen, elke brouw-upgrade verdient zich binnen
+4 minuten terug. Modellen wisselen nog op hoogste tier (0-1, 2-3, 4); eigen modellen per pad horen bij
+de art-pass.
 
 `tests/balance.test.ts` legt deze verhoudingen vast. Faalt die na een wijziging: eerst meten, dan
 pas drempels aanpassen.

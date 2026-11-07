@@ -129,8 +129,8 @@ type Cad = {
       place(d: string, x: number, y: number): { ok: boolean };
       towers: { id: number; x: number; y: number }[];
       coffee: number;
-      upgrade(id: number): unknown;
-      buySide(id: number, p: string): unknown;
+      upgrade(id: number, path: number): unknown;
+      claim(id: number): unknown;
       runFor(s: number): void;
       phase: string;
       giveUp(): void;
@@ -170,14 +170,19 @@ async function run(): Promise<void> {
       // Build a little, start, and fast-forward a few waves.
       await page.evaluate(() => {
         const g = (window as unknown as { cad: Cad }).cad.session.game;
-        g.coffee = 400;
+        g.coffee = 600;
         g.place('autoreply', 6, 3);
         g.place('autoreply', 8, 6);
         g.place('autoreply', 13, 6);
         g.place('coffee', 4, 6);
         const t = g.towers[0];
-        g.upgrade(t.id);
-        g.buySide(t.id, 'escalation');
+        g.upgrade(t.id, 0);
+        g.upgrade(t.id, 0);
+        g.upgrade(t.id, 0);
+        g.upgrade(t.id, 1);
+        const m = g.towers[3];
+        g.upgrade(m.id, 1);
+        g.upgrade(m.id, 1);
       });
       await page.keyboard.press('Space');
       await new Promise((r) => setTimeout(r, 2500));
@@ -187,6 +192,11 @@ async function run(): Promise<void> {
         s.selected = s.game.towers[0].id;
       });
       total += await check(page, 'tower-panel', size);
+      await page.evaluate(() => {
+        const s = (window as unknown as { cad: Cad }).cad.session;
+        s.selected = s.game.towers[3].id;
+      });
+      total += await check(page, 'bank-panel', size);
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
       total += await check(page, 'pause', size);
@@ -227,10 +237,9 @@ async function run(): Promise<void> {
           const spots = [[6, 3], [8, 6], [13, 6], [15, 4], [6, 1], [9, 8], [16, 6], [12, 8]];
           for (const [x, y] of spots) g.place('autoreply', x, y);
           for (const t of g.towers) {
-            g.upgrade(t.id);
-            g.upgrade(t.id);
-            g.buySide(t.id, 'escalation');
-            g.buySide(t.id, 'escalation');
+            for (let i = 0; i < 4; i++) g.upgrade(t.id, 0);
+            g.upgrade(t.id, 1);
+            g.upgrade(t.id, 1);
           }
           g.start();
         }

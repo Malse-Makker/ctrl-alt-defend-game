@@ -56,7 +56,7 @@ export const UI_TEXT = {
   kills: 'Dealt with',
   perCoffee: 'Damage per Coffee',
   coffeeMade: 'Coffee made',
-  chooseOne: 'Pick one path. The other one locks.',
+  pathRule: 'One path can go to tier 4, a second to tier 2. The third stays shut.',
   locked: 'Locked',
   range: 'Range',
   rate: 'Shots per second',
@@ -112,6 +112,7 @@ export const UI_TEXT = {
     'Build towers next to the walkway with Coffee. Dealing with colleagues earns Coffee, and so does surviving a wave.',
     'Click a tower to upgrade it, pick a side path, change who it aims at, or sell it.',
     'Every colleague has a counter. Click a name on the left to see it.',
-    'Space starts the day and calls the next wave. 1-9 pick towers. Esc cancels. Scroll to zoom, drag with the right mouse button to look around.',
+    'Every tower has three upgrade paths. One can go to tier 4, a second to tier 2, the third stays shut. Keys , . / buy the next tier of each path.',
+    'Space starts the day and calls the next wave. 1-9 pick towers. C claims an Expense Claim pot. Esc cancels. Scroll to zoom, drag with the right mouse button to look around.',
   ],
 };

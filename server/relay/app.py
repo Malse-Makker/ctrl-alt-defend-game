@@ -187,7 +187,7 @@ def clean_round(d):
         "firstLeakWave": _int(d, "firstLeakWave", 0, 1000),
         "peakOnFloor": _int(d, "peakOnFloor", 0, 10**5),
     }
-    for key in ("kills", "leaks", "leakFocus", "built", "sidePaths", "speedUse"):
+    for key in ("kills", "leaks", "leakFocus", "built", "pathTiers", "speedUse"):
         r[key] = _counts(d, key)
     coffee = d.get("coffee", {})
     if not isinstance(coffee, dict):
@@ -200,14 +200,15 @@ def clean_round(d):
     for t in towers:
         if not isinstance(t, dict):
             raise Invalid("tower must be an object")
-        side = t.get("side")
-        if side not in (None, "overtime", "escalation"):
-            raise Invalid("tower side unknown")
+        tiers = t.get("tiers")
+        if (not isinstance(tiers, list) or len(tiers) != 3
+                or any(isinstance(x, bool) or not isinstance(x, int) or x < 0 or x > 4 for x in tiers)
+                or sum(1 for x in tiers if x > 0) > 2 or sum(1 for x in tiers if x > 2) > 1):
+            raise Invalid("tower tiers must follow the 4-2-0 rule")
         clean_towers.append({
             "type": _str(t, "type", 24, lambda v: v.isalnum()),
-            "level": _int(t, "level", 1, 3),
-            "side": side,
-            "step": _int(t, "step", 0, 2),
+            "tiers": tiers,
+            "owner": _int(t, "owner", 0, 7),
             "damage": _int(t, "damage", 0, 10**9),
             "kills": _int(t, "kills", 0, 10**7),
             "invested": _int(t, "invested", 0, 10**7),
@@ -237,7 +238,7 @@ def summary_text(r, fun, comment, name):
     if r["towers"]:
         built = defaultdict(int)
         for t in r["towers"]:
-            built[f"{t['type']}{t['level']}"] += 1
+            built[f"{t['type']} {'-'.join(str(x) for x in t['tiers'])}"] += 1
         lines.append("Towers: " + ", ".join(f"{k} x{n}" for k, n in sorted(built.items())))
     if comment:
         lines.append("> " + neutralise(comment).replace("\n", "\n> "))

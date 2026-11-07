@@ -20,18 +20,18 @@ export interface RoundSummary {
   simSeconds: number;
   realSeconds: number;
   score: number;
-  coffee: { kills: number; salary: number; machines: number; sales: number; spent: number; end: number };
+  coffee: { kills: number; bank: number; salary: number; machines: number; sales: number; spent: number; end: number };
   kills: Record<string, number>;
   leaks: Record<string, number>;
   leakFocus: Record<string, number>;
   built: Record<string, number>;
   upgrades: number;
-  sidePaths: Record<string, number>;
+  pathTiers: Record<string, number>;
   sold: number;
   earlyCalls: number;
   firstLeakWave: number;
   peakOnFloor: number;
-  towers: { type: string; level: number; side: string | null; step: number; damage: number; kills: number; invested: number }[];
+  towers: { type: string; tiers: number[]; owner: number; damage: number; kills: number; invested: number }[];
   speedUse: Record<string, number>;
 }
 
@@ -55,6 +55,7 @@ export function summarize(game: Game, player: string, realSeconds: number, speed
     score: game.score,
     coffee: {
       kills: r2(s.coffeeFromKills),
+      bank: s.coffeeFromBank,
       salary: s.coffeeFromSalary,
       machines: s.coffeeFromMachines,
       sales: s.coffeeFromSales,
@@ -66,16 +67,15 @@ export function summarize(game: Game, player: string, realSeconds: number, speed
     leakFocus: s.leakFocus,
     built: s.built,
     upgrades: s.upgrades,
-    sidePaths: s.sidePaths,
+    pathTiers: s.pathTiers,
     sold: s.sold,
     earlyCalls: s.earlyCalls,
     firstLeakWave: s.firstLeakWave,
     peakOnFloor: s.peakOnFloor,
     towers: game.towers.map((t) => ({
       type: t.defId,
-      level: t.level,
-      side: t.side,
-      step: t.sideStep,
+      tiers: [...t.tiers],
+      owner: t.owner,
       damage: Math.round(t.stats.damage),
       kills: t.stats.kills,
       invested: t.invested,

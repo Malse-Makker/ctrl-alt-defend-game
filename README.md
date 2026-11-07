@@ -17,12 +17,15 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.1.0)
+## Wat er nu in zit (v0.2.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en een eindbaas.
-- **Torens**: Coffee Machine (maakt Coffee) en Auto-Reply (schiet), elk met drie upgrades.
-- **Zijsporen** op Auto-Reply: OVERTIME (sneller, dan meer bereik) of ESCALATION (extra doelwit,
-  dan meer schade). Kies er een, de ander gaat op slot.
+- **Torens**: Coffee Machine (maakt Coffee) en Auto-Reply (schiet).
+- **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
+  tier 4, een tweede naar tier 2, het derde blijft dicht (4-2-0). Tier 3 verandert wat de toren
+  doet, tier 4 is het paradepaardje.
+- **The Expense Claim** (Coffee Machine, pad 2): Coffee gaat in een pot met rente; jij kiest wanneer
+  je claimt. Te vroeg is zonde, te laat ook: een volle pot groeit niet meer.
 - **Collega's**: The Intern, The New Hire, The Requester (splitst in twee Chasers) en The Chaser.
 - **Boss**: The Head of Comms. Zijn Interns lopen voor hem uit en vangen je schoten op; zet een
   paar torens op Most HP.
@@ -45,7 +48,8 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 | Scrollwiel | zoomen |
 | Spatie | dag starten / volgende golf |
 | 1-9 | toren uit de winkel kiezen |
-| U | geselecteerde toren upgraden |
+| , . / | volgende tier van pad 1, 2 of 3 kopen (zoals in Bloons) |
+| C | pot van een Expense Claim claimen |
 | F | snelheid wisselen |
 | P / Esc | pauze |
 | R | camera terugzetten |

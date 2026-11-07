@@ -1,22 +1,25 @@
 // The simulation. Pure logic: no DOM, no Three.js, no Date.now(). The renderer reads the state
-// and the events; the balance bots and the tests drive it directly. Fixed time step, seeded RNG,
-// so the same seed plus the same actions always gives the same round.
+// and the events; the balance bots, the tests and (later) the multiplayer server drive it directly.
+// Fixed time step and seeded randomness, so the same seed plus the same actions always gives the
+// same round.
+//
+// Players: one wallet in single player. In multiplayer the host picks a shared wallet, or one per
+// player where all income is split between everyone (like Bloons co-op). Every tower has an owner.
 
 import { COLLEAGUES, killReward, type ColleagueDef } from './data/colleagues';
 import { startCoffee, type LevelDef } from './data/levels';
-import { TOWERS, type SidePath, type TargetMode, type TowerDef } from './data/towers';
+import { TOWERS, boughtEffects, pathBlock, type Effect, type TargetMode, type Tiers, type TowerDef } from './data/towers';
 import {
   POST_CLEAR_DELAY,
   PATH_CLEARANCE,
   WAVE_INTERVAL,
   earlyCallPoints,
   killIncomeMult,
+  pathCost,
   placeCost,
   salaryFor,
   sellValue,
-  sideCost,
   starsFor,
-  upgradeCost,
 } from './economy';
 import { Path, dist, type Vec2 } from './geometry';
 import { Rng } from './rng';
@@ -25,6 +28,12 @@ import { parseWave, type SpawnGroup } from './waves';
 export const TICK = 1 / 60;
 /** Visual travel speed of a shot, tiles per second. Damage lands instantly in the simulation. */
 export const SHOT_SPEED = 16;
+/** How close a colleague must stand to the target to be caught by a splash (Mail Merge). */
+export const SPLASH_RADIUS = 0.8;
+/** How far a reply can bounce on to the next colleague (Out of Office). */
+export const BOUNCE_RANGE = 2.0;
+/** Tip bonuses never go past this, however many tip jars and franchises you stack. */
+export const MAX_TIP = 3.0;
 
 export type Phase = 'plan' | 'running' | 'won' | 'lost';
 export type EndReason = 'won' | 'burnout' | 'gaveup';
@@ -47,6 +56,9 @@ export interface Enemy {
   slowMult: number;
   slowTime: number;
   stunTime: number;
+  /** Speed factor from slowing auras this tick (Legal Hold). 1 = none. */
+  aura: number;
+  revealed: boolean;
   phase: 1 | 2 | 3;
   addTimer: number;
   /** Spawned mid-route (split or boss add) rather than at the door. */
@@ -65,16 +77,18 @@ export interface Tower {
   id: number;
   defId: string;
   def: TowerDef;
+  owner: number;
   tx: number;
   ty: number;
   x: number;
   y: number;
-  level: 1 | 2 | 3;
-  side: SidePath | null;
-  sideStep: 0 | 1 | 2;
+  tiers: Tiers;
   target: TargetMode;
   cooldown: number;
   coffeeTimer: number;
+  abilityTimer: number;
+  /** Expense Claim: Coffee waiting to be claimed. */
+  pot: number;
   invested: number;
   placedAtWave: number;
   stats: TowerStats;
@@ -85,8 +99,17 @@ export interface LiveTowerStats {
   interval: number;
   damage: number;
   targets: number;
+  splash: number;
+  bounce: number;
+  seesHidden: boolean;
+  bossMult: number;
+  slowAura: number;
+  ability: Effect['ability'] | null;
   coffeeAmount: number;
   coffeeInterval: number;
+  bank: Effect['bank'] | null;
+  tip: number;
+  tipEverywhere: number;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -105,16 +128,21 @@ export type GameEvent =
       damage: number;
       result: ShotResult;
       killed: boolean;
+      /** 'reply' flies from the tower, 'hop' jumps from colleague to colleague. */
+      kind: 'reply' | 'hop';
     }
   | { t: 'kill'; enemyId: number; type: string; x: number; y: number; reward: number; delay: number }
   | { t: 'leak'; enemyId: number; type: string; focus: number }
   | { t: 'split'; parentId: number; type: string; count: number }
-  | { t: 'coffee'; towerId: number; amount: number; x: number; y: number }
+  | { t: 'coffee'; towerId: number; amount: number; x: number; y: number; toPot: boolean }
+  | { t: 'claim'; towerId: number; amount: number; x: number; y: number }
+  | { t: 'ability'; towerId: number; x: number; y: number; range: number; hits: number }
   | { t: 'salary'; amount: number; wave: number }
   | { t: 'wave'; index: number; total: number; boss: boolean; early: boolean; points: number }
   | { t: 'bossPhase'; enemyId: number; phase: 2 | 3; called: number }
   | { t: 'bossAdds'; enemyId: number; count: number }
-  | { t: 'placed' | 'upgraded' | 'side' | 'sold'; towerId: number; defId: string }
+  | { t: 'placed' | 'upgraded' | 'sold'; towerId: number; defId: string; player: number }
+  | { t: 'gift'; from: number; to: number; amount: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -127,6 +155,7 @@ export interface RoundStats {
   coffeeFromKills: number;
   coffeeFromSalary: number;
   coffeeFromMachines: number;
+  coffeeFromBank: number;
   coffeeFromSales: number;
   coffeeSpent: number;
   kills: Record<string, number>;
@@ -134,7 +163,8 @@ export interface RoundStats {
   leakFocus: Record<string, number>;
   built: Record<string, number>;
   upgrades: number;
-  sidePaths: Record<string, number>;
+  /** Tiers bought per tower path, keyed "autoreply_0". */
+  pathTiers: Record<string, number>;
   sold: number;
   earlyCalls: number;
   firstLeakWave: number;
@@ -147,6 +177,9 @@ export interface GameOptions {
   costMult?: number;
   extraCoffee?: number;
   extraFocus?: number;
+  /** Multiplayer: number of players and whether they share one wallet. */
+  players?: number;
+  sharedWallet?: boolean;
 }
 
 interface PendingSpawn {
@@ -159,6 +192,58 @@ interface PendingSpawn {
 const TILE_BLOCKED = 1;
 const TILE_PATH = 2;
 
+/** Combine the base numbers of a tower with every upgrade bought. Pure, shared with the UI. */
+export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
+  const b = def.base;
+  let damageAdd = 0;
+  let damageMult = 1;
+  let intervalMult = 1;
+  let rangeMult = 1;
+  let coffeeAdd = 0;
+  let coffeeMult = 1;
+  const s: LiveTowerStats = {
+    range: b.range,
+    interval: b.interval ?? 0,
+    damage: b.damage ?? 0,
+    targets: 1,
+    splash: 0,
+    bounce: 0,
+    seesHidden: false,
+    bossMult: 1,
+    slowAura: 1,
+    ability: null,
+    coffeeAmount: b.coffeeAmount ?? 0,
+    coffeeInterval: b.coffeeInterval ?? 0,
+    bank: null,
+    tip: 0,
+    tipEverywhere: 0,
+  };
+  for (const e of boughtEffects(def, tiers)) {
+    damageAdd += e.damageAdd ?? 0;
+    damageMult *= e.damageMult ?? 1;
+    intervalMult *= e.intervalMult ?? 1;
+    rangeMult *= e.rangeMult ?? 1;
+    coffeeAdd += e.coffeeAdd ?? 0;
+    coffeeMult *= e.coffeeMult ?? 1;
+    s.targets += e.targetsAdd ?? 0;
+    s.splash += e.splash ?? 0;
+    s.bounce += e.bounce ?? 0;
+    s.tip += e.tip ?? 0;
+    s.tipEverywhere += e.tipEverywhere ?? 0;
+    if (e.seesHidden) s.seesHidden = true;
+    if (e.bossMult) s.bossMult = Math.max(s.bossMult, e.bossMult);
+    if (e.slowAura) s.slowAura = Math.min(s.slowAura, e.slowAura);
+    if (e.ability) s.ability = e.ability;
+    if (e.bank) s.bank = e.bank;
+  }
+  s.damage = (s.damage + damageAdd) * damageMult;
+  s.range *= rangeMult;
+  if (def.role === 'economy') s.coffeeInterval *= intervalMult;
+  else s.interval *= intervalMult;
+  s.coffeeAmount = (s.coffeeAmount + coffeeAdd) * coffeeMult;
+  return s;
+}
+
 export class Game {
   readonly level: LevelDef;
   readonly paths: Path[];
@@ -166,12 +251,15 @@ export class Game {
   readonly seed: number;
   readonly costMult: number;
   readonly startFocus: number;
+  readonly players: number;
+  readonly sharedWallet: boolean;
 
   phase: Phase = 'plan';
   endReason: EndReason | null = null;
   time = 0;
   focus: number;
-  coffee: number;
+  /** One wallet when shared (or single player), otherwise one per player. */
+  wallets: number[];
   score = 0;
   waveIndex = 0;
   nextWaveTimer = WAVE_INTERVAL;
@@ -192,15 +280,21 @@ export class Game {
     this.seed = opts.seed ?? 1;
     this.rng = new Rng(this.seed);
     this.costMult = opts.costMult ?? 1;
+    this.players = Math.max(1, Math.min(8, Math.floor(opts.players ?? 1)));
+    this.sharedWallet = this.players === 1 || (opts.sharedWallet ?? true);
     this.paths = level.paths.map((p) => new Path(p));
     this.waves = level.waves.map(parseWave);
     this.startFocus = level.startFocus + (opts.extraFocus ?? 0);
     this.focus = this.startFocus;
-    this.coffee = startCoffee(level.id) + (opts.extraCoffee ?? 0);
+    const start = startCoffee(level.id) + (opts.extraCoffee ?? 0);
+    // Split wallets start with the full amount each: Bloons does the same, so nobody begins unable
+    // to build. Only income is divided.
+    this.wallets = this.sharedWallet ? [start] : Array.from({ length: this.players }, () => start);
     this.stats = {
       coffeeFromKills: 0,
       coffeeFromSalary: 0,
       coffeeFromMachines: 0,
+      coffeeFromBank: 0,
       coffeeFromSales: 0,
       coffeeSpent: 0,
       kills: {},
@@ -208,7 +302,7 @@ export class Game {
       leakFocus: {},
       built: {},
       upgrades: 0,
-      sidePaths: {},
+      pathTiers: {},
       sold: 0,
       earlyCalls: 0,
       firstLeakWave: 0,
@@ -237,7 +331,40 @@ export class Game {
     return this.phase === 'won' ? starsFor(this.focus, this.startFocus) : 0;
   }
 
-  /** Pull and clear the events produced since the last call. */
+  /** Coffee of player 0 (the only one in single player). */
+  get coffee(): number {
+    return this.wallets[0];
+  }
+
+  set coffee(v: number) {
+    this.wallets[0] = v;
+  }
+
+  walletOf(player: number): number {
+    return this.wallets[this.sharedWallet ? 0 : player];
+  }
+
+  private walletIndex(player: number): number {
+    return this.sharedWallet ? 0 : Math.max(0, Math.min(this.wallets.length - 1, player));
+  }
+
+  /** Income for the team: in a split game everyone gets an equal share. */
+  private earn(amount: number): void {
+    if (this.sharedWallet) this.wallets[0] += amount;
+    else for (let i = 0; i < this.wallets.length; i++) this.wallets[i] += amount / this.players;
+  }
+
+  /** Income for one player (their own machine, their own sale). */
+  private earnFor(player: number, amount: number): void {
+    this.wallets[this.walletIndex(player)] += amount;
+  }
+
+  private spend(player: number, amount: number): void {
+    this.wallets[this.walletIndex(player)] -= amount;
+    this.stats.coffeeSpent += amount;
+  }
+
+  /** Drain the events produced since the last call. */
   drainEvents(): GameEvent[] {
     const e = this.events;
     this.events = [];
@@ -278,141 +405,165 @@ export class Game {
 
   // ------------------------------------------------------------------ costs
 
-  copiesOf(defId: string): number {
-    return this.towers.filter((t) => t.defId === defId).length;
+  copiesOf(defId: string, player = 0): number {
+    // The duplicate surcharge counts your own copies: in a team game, a teammate's Auto-Reply does
+    // not make yours more expensive.
+    return this.towers.filter((t) => t.defId === defId && (this.sharedWallet || t.owner === player)).length;
   }
 
-  placeCostFor(defId: string): number {
-    return placeCost(TOWERS[defId], this.copiesOf(defId), this.costMult);
+  placeCostFor(defId: string, player = 0): number {
+    return placeCost(TOWERS[defId], this.copiesOf(defId, player), this.costMult);
   }
 
-  upgradeCostFor(t: Tower): number | null {
-    if (t.level >= 3) return null;
-    return upgradeCost(t.def, (t.level + 1) as 2 | 3, this.costMult);
-  }
-
-  sideCostFor(t: Tower, path: SidePath): number | null {
-    if (!t.def.sidePaths) return null;
-    if (t.side !== null && t.side !== path) return null;
-    if (t.sideStep >= 2) return null;
-    return sideCost(t.def, (t.sideStep + 1) as 1 | 2, this.costMult);
+  pathCostFor(t: Tower, path: number): number | null {
+    if (t.tiers[path] >= t.def.paths[path].tiers.length) return null;
+    return pathCost(t.def, path, t.tiers[path] + 1, this.costMult);
   }
 
   sellValueFor(t: Tower): number {
-    return sellValue(t.invested);
+    return sellValue(t.invested) + Math.floor(t.pot);
+  }
+
+  /** May this player touch this tower? Shared wallet: everyone. Split: only the owner. */
+  canControl(t: Tower, player: number): boolean {
+    return this.sharedWallet || t.owner === player;
+  }
+
+  liveStats(t: Tower): LiveTowerStats {
+    return computeStats(t.def, t.tiers);
   }
 
   // ------------------------------------------------------------------ commands
 
-  canPlace(defId: string, tx: number, ty: number): Check {
+  canPlace(defId: string, tx: number, ty: number, player = 0): Check {
     const def = TOWERS[defId];
     if (!def || !this.level.towers.includes(defId)) return { ok: false, reason: 'Not available on this floor yet.' };
     if (this.over) return { ok: false, reason: 'The day is over.' };
-    const cost = this.placeCostFor(defId);
+    const cost = this.placeCostFor(defId, player);
     if (!this.inBounds(tx, ty)) return { ok: false, reason: 'That is outside the office.', cost };
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
+    if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
     if (def.role === 'damage') {
-      const reach = (def.levels[0].range ?? 0) - 0.2;
+      const reach = def.base.range - 0.2;
       if (this.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > reach) {
         return { ok: false, reason: 'Too far from the walkway to reach anyone.', cost };
       }
     }
-    if (this.coffee < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
+    if (this.walletOf(player) < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
     return { ok: true, cost };
   }
 
-  place(defId: string, tx: number, ty: number): Check & { tower?: Tower } {
-    const check = this.canPlace(defId, tx, ty);
+  /** Build areas per player (multiplayer zones). null = anywhere. */
+  buildAreas: ({ x: number; y: number; w: number; h: number }[] | null)[] = [];
+
+  mayBuildAt(player: number, tx: number, ty: number): boolean {
+    const areas = this.buildAreas[player];
+    if (!areas) return true;
+    return areas.some((r) => tx >= r.x && ty >= r.y && tx < r.x + r.w && ty < r.y + r.h);
+  }
+
+  place(defId: string, tx: number, ty: number, player = 0): Check & { tower?: Tower } {
+    const check = this.canPlace(defId, tx, ty, player);
     if (!check.ok || check.cost === undefined) return check;
     const def = TOWERS[defId];
     const t: Tower = {
       id: this.nextId++,
       defId,
       def,
+      owner: player,
       tx,
       ty,
       x: tx + 0.5,
       y: ty + 0.5,
-      level: 1,
-      side: null,
-      sideStep: 0,
+      tiers: [0, 0, 0],
       target: 'first',
       cooldown: 0,
       coffeeTimer: 0,
+      abilityTimer: 0,
+      pot: 0,
       invested: check.cost,
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
     };
-    this.spend(check.cost);
+    this.spend(player, check.cost);
     this.towers.push(t);
     this.stats.built[defId] = (this.stats.built[defId] ?? 0) + 1;
-    this.events.push({ t: 'placed', towerId: t.id, defId });
+    this.events.push({ t: 'placed', towerId: t.id, defId, player });
     return { ...check, tower: t };
   }
 
-  canUpgrade(t: Tower): Check {
-    const cost = this.upgradeCostFor(t);
-    if (cost === null) return { ok: false, reason: 'Fully upgraded.' };
+  canUpgrade(t: Tower, path: number, player = 0): Check {
+    if (path < 0 || path > 2) return { ok: false, reason: 'No such path.' };
+    const block = pathBlock(t.tiers, path);
+    if (block) return { ok: false, reason: block };
+    const cost = this.pathCostFor(t, path)!;
     if (this.over) return { ok: false, reason: 'The day is over.', cost };
-    if (this.coffee < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
+    if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.', cost };
+    if (this.walletOf(player) < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
     return { ok: true, cost };
   }
 
-  upgrade(towerId: number): Check {
+  upgrade(towerId: number, path: number, player = 0): Check {
     const t = this.tower(towerId);
     if (!t) return { ok: false, reason: 'No such tower.' };
-    const check = this.canUpgrade(t);
+    const check = this.canUpgrade(t, path, player);
     if (!check.ok || check.cost === undefined) return check;
-    this.spend(check.cost);
+    this.spend(player, check.cost);
     t.invested += check.cost;
-    t.level = (t.level + 1) as 2 | 3;
+    t.tiers[path]++;
     this.stats.upgrades++;
-    this.events.push({ t: 'upgraded', towerId: t.id, defId: t.defId });
+    const key = `${t.defId}_${path}`;
+    this.stats.pathTiers[key] = Math.max(this.stats.pathTiers[key] ?? 0, t.tiers[path]);
+    this.events.push({ t: 'upgraded', towerId: t.id, defId: t.defId, player });
     return check;
   }
 
-  canBuySide(t: Tower, path: SidePath): Check {
-    if (!t.def.sidePaths) return { ok: false, reason: 'This one has no side paths.' };
-    if (t.side !== null && t.side !== path) return { ok: false, reason: 'You already chose the other path for this tower.' };
-    const cost = this.sideCostFor(t, path);
-    if (cost === null) return { ok: false, reason: 'This path is complete.' };
-    if (this.over) return { ok: false, reason: 'The day is over.', cost };
-    if (this.coffee < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
-    return { ok: true, cost };
-  }
-
-  buySide(towerId: number, path: SidePath): Check {
-    const t = this.tower(towerId);
-    if (!t) return { ok: false, reason: 'No such tower.' };
-    const check = this.canBuySide(t, path);
-    if (!check.ok || check.cost === undefined) return check;
-    this.spend(check.cost);
-    t.invested += check.cost;
-    t.side = path;
-    t.sideStep = (t.sideStep + 1) as 1 | 2;
-    this.stats.sidePaths[path] = (this.stats.sidePaths[path] ?? 0) + 1;
-    this.events.push({ t: 'side', towerId: t.id, defId: t.defId });
-    return check;
-  }
-
-  sell(towerId: number): Check {
+  sell(towerId: number, player = 0): Check {
     const t = this.tower(towerId);
     if (!t) return { ok: false, reason: 'No such tower.' };
     if (this.over) return { ok: false, reason: 'The day is over.' };
+    if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
     const value = this.sellValueFor(t);
-    this.coffee += value;
+    this.earnFor(t.owner, value);
     this.stats.coffeeFromSales += value;
     this.stats.sold++;
     this.towers = this.towers.filter((x) => x !== t);
-    this.events.push({ t: 'sold', towerId: t.id, defId: t.defId });
+    this.events.push({ t: 'sold', towerId: t.id, defId: t.defId, player });
     return { ok: true, cost: -value };
   }
 
-  setTargeting(towerId: number, mode: TargetMode): void {
+  /** Expense Claim: empty the pot into your Coffee. */
+  claim(towerId: number, player = 0): Check {
     const t = this.tower(towerId);
-    if (t) t.target = mode;
+    if (!t) return { ok: false, reason: 'No such tower.' };
+    if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
+    const amount = Math.floor(t.pot);
+    if (amount <= 0) return { ok: false, reason: 'The pot is empty.' };
+    t.pot -= amount;
+    this.earnFor(t.owner, amount);
+    this.stats.coffeeFromBank += amount;
+    t.stats.coffee += amount;
+    this.events.push({ t: 'claim', towerId: t.id, amount, x: t.x, y: t.y });
+    return { ok: true, cost: -amount };
+  }
+
+  /** Split wallets: give Coffee to a teammate. */
+  gift(from: number, to: number, amount: number): Check {
+    if (this.sharedWallet) return { ok: false, reason: 'You share one wallet already.' };
+    if (from === to || to < 0 || to >= this.players) return { ok: false, reason: 'Nobody to give it to.' };
+    const a = Math.floor(amount);
+    if (a <= 0 || this.walletOf(from) < a) return { ok: false, reason: 'Not enough Coffee.' };
+    this.wallets[from] -= a;
+    this.wallets[to] += a;
+    this.events.push({ t: 'gift', from, to, amount: a });
+    return { ok: true, cost: a };
+  }
+
+  setTargeting(towerId: number, mode: TargetMode, player = 0): void {
+    const t = this.tower(towerId);
+    if (t && this.canControl(t, player)) t.target = mode;
   }
 
   /** Start the day: plan phase ends and wave 1 walks in. */
@@ -449,33 +600,6 @@ export class Game {
     return this.enemies.find((e) => e.id === id);
   }
 
-  private spend(amount: number): void {
-    this.coffee -= amount;
-    this.stats.coffeeSpent += amount;
-  }
-
-  // ------------------------------------------------------------------ live stats
-
-  liveStats(t: Tower): LiveTowerStats {
-    const lv = t.def.levels[t.level - 1];
-    const s: LiveTowerStats = {
-      range: lv.range ?? 0,
-      interval: lv.interval ?? 0,
-      damage: lv.damage ?? 0,
-      targets: 1,
-      coffeeAmount: lv.coffeeAmount ?? 0,
-      coffeeInterval: lv.coffeeInterval ?? 0,
-    };
-    if (t.side === 'overtime') {
-      if (t.sideStep >= 1) s.interval *= 0.8;
-      if (t.sideStep >= 2) s.range *= 1.2;
-    } else if (t.side === 'escalation') {
-      if (t.sideStep >= 1) s.targets += 1;
-      if (t.sideStep >= 2) s.damage *= 1.25;
-    }
-    return s;
-  }
-
   // ------------------------------------------------------------------ the loop
 
   step(dt = TICK): void {
@@ -483,6 +607,7 @@ export class Game {
     this.time += dt;
     this.spawnDue();
     this.updateBosses(dt);
+    this.updateAuras();
     this.updateTowers(dt);
     this.moveEnemies(dt);
     this.enemies = this.enemies.filter((e) => e.alive);
@@ -512,9 +637,10 @@ export class Game {
     if (this.waveIndex >= this.totalWaves) return;
     if (this.waveIndex > 0) {
       const pay = salaryFor(this.waveIndex);
-      this.coffee += pay;
+      this.earn(pay);
       this.stats.coffeeFromSalary += pay;
       this.events.push({ t: 'salary', amount: pay, wave: this.waveIndex });
+      this.payInterest();
     }
     const groups = this.waves[this.waveIndex];
     this.waveIndex++;
@@ -530,6 +656,15 @@ export class Game {
     this.nextWaveTimer = WAVE_INTERVAL;
     const boss = groups.some((g) => COLLEAGUES[g.type].boss !== undefined);
     this.events.push({ t: 'wave', index: this.waveIndex, total: this.totalWaves, boss, early, points });
+  }
+
+  /** Expense Claim pots: a deposit and interest at the start of every wave, never past the cap. */
+  private payInterest(): void {
+    for (const t of this.towers) {
+      const bank = this.liveStats(t).bank;
+      if (!bank) continue;
+      t.pot = Math.min(bank.cap, (t.pot + bank.perWave) * (1 + bank.interest));
+    }
   }
 
   private spawnDue(): void {
@@ -563,6 +698,8 @@ export class Game {
       slowMult: 1,
       slowTime: 0,
       stunTime: 0,
+      aura: 1,
+      revealed: false,
       phase: 1,
       addTimer: 4,
       isAdd,
@@ -575,7 +712,7 @@ export class Game {
 
   private speedOf(e: Enemy): number {
     if (e.stunTime > 0) return 0;
-    let s = e.def.speed;
+    let s = e.def.speed * e.aura;
     if (e.slowTime > 0) s *= e.slowMult;
     if (e.def.boss && e.phase >= 3) s *= e.def.boss.phase3Speed;
     return s;
@@ -597,6 +734,21 @@ export class Game {
       e.y = pt.y;
       e.dirX = pt.dirX;
       e.dirY = pt.dirY;
+    }
+  }
+
+  /** Slowing auras (Legal Hold): the strongest one around a colleague counts. */
+  private updateAuras(): void {
+    const auras: { x: number; y: number; r: number; f: number }[] = [];
+    for (const t of this.towers) {
+      if (t.def.role !== 'damage') continue;
+      const s = this.liveStats(t);
+      if (s.slowAura < 1) auras.push({ x: t.x, y: t.y, r: s.range, f: s.slowAura });
+    }
+    for (const e of this.enemies) {
+      let f = 1;
+      for (const a of auras) if (Math.hypot(e.x - a.x, e.y - a.y) <= a.r) f = Math.min(f, a.f);
+      e.aura = f;
     }
   }
 
@@ -642,39 +794,73 @@ export class Game {
 
   private updateTowers(dt: number): void {
     for (const t of this.towers) {
+      const s = this.liveStats(t);
       if (t.def.role === 'economy') {
-        const s = this.liveStats(t);
         t.coffeeTimer += dt;
         if (t.coffeeTimer >= s.coffeeInterval) {
           t.coffeeTimer -= s.coffeeInterval;
-          this.coffee += s.coffeeAmount;
-          t.stats.coffee += s.coffeeAmount;
-          this.stats.coffeeFromMachines += s.coffeeAmount;
-          this.events.push({ t: 'coffee', towerId: t.id, amount: s.coffeeAmount, x: t.x, y: t.y });
+          if (s.bank) {
+            t.pot = Math.min(s.bank.cap, t.pot + s.coffeeAmount);
+          } else {
+            this.earnFor(t.owner, s.coffeeAmount);
+            t.stats.coffee += s.coffeeAmount;
+            this.stats.coffeeFromMachines += s.coffeeAmount;
+          }
+          this.events.push({ t: 'coffee', towerId: t.id, amount: s.coffeeAmount, x: t.x, y: t.y, toPot: s.bank !== null });
         }
         continue;
       }
-      const s = this.liveStats(t);
+      if (s.ability) this.updateAbility(t, s, dt);
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;
-      const targets = this.pickTargets(t, s.range, s.targets);
+      const targets = this.pickTargets(t, s.range, s.targets, s.seesHidden);
       if (targets.length === 0) {
         t.cooldown = 0;
         continue;
       }
-      for (const e of targets) this.shoot(t, e, s.damage);
+      for (const e of targets) this.fire(t, e, s);
       t.stats.shots++;
       t.cooldown += s.interval;
       if (t.cooldown < 0) t.cooldown = s.interval;
     }
   }
 
+  /** Inbox Zero: every few seconds everyone in range loses a share of their HP. */
+  private updateAbility(t: Tower, s: LiveTowerStats, dt: number): void {
+    const ab = s.ability!;
+    t.abilityTimer += dt;
+    if (t.abilityTimer < ab.every) return;
+    const inRange = this.enemies.filter((e) => e.alive && this.visibleTo(e, s.seesHidden) && dist(t, e) <= s.range);
+    if (inRange.length === 0) {
+      // Stay charged until someone walks in.
+      t.abilityTimer = ab.every;
+      return;
+    }
+    t.abilityTimer = 0;
+    for (const e of inRange) {
+      const share = e.def.boss ? ab.bossShare : ab.hpShare;
+      const amount = Math.max(1, (e.hp + e.shield) * share);
+      const { dealt } = this.damage(e, amount, t.def.damageClass);
+      t.stats.damage += dealt;
+      if (!e.alive) {
+        t.stats.kills++;
+        this.onKill(e, 0.2);
+      }
+    }
+    this.events.push({ t: 'ability', towerId: t.id, x: t.x, y: t.y, range: s.range, hits: inRange.length });
+  }
+
+  private visibleTo(e: Enemy, seesHidden: boolean): boolean {
+    return !e.def.invisible || e.revealed || seesHidden;
+  }
+
   /** Valid targets in range, best first according to the tower's targeting mode. */
-  pickTargets(t: Tower, range: number, n: number): Enemy[] {
+  pickTargets(t: Tower, range: number, n: number, seesHidden = false): Enemy[] {
     const cands: { e: Enemy; d: number; score: number }[] = [];
     for (const e of this.enemies) {
       if (!e.alive) continue;
       if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
+      if (!this.visibleTo(e, seesHidden)) continue;
       const d = dist(t, e);
       if (d > range) continue;
       cands.push({ e, d, score: this.targetScore(t.target, e, d) });
@@ -701,16 +887,47 @@ export class Game {
     }
   }
 
-  private shoot(t: Tower, e: Enemy, amount: number): void {
-    const travel = dist(t, e) / SHOT_SPEED;
-    const fx = t.x;
-    const fy = t.y;
-    const tx = e.x;
-    const ty = e.y;
+  /** One reply: hit the target, then the splash next to it, then the bounces. */
+  private fire(t: Tower, target: Enemy, s: LiveTowerStats): void {
+    const travel = dist(t, target) / SHOT_SPEED;
+    const hit = new Set<Enemy>();
+    this.hitOne(t, target, s, t.x, t.y, travel, 'reply', hit);
+    let from: Enemy = target;
+    let delay = travel;
+    if (s.splash > 0) {
+      const near = this.enemies
+        .filter((e) => e.alive && !hit.has(e) && this.visibleTo(e, s.seesHidden) && Math.hypot(e.x - target.x, e.y - target.y) <= SPLASH_RADIUS)
+        .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y) || a.id - b.id)
+        .slice(0, s.splash);
+      for (const e of near) this.hitOne(t, e, s, target.x, target.y, travel + 0.04, 'hop', hit);
+    }
+    for (let i = 0; i < s.bounce; i++) {
+      let next: Enemy | null = null;
+      let best = BOUNCE_RANGE;
+      for (const e of this.enemies) {
+        if (!e.alive || hit.has(e) || !this.visibleTo(e, s.seesHidden)) continue;
+        if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
+        const d = Math.hypot(e.x - from.x, e.y - from.y);
+        if (d < best || (d === best && next !== null && e.id < next.id)) {
+          best = d;
+          next = e;
+        }
+      }
+      if (!next) break;
+      const hopTravel = best / SHOT_SPEED;
+      this.hitOne(t, next, s, from.x, from.y, delay + hopTravel, 'hop', hit);
+      delay += hopTravel;
+      from = next;
+    }
+  }
+
+  private hitOne(t: Tower, e: Enemy, s: LiveTowerStats, fx: number, fy: number, travel: number, kind: 'reply' | 'hop', hit: Set<Enemy>): void {
+    hit.add(e);
+    const amount = s.damage * (e.def.boss ? s.bossMult : 1);
     const { dealt, result } = this.damage(e, amount, t.def.damageClass);
     t.stats.damage += dealt;
     const killed = !e.alive;
-    this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx, fy, tx, ty, travel, damage: dealt, result, killed });
+    this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx, fy, tx: e.x, ty: e.y, travel, damage: dealt, result, killed, kind });
     if (killed) {
       t.stats.kills++;
       this.onKill(e, travel);
@@ -750,9 +967,22 @@ export class Game {
     }
   }
 
+  /** Extra Coffee from tip jars around where a colleague went down, plus every franchise. */
+  tipBonusAt(x: number, y: number): number {
+    let local = 0;
+    let everywhere = 0;
+    for (const t of this.towers) {
+      if (t.def.role !== 'economy') continue;
+      const s = this.liveStats(t);
+      if (s.tip > 0 && Math.hypot(t.x - x, t.y - y) <= s.range) local = Math.max(local, s.tip);
+      everywhere += s.tipEverywhere;
+    }
+    return Math.min(MAX_TIP, local + everywhere);
+  }
+
   private onKill(e: Enemy, delay: number): void {
-    const reward = killReward(e.def) * killIncomeMult(this.waveIndex);
-    this.coffee += reward;
+    const reward = killReward(e.def) * killIncomeMult(this.waveIndex) * (1 + this.tipBonusAt(e.x, e.y));
+    this.earn(reward);
     this.stats.coffeeFromKills += reward;
     this.stats.kills[e.type] = (this.stats.kills[e.type] ?? 0) + 1;
     this.score += 1;

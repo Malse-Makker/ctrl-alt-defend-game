@@ -4,7 +4,9 @@
 
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
-import { TOWERS } from '../src/sim/data/towers';
+import { TOWERS, type Tiers } from '../src/sim/data/towers';
+import { placeCost } from '../src/sim/economy';
+import { computeStats } from '../src/sim/game';
 import { parseWave, waveDuration, waveHp } from '../src/sim/waves';
 import { BOTS, runBot } from './bots';
 
@@ -16,16 +18,26 @@ function pad(s: string | number, n: number): string {
   return String(s).padStart(n);
 }
 
-console.log('TOWERS (DPS per Coffee, cumulative)');
+console.log('TOWERS per path: single-target DPS / DPS against a crowd of 5, and per Coffee spent');
 for (const def of Object.values(TOWERS)) {
   if (def.role !== 'damage') continue;
-  let spent = 0;
-  const row = def.levels.map((lv) => {
-    spent += lv.cost;
-    const dps = lv.damage! / lv.interval!;
-    return `${lv.name}: ${dps.toFixed(2)} dps, ${(dps / spent).toFixed(3)}/C`;
+  const b = computeStats(def, [0, 0, 0]);
+  console.log(`  ${def.name}: base ${(b.damage / b.interval).toFixed(2)} dps for ${def.base.cost}`);
+  def.paths.forEach((p, pi) => {
+    let spent = def.base.cost;
+    const row = p.tiers.map((tier, ti) => {
+      spent += tier.cost;
+      const tiers: Tiers = [0, 0, 0];
+      tiers[pi] = ti + 1;
+      const s = computeStats(def, tiers);
+      const single = s.damage / s.interval;
+      const crowd = single * Math.min(5, s.targets + s.splash + s.bounce);
+      return `${ti + 1} ${single.toFixed(1)}/${crowd.toFixed(1)} (${(crowd / spent).toFixed(2)}/C)`;
+    });
+    console.log(`    ${p.name.padEnd(14)} ${row.join(' | ')}`);
   });
-  console.log(`  ${def.name.padEnd(16)} ${row.join(' | ')}`);
+  const copies = [0, 1, 2, 3, 4, 5, 6, 7].map((n) => placeCost(def, n));
+  console.log(`    copies cost   ${copies.join(', ')} (each ${(b.damage / b.interval).toFixed(1)} dps)`);
 }
 
 for (const level of Object.values(LEVELS)) {
