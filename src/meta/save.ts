@@ -16,6 +16,9 @@ export interface SaveData {
   stars: Record<string, number>;
   flawless: Record<string, boolean>;
   recognition: number;
+  /** Recognition shop: perks owned for good, and Smoke Breaks in your pocket. */
+  perks: string[];
+  smokes: number;
   seenColleagues: string[];
   hintsDone: string[];
   lastSeenVersion: string;
@@ -43,6 +46,8 @@ export function defaults(): SaveData {
     stars: {},
     flawless: {},
     recognition: 0,
+    perks: [],
+    smokes: 0,
     seenColleagues: [],
     hintsDone: [],
     lastSeenVersion: '',
@@ -62,6 +67,8 @@ export function load(): SaveData {
       ...base,
       ...d,
       settings: { ...base.settings, ...(d.settings ?? {}) },
+      perks: Array.isArray(d.perks) ? d.perks.filter((p): p is string => typeof p === 'string') : [],
+      smokes: typeof d.smokes === 'number' && d.smokes >= 0 ? Math.floor(d.smokes) : 0,
       playerId: typeof d.playerId === 'string' && /^[0-9a-f]{16}$/.test(d.playerId) ? d.playerId : base.playerId,
     };
   } catch {
@@ -82,7 +89,12 @@ export interface LevelResult {
   starsNow: number;
   recognition: number;
   flawlessBonus: number;
+  /** The first time you finish level 5, 10 or 15: your new job title. */
+  promoted: string | null;
 }
+
+/** Promotions: finish the last floor of a block for the first time. */
+export const PROMOTIONS: Record<number, string> = { 5: 'Medior', 10: 'Senior', 15: 'Specialist' };
 
 /** Record a finished level. Pays only the difference with what this level paid before. */
 export function completeLevel(s: SaveData, levelId: number, stars: number, flawless: boolean): LevelResult {
@@ -98,5 +110,6 @@ export function completeLevel(s: SaveData, levelId: number, stars: number, flawl
   s.stars[key] = best;
   s.recognition += pay + bonus;
   store(s);
-  return { starsBefore: before, starsNow: best, recognition: pay, flawlessBonus: bonus };
+  const promoted = before === 0 && best > 0 ? (PROMOTIONS[levelId] ?? null) : null;
+  return { starsBefore: before, starsNow: best, recognition: pay, flawlessBonus: bonus, promoted };
 }

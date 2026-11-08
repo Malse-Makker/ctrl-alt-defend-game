@@ -36,6 +36,7 @@ export interface HudActions {
   settings(): void;
   leave(): void;
   dir(id: number, dir: number): void;
+  smoke(): void;
 }
 
 export interface MpPlayer {
@@ -52,6 +53,8 @@ export interface HudState {
   paused: boolean;
   /** Multiplayer: the other players, and whether you are the host. Null in single player. */
   mp: { players: MpPlayer[]; host: number } | null;
+  /** Smoke Breaks in your pocket (single player only; null hides the button). */
+  smokes: number | null;
 }
 
 export const SPEEDS = [1, 2, 4, 8];
@@ -81,6 +84,8 @@ export class Hud {
   private focusStat!: HTMLElement;
   private coffeeStat!: HTMLElement;
   private claimAllBtn!: HTMLButtonElement;
+  private smokeBtn!: HTMLButtonElement;
+  private smokeLabel!: HTMLElement;
   private claimAllLabel!: HTMLElement;
   private focusV!: HTMLElement;
   private coffeeV!: HTMLElement;
@@ -172,6 +177,9 @@ export class Hud {
     this.claimAllLabel = h('span');
     this.claimAllBtn = h('button', { class: 'btn small claim-all', title: T.claimAllHelp, on: { click: () => this.claimAll() } }, icon('sack-dollar'), this.claimAllLabel);
     this.claimAllBtn.hidden = true;
+    this.smokeLabel = h('span');
+    this.smokeBtn = h('button', { class: 'btn small smoke', title: T.smokeHelp, on: { click: () => this.act.smoke() } }, icon('smoking'), this.smokeLabel);
+    this.smokeBtn.hidden = true;
 
     this.startLabel = h('span', { text: T.start });
     this.startBtn = h('button', { class: 'btn primary', title: T.nextWaveHelp, on: { click: () => this.act.startOrNext() } }, icon('play'), this.startLabel);
@@ -184,7 +192,7 @@ export class Hud {
     this.pauseBtn = h('button', { class: 'btn small', title: `${T.pause} (P)`, on: { click: () => this.act.togglePause() } }, icon('pause'));
     const settingsBtn = h('button', { class: 'btn small', title: T.settings, attrs: { 'aria-label': T.settings }, on: { click: () => this.act.settings() } }, icon('sliders'));
     const leaveBtn = h('button', { class: 'btn small', title: T.goHome, attrs: { 'aria-label': T.goHome }, on: { click: () => this.act.leave() } }, icon('house'));
-    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, this.claimAllBtn, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn, leaveBtn);
+    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, this.smokeBtn, c.el, this.claimAllBtn, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn, leaveBtn);
     this.root.append(this.topbar);
   }
 
@@ -271,6 +279,8 @@ export class Hud {
     const blocked = g.incomeBlocked;
     toggle(this.coffeeStat, 'blocked', blocked);
     this.coffeeStat.title = blocked ? T.incomeBlocked : T.coffee;
+    this.smokeBtn.hidden = !st.smokes;
+    if (st.smokes) setText(this.smokeLabel, ` ${T.smoke} (${st.smokes})`);
     const offshore = g.claimAllTower(this.me);
     this.claimAllBtn.hidden = !offshore;
     if (offshore) {

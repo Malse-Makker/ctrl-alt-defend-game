@@ -2,6 +2,7 @@
 
 import changelog from '../../CHANGELOG.md?raw';
 import { LEVELS, LEVEL_NAMES } from '../sim/data/levels';
+import { PERKS, type PerkId } from '../meta/perks';
 import type { SaveData } from '../meta/save';
 import { BUILD_LABEL } from '../version';
 import { h, icon } from './dom';
@@ -73,7 +74,50 @@ export function mainMenu(act: MenuActions, hasNews: boolean): HTMLElement {
   );
 }
 
-export function careerScreen(save: SaveData, play: (id: number) => void, back: () => void): HTMLElement {
+/** The Recognition shop: perks for your own game. buy() returns why not, or null. */
+export function perkShopScreen(save: SaveData, buy: (id: PerkId) => string | null, back: () => void): HTMLElement {
+  const balance = h('span', { class: 'mono' });
+  const status = h('div', { class: 'status' });
+  const list = h('div', { class: 'perk-list' });
+  const render = () => {
+    balance.textContent = String(save.recognition);
+    list.replaceChildren(
+      ...PERKS.map((p) => {
+        const owned = !p.consumable && save.perks.includes(p.id);
+        const btn = h('button', { class: 'btn small primary', disabled: owned || save.recognition < p.cost }, h('span', { text: owned ? T.shopYours : `${T.shopBuy} (${p.cost})` }));
+        btn.addEventListener('click', () => {
+          const why = buy(p.id);
+          status.textContent = why ?? '';
+          status.className = `status ${why ? 'bad' : 'ok'}`;
+          render();
+        });
+        return h(
+          'div',
+          { class: `perk${owned ? ' owned' : ''}` },
+          icon(p.icon),
+          h('div', { class: 'perk-text' }, h('div', { class: 'perk-name', text: p.name }), h('div', { class: 'faint wrap', text: p.desc }), p.consumable ? h('div', { class: 'faint', text: `${T.shopInPocket}: ${save.smokes}` }) : null),
+          btn,
+        );
+      }),
+    );
+  };
+  render();
+  return h(
+    'div',
+    { class: 'screen' },
+    h(
+      'div',
+      { class: 'screen-card panel' },
+      h('div', { class: 'screen-head' }, h('h2', { attrs: { style: 'margin:0' }, text: T.shopTitle }), h('span', { class: 'muted' }, icon('award'), ` ${T.recognition}: `, balance)),
+      h('div', { class: 'faint', attrs: { style: 'font-size:12px' }, text: T.shopIntro }),
+      list,
+      status,
+      h('div', {}, h('button', { class: 'btn', on: { click: back } }, icon('arrow-left'), h('span', { text: T.back }))),
+    ),
+  );
+}
+
+export function careerScreen(save: SaveData, play: (id: number) => void, back: () => void, shop?: () => void): HTMLElement {
   const blocks = [
     { key: 'junior', from: 1 },
     { key: 'medior', from: 6 },
@@ -113,7 +157,17 @@ export function careerScreen(save: SaveData, play: (id: number) => void, back: (
     h(
       'div',
       { class: 'screen-card wide panel' },
-      h('div', { class: 'section-head' }, h('h2', { attrs: { style: 'margin:0' }, text: T.levelSelect }), h('span', { class: 'muted' }, icon('award'), ` ${T.recognition}: ${save.recognition}`)),
+      h(
+        'div',
+        { class: 'section-head' },
+        h('h2', { attrs: { style: 'margin:0' }, text: T.levelSelect }),
+        h(
+          'span',
+          { class: 'career-meta' },
+          h('span', { class: 'muted' }, icon('award'), ` ${T.recognition}: ${save.recognition}`),
+          shop ? h('button', { class: 'btn small', on: { click: shop } }, icon('store'), h('span', { text: ` ${T.shopTitle}` })) : null,
+        ),
+      ),
       wrap,
       h('div', {}, h('button', { class: 'btn', on: { click: back } }, icon('arrow-left'), h('span', { text: T.back }))),
     ),

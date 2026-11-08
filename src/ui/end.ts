@@ -35,6 +35,9 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
   if (result && (result.recognition > 0 || result.flawlessBonus > 0)) {
     grid.append(cell(T.recognitionEarned, `+${result.recognition + result.flawlessBonus}`));
   }
+  const promotion = result?.promoted
+    ? h('div', { class: 'promotion' }, icon('briefcase'), h('div', {}, h('div', { class: 'promo-big', text: T.promoted }), h('div', { text: T.promotedLine.replace('{title}', result.promoted) })))
+    : null;
 
   // WHAT HURT YOU
   const hurt = Object.entries(s.leakFocus).sort((a, b) => b[1] - a[1]);
@@ -128,6 +131,7 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
     h('h2', { text: title }),
     h('div', { class: 'muted', text: sub }),
     game.phase === 'won' ? stars : null,
+    promotion,
     grid,
     h('div', { class: 'label', text: T.whatHurt }),
     hurtList,

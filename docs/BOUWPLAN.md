@@ -27,7 +27,7 @@ Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 4. **Level 5 Boardroom** (KLAAR, v0.12.0): Keyboard Smash, de bureaustoel (idee van de maker: rijdt in een rechte
    lijn die je zelf kiest, raakt en verliest HP, rijdt dan terug), Your Line Manager (drie fases).
    Daarvoor of tussendoor: eigen modellen per pad op tier 3 en 4, toren voor toren.
-5. Meta-shop met Recognition (Startup Budget, Extra Caffeine, Bulk Discount, Smoke Break) en de
+5. (KLAAR, v0.13.0) Meta-shop met Recognition (Startup Budget, Extra Caffeine, Bulk Discount, Smoke Break) en de
    promotie na L5.
 
 Per level: modellen in Blender (zelfde stijl), golven vertaald uit v0.88 en daarna gemeten met de

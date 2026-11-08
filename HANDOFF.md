@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.12.0 (2026-11-08)
+## Stand: v0.13.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,14 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Meta-shop (v0.13.0)
+- `src/meta/perks.ts`: de vier perks uit de bijbel. Ze tellen alleen in je eigen spel (niet online,
+  niet in de menu-demo): `perkOptions(save)` geeft `extraCoffee`, `extraFocus`, `costMult`.
+- Smoke Break is een verbruiksitem (`save.smokes`), te gebruiken via de knop in de bovenbalk;
+  `game.takeBreak()` geeft Focus terug tot de start-Focus.
+- Promotie: `completeLevel` geeft `promoted` ('Medior', 'Senior', 'Specialist') de eerste keer dat
+  je level 5, 10 of 15 haalt; het eindscherm toont het.
 
 ### Level 5 (v0.12.0): ontwerpkeuzes die ik maakte
 - Specials: `special: true` op TowerDef, maximaal één per speler (`canPlace`). Ze hebben wel drie

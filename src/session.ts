@@ -6,6 +6,7 @@
 //           sends commands. Positions are smoothed between snapshots.
 
 import type { Sfx } from './audio/sfx';
+import { perkOptions, SMOKE_FOCUS } from './meta/perks';
 import { completeLevel, store, type LevelResult, type SaveData } from './meta/save';
 import { sendRound, summarize, type RoundSummary } from './net/api';
 import type { MpClient, RoomInfo, ServerMsg } from './net/mp';
@@ -100,7 +101,9 @@ export class Session {
       const mode = this.room.settings.zoneMode;
       this.game.setZones(zoneMap(level.size.w, level.size.h, mode, n), mode === 'anywhere' ? [] : this.room.settings.assign);
     } else {
-      this.game = new Game(level, { seed: this.attract ? 7 : Math.floor(Math.random() * 1e9) });
+      // Your Recognition perks count in your own game (not in the menu demo, not online).
+      const perks = this.attract ? {} : perkOptions(host.save);
+      this.game = new Game(level, { seed: this.attract ? 7 : Math.floor(Math.random() * 1e9), ...perks });
     }
     this.world = new World(level, this.game, host.assets, this.me);
     this.actors = new Actors(host.assets, host.view.screenRight);
@@ -139,6 +142,7 @@ export class Session {
         gift: (to, amount) => this.run({ c: 'gift', to, amount }),
         settings: () => this.openSettings(false),
         leave: () => this.confirmLeave(),
+        smoke: () => this.smokeBreak(),
         dir: (id, dir) => {
           this.run({ c: 'dir', id, dir });
           this.host.sfx.play('click');
@@ -207,6 +211,7 @@ export class Session {
       speed: this.speed,
       paused: this.paused,
       mp: this.room ? { players: this.room.players, host: this.room.host } : null,
+      smokes: this.mp ? null : this.host.save.smokes,
     });
     this.updatePreview();
     this.updateHazard();
@@ -600,6 +605,19 @@ export class Session {
         { online: this.mp !== null, host: this.isHost },
       ),
     );
+  }
+
+  /** Use a Smoke Break from your pocket. Not when you are at full Focus. */
+  private smokeBreak(): void {
+    const save = this.host.save;
+    if (this.mp || save.smokes <= 0 || this.ended) return;
+    if (this.game.focus >= this.game.startFocus) return this.refuse(T.smokeFull);
+    const got = this.game.takeBreak(SMOKE_FOCUS);
+    if (got <= 0) return;
+    save.smokes -= 1;
+    store(save);
+    this.host.sfx.play('coffee', { pitch: 0.8 });
+    this.hud?.toast(T.smokeDone.replace('{n}', String(got)), 'good', 2.5);
   }
 
   /** Back to the career (or out of the online game). The round counts as given up. */

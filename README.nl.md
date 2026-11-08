@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.12.0)
+## Wat er nu in zit (v0.13.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy
@@ -58,6 +58,9 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
   Coffee, en **feedback** (hoe leuk was het, 0-10, plus opmerking) met één knop.
 - **Give up** brengt je naar het eindscherm met je cijfers, niet terug naar het menu.
 - **Voortgang** (sterren, Recognition) wordt in je eigen browser bewaard.
+- **Recognition-winkel**: sterren leveren Recognition op; die geef je uit aan perks voor je eigen
+  spel (meer Coffee, meer Focus, goedkopere torens, Smoke Breaks). Haal level 5 en je wordt
+  gepromoveerd tot Medior.
 - **Samen spelen** (tot 8 spelers): host een spel en deel de code of de link
   (`game.makkers.net/?join=CODE`). De host kiest het level, het aantal spelers, gedeeld geld of
   ieder eigen geld (inkomen gedeeld, Coffee aan elkaar geven), en waar je bouwt: overal, boven en

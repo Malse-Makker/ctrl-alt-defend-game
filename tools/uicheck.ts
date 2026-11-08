@@ -521,10 +521,23 @@ async function level5Flow(browser: import('puppeteer-core').Browser, errors: str
   const page = await browser.newPage();
   page.on('pageerror', (e) => errors.push(`l5: ${String(e)}`));
   await page.setViewport({ width: 1600, height: 900 });
-  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3 }, seenColleagues: [], settings:"));
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3 }, recognition: 80, smokes: 1, seenColleagues: [], settings:"));
   await page.goto(URL_, { waitUntil: 'networkidle0' });
   await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
   await clickText(page, 'Clock in');
+  // The Recognition shop: buy a perk and a Smoke Break, then back to work.
+  await clickText(page, 'Recognition shop');
+  await page.waitForSelector('.perk-list');
+  total += await check(page, 'l5-shop', size);
+  await page.evaluate(() => {
+    const perk = [...document.querySelectorAll('.perk')].find((p) => p.textContent?.includes('Startup Budget'));
+    perk?.querySelector<HTMLButtonElement>('button')?.click();
+    const smoke = [...document.querySelectorAll('.perk')].find((p) => p.textContent?.includes('Smoke Break'));
+    smoke?.querySelector<HTMLButtonElement>('button')?.click();
+  });
+  const left = await page.evaluate(() => document.querySelector('.screen-head .mono')?.textContent ?? '?');
+  if (left !== '38') errors.push(`l5: Recognition after buying is ${left}, expected 38`);
+  await clickText(page, 'Back');
   await clickText(page, 'Boardroom');
   await page.waitForFunction(() => document.querySelector('.hud'));
   type G = {
@@ -612,9 +625,17 @@ async function level5Flow(browser: import('puppeteer-core').Browser, errors: str
   });
   total += await check(page, 'l5-panel-keyboard', size);
   await page.keyboard.press('Escape');
+  const smokeBtn = await page.evaluate(() => document.querySelector('.topbar .smoke:not([hidden])')?.textContent ?? 'missing');
+  if (!/Smoke break \(2\)/.test(smokeBtn)) errors.push(`l5: smoke button shows ${smokeBtn}`);
   console.log(`  ${await ff('boss')}`);
   await new Promise((r) => setTimeout(r, 1500));
   total += await check(page, 'l5-boss', size);
+  // Win it: the first time through level 5 is a promotion.
+  console.log(`  ${await ff('end')}`);
+  await page.waitForFunction(() => document.querySelector('.overlay .fun-scale'), { timeout: 15000 });
+  const promoted = await page.evaluate(() => document.querySelector('.promotion')?.textContent ?? 'missing');
+  if (!/PROMOTED/.test(promoted)) errors.push(`l5: no promotion on the end screen (${promoted})`);
+  total += await check(page, 'l5-won', size);
   await page.close();
   return total;
 }

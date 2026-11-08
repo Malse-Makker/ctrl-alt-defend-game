@@ -18,7 +18,8 @@ import { Assets } from './render/assets';
 import { View } from './render/view';
 import { Session } from './session';
 import { lobbyScreen, mpMenu } from './ui/lobby';
-import { careerScreen, changelogView, howToBody, loadingScreen, mainMenu, settingsScreen, textScreen } from './ui/screens';
+import { buyPerk } from './meta/perks';
+import { careerScreen, changelogView, howToBody, loadingScreen, mainMenu, perkShopScreen, settingsScreen, textScreen } from './ui/screens';
 import { UI_TEXT as T } from './ui/text';
 import { VERSION } from './version';
 
@@ -126,7 +127,11 @@ class App {
 
   career(): void {
     this.demo();
-    this.show(careerScreen(this.save, (id) => this.play(id), () => this.menu()));
+    this.show(careerScreen(this.save, (id) => this.play(id), () => this.menu(), () => this.perkShop()));
+  }
+
+  perkShop(): void {
+    this.show(perkShopScreen(this.save, (id) => buyPerk(this.save, id), () => this.career()));
   }
 
   settings(): void {

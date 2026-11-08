@@ -871,6 +871,14 @@ export class Game {
     return { ok: true, cost: -total };
   }
 
+  /** A Smoke Break: Focus back, up to what you started with. Returns how much came back. */
+  takeBreak(amount: number): number {
+    if (this.over) return 0;
+    const before = this.focus;
+    this.focus = Math.min(this.startFocus, this.focus + amount);
+    return this.focus - before;
+  }
+
   /** The Offshore Account of this player, if they have one: it claims every pot of theirs at once. */
   claimAllTower(player: number): Tower | undefined {
     return this.towers.find((t) => t.owner === player && t.def.role === 'economy' && this.liveStats(t).bank?.claimAll === true);

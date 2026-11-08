@@ -1730,3 +1730,69 @@ select {
   grid-template-columns: repeat(2, 40px);
   gap: 4px;
 }
+
+.career-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.perk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perk {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.perk > i {
+  font-size: 18px;
+  color: var(--coffee);
+  text-align: center;
+}
+
+.perk.owned {
+  outline: 1px solid rgba(111, 207, 127, 0.5);
+}
+
+.perk-name {
+  font-weight: 600;
+}
+
+.perk-text .faint {
+  font-size: 12px;
+}
+
+.promotion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(242, 198, 65, 0.15);
+  border: 1px solid rgba(242, 198, 65, 0.5);
+}
+
+.promotion > i {
+  font-size: 22px;
+  color: var(--warn);
+}
+
+.promo-big {
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--warn);
+}
+
+.topbar .smoke {
+  color: var(--focus);
+}

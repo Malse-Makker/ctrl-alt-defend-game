@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.13.0] - 2026-11-08
+
+### New
+- Recognition shop, under Your career: spend what your stars earned on perks for your own game. Startup Budget (+15 Coffee on every floor), Extra Caffeine (+10 Focus), Bulk Discount (everything 10% cheaper) and Smoke Breaks. Online everyone starts the same.
+- Smoke Break: a button in the top bar while you have one. +15 Focus in the middle of a floor, up to what you started with.
+- Promotion: finish level 5 for the first time and you are a Medior. The medior floors are on their way.
+
 ## [0.12.0] - 2026-11-08
 
 ### New

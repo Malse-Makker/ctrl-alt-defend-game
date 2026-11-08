@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.12.0)
+## What is in it now (v0.13.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: a small square office kitchen, 22 waves and The Repair Guy (no
@@ -59,6 +59,8 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
   and **feedback** (how much fun was it, 0-10, plus a comment) in one click.
 - **Give up** takes you to the end screen with your numbers, not back to the menu.
 - **Progress** (stars, Recognition) is kept in your own browser.
+- **Recognition shop**: stars earn Recognition; spend it on perks for your own game (more Coffee,
+  more Focus, cheaper towers, Smoke Breaks). Finish level 5 and you get promoted to Medior.
 - **Play together** (up to 8 players): host a game and share the code or the link
   (`game.makkers.net/?join=CODE`). The host picks the level, the number of players, shared money
   or everyone their own (income split, give Coffee to each other), and where people build:
