@@ -229,6 +229,7 @@ function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLEl
     h('h2', { attrs: { style: 'margin:0' }, text: T.settings }),
     slider(T.settingsVolume, st.volume, (v) => (st.volume = v)),
     slider(T.settingsSfx, st.sfx, (v) => (st.sfx = v)),
+    slider(T.settingsAmbience, st.ambience, (v) => (st.ambience = v)),
     check(T.settingsDamageNumbers, st.damageNumbers, (v) => (st.damageNumbers = v)),
     check(T.settingsShareStats, st.shareStats, (v) => (st.shareStats = v), T.settingsShareStatsHelp),
     reset ? h('div', { class: 'row-buttons' }, reset) : null,

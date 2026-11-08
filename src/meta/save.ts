@@ -8,6 +8,8 @@ export interface Settings {
   sfx: number;
   damageNumbers: boolean;
   shareStats: boolean;
+  /** The typing in the background. */
+  ambience: number;
 }
 
 export interface SaveData {
@@ -52,7 +54,7 @@ export function defaults(): SaveData {
     hintsDone: [],
     lastSeenVersion: '',
     mpName: '',
-    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true },
+    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true, ambience: 0.5 },
   };
 }
 

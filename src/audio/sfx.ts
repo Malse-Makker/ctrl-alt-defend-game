@@ -26,6 +26,11 @@ export const SOUNDS = [
   'lunch',
   'smash',
   'roll',
+  'cash',
+  'key1',
+  'key2',
+  'key3',
+  'keyspace',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
@@ -43,6 +48,7 @@ const THROTTLE: Partial<Record<SoundName, number>> = {
   mop: 0.4,
   smash: 0.15,
   roll: 0.3,
+  cash: 0.12,
 };
 
 const GAIN: Partial<Record<SoundName, number>> = {
@@ -60,7 +66,22 @@ const GAIN: Partial<Record<SoundName, number>> = {
   lunch: 0.7,
   smash: 0.8,
   roll: 0.5,
+  cash: 0.6,
+  place: 0.8,
 };
+
+/** Keys someone types on in the background; the space bar comes between words. */
+const KEYS: readonly SoundName[] = ['key1', 'key2', 'key3'];
+
+/** Keys per second for the typing in the background: 4 when calm, 14 with no Focus left. */
+export function typingRate(stress: number): number {
+  return 4 + Math.max(0, Math.min(1, stress)) * 10;
+}
+
+/** How loud one key is: barely there when calm, clearly there when it is going wrong. */
+export function typingGain(stress: number): number {
+  return 0.05 + Math.max(0, Math.min(1, stress)) * 0.2;
+}
 
 export class Sfx {
   private ctx: AudioContext | null = null;
@@ -69,7 +90,15 @@ export class Sfx {
   private last = new Map<SoundName, number>();
   private volume = 0.8;
   private sfxVolume = 0.8;
+  private ambienceVolume = 0.5;
   private loading: Promise<void> | null = null;
+  // Somebody typing at the next desk: calm when all is well, frantic when your Focus runs low.
+  private ambience: GainNode | null = null;
+  private typingOn = false;
+  private stress = 0;
+  private nextKey = 0;
+  private wordLeft = 0;
+  private typingTimer: number | null = null;
 
   constructor() {
     const unlock = () => {
@@ -81,10 +110,65 @@ export class Sfx {
     window.addEventListener('keydown', unlock);
   }
 
-  setVolume(master: number, sfx: number): void {
+  setVolume(master: number, sfx: number, ambience = this.ambienceVolume): void {
     this.volume = master;
     this.sfxVolume = sfx;
+    this.ambienceVolume = ambience;
     if (this.master) this.master.gain.value = master * sfx;
+    if (this.ambience) this.ambience.gain.value = master * ambience;
+  }
+
+  /**
+   * The typing in the background. stress 0 = full Focus (a few calm words, with pauses to think),
+   * 1 = no Focus left (fast and loud, no pauses at all). Off in menus and while paused.
+   */
+  setTyping(on: boolean, stress: number): void {
+    this.stress = Math.max(0, Math.min(1, stress));
+    if (on === this.typingOn) return;
+    this.typingOn = on;
+    if (on && this.typingTimer === null) {
+      this.typingTimer = window.setInterval(() => this.scheduleTyping(), 40);
+    } else if (!on && this.typingTimer !== null) {
+      window.clearInterval(this.typingTimer);
+      this.typingTimer = null;
+    }
+  }
+
+  private scheduleTyping(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.ambience || !this.typingOn || this.volume * this.ambienceVolume <= 0) return;
+    const now = ctx.currentTime;
+    if (this.nextKey < now) this.nextKey = now + 0.05;
+    // Plan a little ahead so the timer's jitter does not show.
+    while (this.nextKey < now + 0.2) {
+      const s = this.stress;
+      const space = this.wordLeft <= 0;
+      this.playKey(space ? 'keyspace' : KEYS[Math.floor(Math.random() * KEYS.length)], this.nextKey, s);
+      if (space) {
+        this.wordLeft = 2 + Math.floor(Math.random() * 6);
+        // Between words: a breath when calm, nothing when in a hurry. Now and then a proper pause to think.
+        let pause = (0.12 + Math.random() * 0.35) * (1 - s);
+        if (Math.random() < 0.12 * (1 - s)) pause += 1.5 + Math.random() * 2.5;
+        this.nextKey += 0.06 + pause;
+      } else {
+        this.wordLeft--;
+        this.nextKey += (1 / typingRate(s)) * (0.65 + Math.random() * 0.7);
+      }
+    }
+  }
+
+  private playKey(name: SoundName, at: number, s: number): void {
+    const ctx = this.ctx!;
+    const buf = this.buffers.get(name);
+    if (!buf) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = 0.9 + Math.random() * 0.25;
+    const g = ctx.createGain();
+    // Barely there when calm; clearly there when it is going wrong.
+    g.gain.value = typingGain(s) * (0.7 + Math.random() * 0.6);
+    src.connect(g).connect(this.ambience!);
+    src.start(at);
   }
 
   private ensure(): void {
@@ -97,6 +181,9 @@ export class Sfx {
       this.master = this.ctx.createGain();
       this.master.gain.value = this.volume * this.sfxVolume;
       this.master.connect(this.ctx.destination);
+      this.ambience = this.ctx.createGain();
+      this.ambience.gain.value = this.volume * this.ambienceVolume;
+      this.ambience.connect(this.ctx.destination);
       this.loading = this.loadAll();
     } catch {
       this.ctx = null;

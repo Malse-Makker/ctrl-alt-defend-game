@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.13.0 (2026-11-08)
+## Stand: v0.14.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,12 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Geluid (v0.14.0, wens van de maker)
+- Kantoorgeluiden opnieuw gemaakt met de sfx-MCP (zie `art/SOUND.md`).
+- Typen op de achtergrond: `Sfx.setTyping(on, stress)`, stress = 1 - Focus/start-Focus. Gemeten in
+  een echte browser: 2 aanslagen/s bij volle Focus, 12 bij 10 Focus, 0 bij pauze. Eigen schuif
+  (`settings.ambience`). Uit in menu's, demo, pauze en op het eindscherm.
 
 ### Meta-shop (v0.13.0)
 - `src/meta/perks.ts`: de vier perks uit de bijbel. Ze tellen alleen in je eigen spel (niet online,

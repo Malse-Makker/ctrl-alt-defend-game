@@ -3,7 +3,7 @@
 
 import { existsSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { SOUNDS } from '../src/audio/sfx';
+import { SOUNDS, typingGain, typingRate } from '../src/audio/sfx';
 import { MODEL_NAMES } from '../src/render/assets';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
@@ -64,5 +64,14 @@ describe('assets', () => {
     expect(modelFor(def, [0, 2, 4])).toBe('c4');
     // Without its own looks a tower keeps the old base / mid / top models.
     expect(modelFor(TOWERS.autoreply, [4, 2, 0])).toBe(TOWERS.autoreply.models[2]);
+  });
+
+  it('the typing in the background speeds up and gets louder as Focus runs out', () => {
+    expect(typingRate(1)).toBeGreaterThan(typingRate(0.5));
+    expect(typingRate(0.5)).toBeGreaterThan(typingRate(0));
+    expect(typingGain(1)).toBeGreaterThan(typingGain(0) * 3);
+    // Never silent and never past the clamp.
+    expect(typingGain(0)).toBeGreaterThan(0);
+    expect(typingRate(5)).toBe(typingRate(1));
   });
 });

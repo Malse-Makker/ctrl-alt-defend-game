@@ -124,6 +124,7 @@ export const UI_TEXT = {
   feedbackPrivacy: 'Sends your score, your comment, your name if you gave one, and the numbers from this round.',
 
   settingsVolume: 'Volume',
+  settingsAmbience: 'Typing in the background',
   settingsSfx: 'Sound effects',
   settingsDamageNumbers: 'Show damage numbers',
   settingsShareStats: 'Share anonymous round stats',

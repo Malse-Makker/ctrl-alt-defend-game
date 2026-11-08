@@ -260,7 +260,7 @@ class App {
   }
 
   private applySettings(): void {
-    this.sfx.setVolume(this.save.settings.volume, this.save.settings.sfx);
+    this.sfx.setVolume(this.save.settings.volume, this.save.settings.sfx, this.save.settings.ambience);
   }
 }
 

@@ -3,6 +3,14 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.14.0] - 2026-11-08
+
+### New
+- Somebody is typing at the next desk. Calm and barely there while all is well, faster and louder the less Focus you have left. Its own slider in Settings: Typing in the background.
+
+### Changed
+- The office sounds like an office: Coffee Machines bubble, replies whoosh off like sent mail, hits slap like paper, colleagues dealt with crumple up, a colleague at your desk lands with a thud, towers go down on a desk, upgrades chime, a new wave pings like a notification, and claiming a pot or getting Coffee from a colleague rings the till.
+
 ## [0.13.0] - 2026-11-08
 
 ### New

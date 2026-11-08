@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.13.0)
+## Wat er nu in zit (v0.14.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy

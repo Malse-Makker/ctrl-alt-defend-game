@@ -215,6 +215,9 @@ export class Session {
     });
     this.updatePreview();
     this.updateHazard();
+    // Somebody typing nearby: faster and louder the less Focus you have left.
+    const working = !this.attract && !this.ended && !this.paused && this.overlay === null && (g.phase === 'running' || g.phase === 'plan');
+    this.host.sfx.setTyping(working, 1 - g.focus / Math.max(1, g.startFocus));
     if (this.attract && g.over) this.host.retry(g.level.id);
   }
 
@@ -350,7 +353,7 @@ export class Session {
       }
       case 'gift':
         if (ev.to === this.me) {
-          sfx.play('coffee', { pitch: 1.2 });
+          sfx.play('cash', { pitch: 1.1 });
           this.hud?.toast(`${this.nameOf(ev.from)} gave you ${ev.amount} ${T.coffee}.`, 'good', 3);
         }
         break;
@@ -410,7 +413,7 @@ export class Session {
         sfx.play('upgrade', { gain: ev.player === this.me ? 1 : 0.5 });
         break;
       case 'claim':
-        sfx.play('coffee', { pitch: 0.8, gain: 1.6 });
+        sfx.play('cash');
         this.popups.spawn(`+${ev.amount}`, ev.x, ev.y, 1.4, 'coffee', { icon: 'fa-solid fa-sack-dollar', life: 1.4 });
         break;
       case 'ability':
@@ -849,6 +852,7 @@ export class Session {
   }
 
   dispose(): void {
+    this.host.sfx.setTyping(false, 0);
     this.cleanup.forEach((f) => f());
     this.ro?.disconnect();
     this.root.remove();

@@ -9,11 +9,13 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 
 | Bestand | Wanneer | Hoe gemaakt |
 |---|---|---|
-| shot, hit, kill | schot, treffer, collega afgehandeld | v0.1 |
-| leak | collega bereikt je bureau | v0.1 |
-| coffee | Coffee binnen | v0.1 |
-| place, upgrade, sell, deny, click | bouwen en menu's | v0.1 |
-| wave, boss, bossphase | nieuwe golf, boss, boss-fase | v0.1 |
+| shot, hit, kill | mail verstuurd (swoosh), papier-klap, verfrommeld papier | v0.14: `swoosh`, `hit`/`mechanical-click`, `explosion`/`muffled-distant` met crackle |
+| leak | collega bereikt je bureau: doffe plof | v0.14: `hit`/`punchy-impact`, 140 Hz omlaag |
+| coffee | Coffee binnen: borrelende machine | v0.14: `blip`, 260 Hz sinus, herhaling 55 ms (bubbels), wow |
+| place, upgrade | iets op een bureau zetten, belletje | v0.14: `footstep`/`punchy-impact`; `powerup`/`soft-notification` |
+| sell, deny, click | menu's | v0.1 |
+| wave | nieuwe golf: notificatie-ding-dong | v0.14: `success`/`soft-notification`, 988 Hz |
+| boss, bossphase | boss, boss-fase | v0.1 |
 | win, lose, split | einde, Requester splitst | v0.1 |
 | pulse | Headphones-puls | v0.4 |
 | staple | Office Artillery | v0.4 |
@@ -22,3 +24,5 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | lunch | lunchpauze begint | preset `success`, profiel `soft-notification`, 880 Hz sinus, toon omlaag |
 | smash | Keyboard Smash slaat op het looppad | preset `hit`, profiel `punchy-impact`, 180 Hz, ruis 0.6, herhaling 30 ms |
 | roll | de bureaustoel gaat rijden | preset `swoosh`, profiel `mechanical-click`, 420 Hz, tremolo (wieltjes) |
+| cash | pot claimen, Coffee krijgen van een collega | preset `coin`, profiel `bright-ui-tick` |
+| key1-3, keyspace | iemand typt op de achtergrond; sneller en harder bij weinig Focus (`setTyping` in `sfx.ts`) | preset `click`, profiel `mechanical-click`, 1500-2300 Hz; spatie 700 Hz |
