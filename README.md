@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.15.0)
+## What is in it now (v0.16.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: a small square office kitchen, 22 waves and The Repair Guy (no
@@ -30,12 +30,15 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
   Your Line Manager.
 - **Level 6, Work From Home** (medior): 15 waves through your house, walls your towers cannot see
   through, the No Internet dinosaur, Reply All, The Cold Caller and The Baby.
+- **Level 7, The Car Park** (medior): 15 waves between parked cars, exhaust fumes that shorten
+  your towers' reach, Delegation, The Phone Caller and The Smoking Colleague.
 - **Towers**: Coffee Machine, Auto-Reply, Headphones (everyone in range stops for a moment),
   Office Artillery (reaches the whole floor, breaks shields), The Shredder (a zone that shares its
   damage and reveals hidden colleagues; it only slows if you jam it), Quick Reply (builds up
   damage on the same target), Thumbtacks (piles of tacks on the walkway, they hit hidden
   colleagues too) and Self-Service (hits everyone in a small circle).
 - **Reply All** (from level 6): every email lands on everyone near its target.
+- **Delegation** (from level 7): passes it on from colleague to colleague, harder with every jump.
 - **Specials** (one each): Keyboard Smash (slams the walkway and leaves the keyboard across it)
   and the Office Chair (rolls down a lane you choose, trading its HP for damage).
 - **Colleagues**: Intern, New Hire, Requester, Chaser, Chatterbox (silences towers), Old Guard

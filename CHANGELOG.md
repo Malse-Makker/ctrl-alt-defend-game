@@ -3,6 +3,19 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.16.0] - 2026-11-08
+
+### New
+- Level 7, The Car Park: 15 waves weaving between parked cars and vans, past the ticket machine. Opens once you finish level 6.
+- Exhaust fumes: every so often clouds drift across the car park. Towers standing in one reach a lot less far until it clears. Office Artillery does not care.
+- Delegation: passes the problem on. One colleague gets it, then the next one near him, and every jump hits harder than the one before. ESCALATE makes the chain longer and harsher, DELEGATE passes it on faster, PROTOCOL widens the circle.
+- The Phone Caller: always on the phone, and towers that only ever aim at one colleague drop everything for him. Those do him half damage; anything that hits a crowd does him in full.
+- Boss: The Smoking Colleague. Towers near him reach less far, and he leaves clouds of smoke behind wherever he walks.
+- The tower panel says when a tower stands in the smoke.
+
+### Fixed
+- A long note in the tower panel (quiet, mopped) could squeeze up and run over the upgrades below it.
+
 ## [0.15.0] - 2026-11-08
 
 ### New

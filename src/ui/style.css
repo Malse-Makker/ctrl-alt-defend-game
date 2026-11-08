@@ -1265,6 +1265,7 @@ button:disabled {
 
 .status {
   min-height: 1.4em;
+  flex-shrink: 0;
   font-size: 13px;
 }
 

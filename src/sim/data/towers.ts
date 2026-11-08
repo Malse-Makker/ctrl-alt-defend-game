@@ -142,6 +142,10 @@ export interface Effect {
   ignoresMinHit?: boolean;
   /** Reply All: a wider circle around the target. */
   aoeMult?: number;
+  /** Delegation: each jump hits this much harder than the one before (highest counts). */
+  bounceMult?: number;
+  /** Delegation: jumps reach further. */
+  bounceRangeMult?: number;
   // Keyboard Smash
   /** Bigger slam. */
   radiusMult?: number;
@@ -191,6 +195,9 @@ export interface TowerBase {
   targets?: number;
   /** Reply All: everyone within this distance of the target is hit too, as many as there are. */
   aoe?: number;
+  /** Delegation: jumps after the first hit, each one hitting this much harder than the last. */
+  bounce?: number;
+  bounceMult?: number;
   /** Trap: tacks per pile, and how long a pile stays on the floor. */
   pierce?: number;
   pileLife?: number;
@@ -778,6 +785,53 @@ export const TOWERS: Record<string, TowerDef> = {
     ],
   },
 
+  delegation: {
+    id: 'delegation',
+    name: 'Delegation',
+    flavour: 'Can you pick this up?',
+    verb: 'Passes the problem on: every email jumps to the next colleague, and every jump hits harder than the one before. Escalating only makes it worse.',
+    role: 'damage',
+    damageClass: 'written',
+    unlockLevel: 7,
+    accent: '#f2c641',
+    models: ['delegation_1', 'delegation_2', 'delegation_3'],
+    base: { cost: 28, range: 3.0, interval: 1.1, damage: 2, bounce: 3, bounceMult: 1.4 },
+    paths: [
+      {
+        name: 'ESCALATE',
+        quote: 'Looping in my manager.',
+        color: '#f2c641',
+        tiers: [
+          { name: 'Loop In', desc: '+1 jump, and +1 damage.', cost: 18, effect: { bounce: 1, damageAdd: 1 } },
+          { name: 'Escalate', desc: 'Every jump hits 60% harder than the last.', cost: 35, effect: { bounceMult: 1.6 } },
+          { name: 'Steering Group', desc: '+2 jumps and +1 damage.', cost: 95, effect: { bounce: 2, damageAdd: 1 } },
+          { name: 'Company Policy', desc: 'Every jump hits twice as hard as the last, +2 jumps and +2 damage.', cost: 260, effect: { bounceMult: 2, bounce: 2, damageAdd: 2 } },
+        ],
+      },
+      {
+        name: 'DELEGATE',
+        quote: 'Assigned to you.',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Delegate', desc: 'Passes it on 33% more often.', cost: 12, effect: { intervalMult: 0.75 } },
+          { name: 'Assign', desc: 'Passes it on 33% more often again.', cost: 30, effect: { intervalMult: 0.75 } },
+          { name: 'Hand Off', desc: 'Starts two chains at once, and +1 damage.', cost: 90, effect: { targetsAdd: 1, damageAdd: 1 } },
+          { name: 'Outsource', desc: 'Passes it on twice as often.', cost: 240, effect: { intervalMult: 0.5 } },
+        ],
+      },
+      {
+        name: 'PROTOCOL',
+        quote: 'Per the process.',
+        color: '#8fa0b4',
+        tiers: [
+          { name: 'Wider Circle', desc: 'Jumps reach 40% further.', cost: 12, effect: { bounceRangeMult: 1.4 } },
+          { name: 'Paper Trail', desc: 'Can see hidden colleagues.', cost: 25, effect: { seesHidden: true } },
+          { name: 'Sign-Off', desc: 'Everyone in the chain slows down for a moment.', cost: 70, effect: { slowOnHit: { mult: 0.7, time: 0.8 } } },
+          { name: 'Compliance', desc: 'Gets through any shield, and bosses take double.', cost: 200, effect: { ignoresMinHit: true, bossMult: 2 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
@@ -807,11 +861,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Delegation', unlockLevel: 7 },
   { name: 'Pomodoro Timer', unlockLevel: 8 },
   { name: 'Motivational Poster', unlockLevel: 9 },
 ];

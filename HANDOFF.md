@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.15.0 (2026-11-08)
+## Stand: v0.16.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,22 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 7 (v0.16.0): ontwerpkeuzes die ik maakte
+- Uitlaatgassen (`type: 'smoke'`): elke 45 s twee wolken (straal 2,4) op willekeurige plekken
+  naast het pad, 14 s lang. Torens erin krijgen `rangeMult` 0,55 via `rangeFactor(t)` in
+  `liveStats`; Artillery (globaal) negeert het. Wolken zitten in de snapshot (`smoke`).
+- Delegation: ketting (`bounce`) met `bounceMult` (elke sprong x1,4, later x1,6 en x2) en
+  `bounceRange`. Auto-Reply houdt `bounceMult` 1. Economie-test telt een ketting als de som van
+  de sprongen in een groep van vijf (`chain`).
+- The Phone Caller: `taunt` (zoals de Baby) plus `pointResist` 0,5: pure single-target-torens
+  (1 doel, geen aoe/splash/bounce) doen hem half. Dwingt een groepstoren af.
+- The Smoking Colleague: aura (straal 3,2, bereik x0,6) en elke 6 s een wolk achter zich; hulpjes
+  zijn Chatterboxes.
+- Balans (bots, seeds 1 en 2): goed spelen wint met 3 sterren en 95/100 Focus, eerst koffie wint
+  met 96, alleen Auto-Replies verliest in golf 9.
+- uicheck meet nu ook tekst die verticaal uit zijn vak loopt (vond de rook-notitie die over
+  UPGRADES heen liep; `.status` krimpt niet meer).
 
 ### Level 6 (v0.15.0): ontwerpkeuzes die ik maakte
 - Zichtmuren: `level.walls` (tegels). Blokkeren bouwen en zicht (`lineOfSight`, monsters om de

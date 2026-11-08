@@ -86,6 +86,11 @@ function uiProblems(): Problem[] {
     if (st.display !== 'inline' && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1 && st.overflowX === 'visible') {
       problems.push({ kind: 'overflow', text: label(el), detail: `text ${el.scrollWidth}px in a ${el.clientWidth}px box` });
     }
+    // Text taller than its box, spilling over whatever comes next (a squeezed flex child). A few
+    // pixels is just a tight line-height on a big title; a whole extra line is a problem.
+    if (st.display !== 'inline' && el.clientHeight > 0 && el.scrollHeight > el.clientHeight + Math.max(8, el.clientHeight * 0.25) && st.overflowY === 'visible') {
+      problems.push({ kind: 'overflow', text: label(el), detail: `text ${el.scrollHeight}px tall in a ${el.clientHeight}px box` });
+    }
     // Text cut off by its own box (ellipsis-free clipping).
     if (st.overflowX === 'hidden' && el.scrollWidth > el.clientWidth + 1) {
       problems.push({ kind: 'clipped', text: label(el), detail: `text ${el.scrollWidth}px in a ${el.clientWidth}px box` });
@@ -730,6 +735,96 @@ async function level6Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+async function level7Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 7)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l7: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3, '5': 3, '6': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'The Car Park');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    waveIndex: number;
+    phase: string;
+    smoke: unknown[];
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    rangeFactor(t: unknown): number;
+    step(): void;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    const want: [string, number, number][] = [
+      ['autoreply', 4, 2],
+      ['delegation', 10, 4],
+      ['delegation', 5, 8],
+      ['replyall', 12, 6],
+      ['thumbtacks', 1, 6],
+      ['artillery', 0, 0],
+      ['autoreply', 16, 10],
+      ['autoreply', 7, 11],
+    ];
+    const out = want.map(([d, x, y]) => {
+      const r = g.place(d, x, y);
+      if (r.tower) for (let i = 0; i < 2; i++) g.upgrade(r.tower.id, 0);
+      return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
+    });
+    out.push(`on a car: ${g.place('autoreply', 4, 3).reason}`);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  total += await check(page, 'l7-park', size);
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'smoke' && g.hazardOn && g.smoke.length > 0) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      g.events.push(...keep.slice(-3));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)} clouds=${g.smoke.length}`;
+    }, stop);
+  console.log(`  ${await ff('smoke')}`);
+  // Select a tower in the smoke: its panel must say so.
+  const smoked = await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; select(id: number): void } } }).cad.session;
+    // The clouds land where they like; if none caught a tower, drift one over the first.
+    if (!s.game.towers.some((x) => s.game.rangeFactor(x) < 1)) {
+      const first = s.game.towers[0] as unknown as { x: number; y: number };
+      (s.game.smoke as { x: number; y: number; r: number; mult: number; life: number }[]).push({ x: first.x, y: first.y, r: 2, mult: 0.55, life: 10 });
+    }
+    const t = s.game.towers.find((x) => s.game.rangeFactor(x) < 1)!;
+    s.select(t.id);
+    return t.defId;
+  });
+  await page.waitForFunction(() => [...document.querySelectorAll('.status')].some((e) => e.textContent?.startsWith('In the smoke')), { timeout: 3000 }).catch(() => errors.push(`l7: no smoke note on the ${smoked} panel`));
+  await new Promise((r) => setTimeout(r, 800));
+  total += await check(page, 'l7-smoke', size);
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l7-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -765,6 +860,10 @@ async function run(): Promise<void> {
     }
     if (args.includes('--l6-only')) {
       total += await level6Flow(browser, errors);
+      throw new Done();
+    }
+    if (args.includes('--l7-only')) {
+      total += await level7Flow(browser, errors);
       throw new Done();
     }
     if (args.includes('--l5-only')) {
@@ -930,6 +1029,7 @@ async function run(): Promise<void> {
     total += await level4Flow(browser, errors);
     total += await level5Flow(browser, errors);
     total += await level6Flow(browser, errors);
+    total += await level7Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

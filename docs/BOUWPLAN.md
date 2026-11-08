@@ -37,6 +37,8 @@ bots, een eigen boss-mechaniek die een andere aanpak afdwingt.
 
 KLAAR: Level 6 Work From Home (v0.15.0): zichtmuren, No Internet-dino, Reply All, The Cold Caller,
 The Baby.
+KLAAR: Level 7 The Car Park (v0.16.0): uitlaatgassen, Delegation, The Phone Caller, The Smoking
+Colleague.
 
 Levels 6-15 met hun hazards en mini-games (No Internet-dino, telefoon, brandalarm, formulier,
 pizza, oververhitting), de resterende torens (Reply All, Delegation, Pomodoro, Motivational Poster,

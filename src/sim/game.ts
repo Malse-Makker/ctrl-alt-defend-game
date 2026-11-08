@@ -217,6 +217,9 @@ export interface LiveTowerStats {
   slowOnHit: Effect['slowOnHit'] | null;
   /** Reply All: radius of the hit around the target. */
   aoe: number;
+  /** Delegation: each jump hits this much harder than the last, and how far it jumps. */
+  bounceMult: number;
+  bounceRange: number;
   /** Thumbtacks: tacks per pile, seconds a pile lasts, piles per drop, and hits that ignore shields. */
   pierce: number;
   pileLife: number;
@@ -274,6 +277,7 @@ export type GameEvent =
   | { t: 'smash'; towerId: number; x: number; y: number; radius: number }
   | { t: 'chairRoll'; towerId: number }
   | { t: 'cry'; enemyId: number; x: number; y: number; radius: number }
+  | { t: 'puff'; enemyId: number; x: number; y: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -360,6 +364,8 @@ export interface Snapshot {
   piles: number[][];
   /** Keyboard barriers: [id, x, y, dirX, dirY, hp, maxHp]. */
   barriers?: number[][];
+  /** Smoke clouds: [x, y, radius, range left, seconds left]. */
+  smoke?: number[][];
   stats: RoundStats;
   hz: { on: boolean; until: number; solved: number[] };
 }
@@ -394,7 +400,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     damage: b.damage ?? 0,
     targets: b.targets ?? 1,
     splash: 0,
-    bounce: 0,
+    bounce: b.bounce ?? 0,
     seesHidden: false,
     bossMult: 1,
     slowAura: 1,
@@ -426,6 +432,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rampKeep: 0,
     slowOnHit: null,
     aoe: b.aoe ?? 0,
+    bounceMult: b.bounceMult ?? 1,
+    bounceRange: BOUNCE_RANGE,
     pierce: b.pierce ?? 0,
     pileLife: b.pileLife ?? 0,
     piles: 1,
@@ -441,6 +449,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
   };
   let radiusMult = 1;
   let aoeMult = 1;
+  let bounceRangeMult = 1;
   let barrierHpMult = 1;
   let chairHpMult = 1;
   let speedMult = 1;
@@ -474,6 +483,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.ignoresMinHit) s.ignoresMinHit = true;
     radiusMult *= e.radiusMult ?? 1;
     aoeMult *= e.aoeMult ?? 1;
+    bounceRangeMult *= e.bounceRangeMult ?? 1;
+    if (e.bounceMult !== undefined) s.bounceMult = Math.max(s.bounceMult, e.bounceMult);
     s.barrierHp += e.barrierHpAdd ?? 0;
     barrierHpMult *= e.barrierHpMult ?? 1;
     s.barrierTime += e.barrierTimeAdd ?? 0;
@@ -508,6 +519,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
   s.range = s.global ? Infinity : (s.range + rangeAdd) * rangeMult;
   s.smashRadius *= radiusMult;
   s.aoe *= aoeMult;
+  s.bounceRange *= bounceRangeMult;
   s.barrierHp *= barrierHpMult;
   s.chairHp *= chairHpMult;
   s.rollSpeed *= speedMult;
@@ -543,6 +555,8 @@ export class Game {
   enemies: Enemy[] = [];
   piles: Pile[] = [];
   barriers: Barrier[] = [];
+  /** Clouds of smoke on the floor: towers inside reach less far. */
+  smoke: { x: number; y: number; r: number; mult: number; life: number }[] = [];
   events: GameEvent[] = [];
   stats: RoundStats;
 
@@ -746,7 +760,21 @@ export class Game {
   }
 
   liveStats(t: Tower): LiveTowerStats {
-    return computeStats(t.def, t.tiers);
+    const s = computeStats(t.def, t.tiers);
+    const f = this.rangeFactor(t);
+    if (f < 1) s.range *= f;
+    return s;
+  }
+
+  /** Smoke (clouds, or a smoker standing close): towers reach this much of their range. */
+  rangeFactor(t: { x: number; y: number }): number {
+    let f = 1;
+    for (const c of this.smoke) if (Math.hypot(t.x - c.x, t.y - c.y) <= c.r) f = Math.min(f, c.mult);
+    for (const e of this.enemies) {
+      const sm = e.def.boss?.smoke;
+      if (sm && e.alive && this.onFloor(e) && Math.hypot(t.x - e.x, t.y - e.y) <= sm.radius) f = Math.min(f, sm.rangeMult);
+    }
+    return f;
   }
 
   // ------------------------------------------------------------------ commands
@@ -1036,6 +1064,7 @@ export class Game {
       ]),
       piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
       barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
+      smoke: this.smoke.map((c) => [r3(c.x), r3(c.y), r3(c.r), c.mult, r3(c.life)]),
       stats: this.stats,
       hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved] },
     };
@@ -1147,6 +1176,7 @@ export class Game {
       };
     });
     this.piles = (s.piles ?? []).map((a) => ({ id: a[0], tower: 0, x: a[1], y: a[2], pierce: a[3], maxPierce: a[4], life: 1, hit: new Set<number>() }));
+    this.smoke = (s.smoke ?? []).map((a) => ({ x: a[0], y: a[1], r: a[2], mult: a[3], life: a[4] }));
     this.barriers = (s.barriers ?? []).map((a) => ({ id: a[0], tower: 0, pathIndex: 0, dist: 0, x: a[1], y: a[2], dirX: a[3], dirY: a[4], hp: a[5], maxHp: a[6], time: 1, thorns: 0 }));
   }
 
@@ -1177,7 +1207,7 @@ export class Game {
   /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
   solveHazard(player: number): Check {
     const hz = this.level.hazard;
-    if (!hz || hz.type === 'lunch' || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
+    if (!hz || (hz.type !== 'projector' && hz.type !== 'nointernet') || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
     if (this.hazardSolved.includes(player)) return { ok: false, reason: 'You already did your part.' };
     this.hazardSolved.push(player);
     const bonus = hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time));
@@ -1199,6 +1229,14 @@ export class Game {
     if (!hz) return;
     if (this.hazardNext === Infinity && !this.hazardOn) this.hazardNext = hz.first;
     if (!this.hazardOn && this.time >= this.hazardNext) {
+      if (hz.type === 'smoke') {
+        // A gust of exhaust: clouds settle on random bits of the walkway.
+        for (let i = 0; i < hz.clouds; i++) {
+          const path = this.paths[i % this.paths.length];
+          const p = path.pointAt(this.rng.range(path.length * 0.1, path.length * 0.9));
+          this.smoke.push({ x: p.x, y: p.y, r: hz.radius, mult: hz.rangeMult, life: hz.window });
+        }
+      }
       if (hz.type === 'lunch') {
         // No lunch break during the boss: the day should be able to end.
         if (this.waveIndex >= this.totalWaves) {
@@ -1237,6 +1275,10 @@ export class Game {
     this.moveEnemies(dt);
     this.updatePiles(dt);
     this.updateBarriers(dt);
+    if (this.smoke.length) {
+      for (const c of this.smoke) c.life -= dt;
+      this.smoke = this.smoke.filter((c) => c.life > 0);
+    }
     this.enemies = this.enemies.filter((e) => e.alive);
     this.stats.peakOnFloor = Math.max(this.stats.peakOnFloor, this.enemies.length);
     if (this.over) return;
@@ -1344,7 +1386,7 @@ export class Game {
       stunRecover: 0,
       phase: 1,
       addTimer: 4,
-      cryTimer: def.boss?.cry?.every ?? 0,
+      cryTimer: def.boss?.cry?.every ?? def.boss?.smoke?.cloudEvery ?? 0,
       isAdd,
       spawnedAt: this.time,
     };
@@ -1510,6 +1552,12 @@ export class Game {
       const b = e.def.boss;
       if (!e.alive || !b) continue;
       if (b.sweep && this.onFloor(e)) this.sweep(e, b.sweep);
+      if (b.smoke && this.onFloor(e) && (e.cryTimer -= dt) <= 0) {
+        // The Smoking Colleague leaves a cloud wherever he stops for a puff.
+        e.cryTimer = b.smoke.cloudEvery;
+        this.smoke.push({ x: e.x, y: e.y, r: b.smoke.cloudRadius, mult: b.smoke.rangeMult, life: b.smoke.cloudTime });
+        this.events.push({ t: 'puff', enemyId: e.id, x: e.x, y: e.y });
+      }
       if (b.cry && this.onFloor(e) && (e.cryTimer -= dt) <= 0) {
         // A crying fit: every tower nearby has to stop and look. Noise Cancelling does not hear it.
         e.cryTimer = b.cry.every;
@@ -2112,7 +2160,7 @@ export class Game {
     }
     for (let i = 0; i < s.bounce; i++) {
       let next: Enemy | null = null;
-      let best = BOUNCE_RANGE;
+      let best = s.bounceRange;
       for (const e of this.enemies) {
         if (!e.alive || hit.has(e) || !this.visibleTo(e, s.seesHidden)) continue;
         if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
@@ -2124,7 +2172,8 @@ export class Game {
       }
       if (!next) break;
       const hopTravel = best / SHOT_SPEED;
-      this.hitOne(t, next, s, from.x, from.y, delay + hopTravel, 'hop', hit);
+      // Delegation: every jump hits harder than the one before.
+      this.hitOne(t, next, s, from.x, from.y, delay + hopTravel, 'hop', hit, Math.pow(s.bounceMult, i + 1));
       delay += hopTravel;
       from = next;
     }
@@ -2132,7 +2181,9 @@ export class Game {
 
   private hitOne(t: Tower, e: Enemy, s: LiveTowerStats, fx: number, fy: number, travel: number, kind: 'reply' | 'hop', hit: Set<Enemy>, mult = 1): void {
     hit.add(e);
-    const amount = s.damage * mult * (e.def.boss ? s.bossMult : 1);
+    // The Phone Caller can take it from towers that deal with one colleague at a time.
+    const single = s.targets === 1 && s.aoe === 0 && s.splash === 0 && s.bounce === 0;
+    const amount = s.damage * mult * (e.def.boss ? s.bossMult : 1) * (single && e.def.pointResist ? e.def.pointResist : 1);
     const { dealt, result } = this.damage(e, amount, t.def.damageClass);
     t.stats.damage += dealt;
     const killed = !e.alive;

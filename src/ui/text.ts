@@ -189,6 +189,8 @@ export const UI_TEXT = {
   netFixed: 'Back online. +{n} Coffee for not calling the helpdesk.',
   netOtherFixed: '{name} is back online.',
   netTimeout: 'The internet came back by itself. Nobody knows why.',
+  smokeStarts: 'Exhaust fumes drift in. Towers in the smoke reach a lot less far.',
+  smokedNote: 'In the smoke: this tower reaches less far until it clears.',
   babyCries: 'The Baby is crying. Every tower near him stops until it is over.',
   hushedNote: 'The Baby is crying next to this tower. It does nothing until he calms down.',
   offlineNote: 'No internet: this tower sends nothing until you reconnect.',

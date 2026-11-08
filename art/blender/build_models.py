@@ -1648,6 +1648,154 @@ def b_cat():
     return root
 
 
+# ---------------------------------------------------------------- level 7: the car park
+
+def _tray(x, y, z, col="charcoal", folders=2, seed=0):
+    tray = box(f"Tray{seed}", (0.3, 0.22, 0.06), loc=(x, y, z), material=mat(col), bevel=0.005)
+    out = [tray]
+    for i in range(folders):
+        out.append(box(f"Folder{seed}_{i}", (0.26, 0.2, 0.012), loc=(x, y, z + 0.015 + i * 0.014), material=mat(["yellow", "blue", "red", "teal"][(i + seed) % 4])))
+    return out
+
+
+def b_delegation_1():
+    root = empty("delegation_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _tray(-0.15, 0.05, h, folders=3, seed=1)
+    parts += _tray(-0.15, 0.05, h + 0.12, folders=1, seed=2)
+    parts += _tray(0.18, 0.0, h, col="plastic_white", folders=2, seed=3)
+    arrow = box("Arrow", (0.18, 0.02, 0.04), loc=(0.02, -0.15, h + 0.02), material=mat("yellow", emit=0.6))
+    head = box("ArrowHead", (0.06, 0.02, 0.08), loc=(0.13, -0.15, h + 0.0), material=mat("yellow", emit=0.6), taper=0.1)
+    ob = join("delegation_1_mesh", parts + [arrow, head])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_2():
+    root = empty("delegation_2")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    for k in range(3):
+        parts += _tray(-0.15, 0.08, h + k * 0.12, folders=3 - k, seed=4 + k)
+    parts += _tray(0.18, 0.05, h, col="plastic_white", folders=3, seed=8)
+    stamp = cyl("Stamp", 0.035, 0.08, loc=(0.2, -0.18, h), material=mat("red", rough=0.4), verts=10)
+    knob = ball("StampKnob", 0.03, loc=(0.2, -0.18, h + 0.1), material=mat("plastic_black"), subdiv=1)
+    ob = join("delegation_2_mesh", parts + [stamp, knob])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_3():
+    """An org chart in trays: one at the top, passing it down to two, then four."""
+    root = empty("delegation_3")
+    base = box("Base", (0.8, 0.5, 0.1), loc=(0, 0, 0), material=mat("charcoal"), bevel=0.02)
+    pole = box("Pole", (0.05, 0.05, 1.0), loc=(0, 0.15, 0.1), material=mat("metal_light", metal=0.6, rough=0.3))
+    parts = [base, pole]
+    rows = [(1, 1.05), (2, 0.75), (4, 0.45)]
+    for r, (n, z) in enumerate(rows):
+        for i in range(n):
+            x = (i - (n - 1) / 2) * 0.22
+            parts += _tray(x, 0.05, z, col=["yellow", "plastic_white", "charcoal"][r], folders=2, seed=10 + r * 4 + i)
+        if r > 0:
+            parts.append(box(f"Bar{r}", (0.22 * n, 0.03, 0.02), loc=(0, 0.06, z + 0.2), material=mat("metal_light", metal=0.6)))
+    ob = join("delegation_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_phonecaller():
+    s = 1.0
+    root, body, hz = person("phonecaller", "orange", "denim", "skin_3", "hair_brown", style="side", h=s)
+    tie = box("Tie", (0.035, 0.014, 0.15), loc=(0, -0.108, 0.5), material=mat("navy"), taper=0.6)
+    acc = join("Props", [tie])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -2.5
+    hp = _hand_world(arm, s)
+    handset = box("Handset", (0.05, 0.05, 0.16), loc=(hp.x, hp.y, hp.z - 0.06), material=mat("plastic_black"), bevel=0.01)
+    _hold(root, "R", s, [handset])
+    hl = _hand_world(_arm(root, "L"), s)
+    phone = box("DeskPhone", (0.14, 0.12, 0.06), loc=(hl.x, hl.y - 0.04, hl.z - 0.08), material=mat("plastic_black"), bevel=0.01)
+    pad = box("Keypad", (0.08, 0.06, 0.005), loc=(hl.x, hl.y - 0.06, hl.z - 0.019), material=mat("plastic_white"))
+    _hold(root, "L", s, [phone, pad])
+    return root
+
+
+def b_smoker():
+    s = 1.5
+    root, body, hz = person("smoker", "#6c7480", "charcoal", "skin_1", "hair_grey", style="side", h=s)
+    coat = box("Coat", (0.36 * s, 0.22 * s, 0.4 * s), loc=(0, 0, 0.22 * s), material=mat("#6c7480", rough=0.8), bevel=0.02, taper=0.95)
+    scarf = box("Scarf", (0.22 * s, 0.2 * s, 0.05 * s), loc=(0, 0, 0.68 * s), material=mat("red", rough=0.8), bevel=0.01)
+    acc = join("Props", [coat, scarf])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -1.9
+    hp = _hand_world(arm, s)
+    cig = cyl("Cigarette", 0.008 * s, 0.07 * s, loc=(hp.x, hp.y - 0.03 * s, hp.z), material=mat("plastic_white"), verts=6, rot=(math.pi / 2, 0, 0))
+    tip = ball("Ember", 0.01 * s, loc=(hp.x, hp.y - 0.1 * s, hp.z), material=mat("orange", emit=3.0), subdiv=1)
+    # The smoke rises from the cigarette, well clear of his head.
+    puffs = [ball(f"Puff{i}", 0.05 * s * (1 + i * 0.5), loc=(hp.x - 0.04 * s * i, hp.y - 0.12 * s - 0.04 * s * i, hp.z + 0.1 * s + i * 0.14 * s), material=mat("#d9dde3", rough=1.0), subdiv=2) for i in range(3)]
+    _hold(root, "R", s, [cig, tip] + puffs)
+    return root
+
+
+def _car(name, body_col, w=1.8, d=0.85, cab_h=0.32, van=False):
+    root = empty(name)
+    hgt = 0.62 if van else 0.35
+    body = box("Body", (w, d, hgt), loc=(0, 0, 0.12), material=mat(body_col, rough=0.35, metal=0.2), bevel=0.06)
+    parts = [body]
+    if van:
+        cab = box("Cab", (0.45, d * 0.96, 0.28), loc=(-w / 2 + 0.25, 0, 0.12 + hgt), material=mat(body_col, rough=0.35, metal=0.2), bevel=0.05)
+        windshield = box("Windshield", (0.02, d * 0.8, 0.22), loc=(-w / 2 + 0.03, 0, 0.12 + hgt + 0.02), material=mat("window", rough=0.1))
+        parts += [cab, windshield]
+        parts.append(box("Stripe", (w * 0.7, 0.01, 0.08), loc=(0.15, -d / 2 - 0.002, 0.45), material=mat("yellow")))
+    else:
+        cab = box("Cab", (w * 0.55, d * 0.9, cab_h), loc=(0.05, 0, 0.12 + hgt), material=mat(body_col, rough=0.35, metal=0.2), bevel=0.06, taper=0.85)
+        glass = box("Glass", (w * 0.56, d * 0.92, cab_h * 0.6), loc=(0.05, 0, 0.12 + hgt + 0.06), material=mat("window", rough=0.1), taper=0.85)
+        parts += [cab, glass]
+    for i, (x, y) in enumerate(((w / 2 - 0.3, d / 2), (-w / 2 + 0.3, d / 2), (w / 2 - 0.3, -d / 2), (-w / 2 + 0.3, -d / 2))):
+        parts.append(cyl(f"Wheel{i}", 0.14, 0.12, loc=(x, y - 0.06 if y > 0 else y - 0.06, 0.14), material=mat("plastic_black"), verts=14, rot=(math.pi / 2, 0, 0)))
+    for i, y in enumerate((-d * 0.3, d * 0.3)):
+        parts.append(box(f"Light{i}", (0.02, 0.14, 0.06), loc=(-w / 2 - 0.005, y, 0.3), material=mat("yellow", emit=1.2)))
+        parts.append(box(f"Rear{i}", (0.02, 0.14, 0.06), loc=(w / 2 + 0.005, y, 0.3), material=mat("red", emit=1.0)))
+    ob = join(f"{name}_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_car():
+    return _car("car", "#3e7cc9")
+
+
+def b_van():
+    return _car("van", "#eeeeea", w=1.9, d=0.9, van=True)
+
+
+def b_ticket_machine():
+    root = empty("ticket_machine")
+    post = box("Post", (0.4, 0.3, 1.2), loc=(0, 0, 0), material=mat("yellow", rough=0.5), bevel=0.03)
+    screen = box("Screen", (0.26, 0.02, 0.16), loc=(0, -0.16, 0.9), material=mat("screen", emit=1.2))
+    slot = box("Slot", (0.14, 0.03, 0.03), loc=(0, -0.16, 0.7), material=mat("plastic_black"))
+    btn = box("Button", (0.08, 0.03, 0.08), loc=(0, -0.16, 0.55), material=mat("red", emit=0.8))
+    roof = box("Roof", (0.5, 0.4, 0.05), loc=(0, 0, 1.2), material=mat("charcoal"))
+    ob = join("ticket_machine_mesh", [post, screen, slot, btn, roof])
+    parent(ob, root)
+    return root
+
+
+def b_lamp_post():
+    root = empty("lamp_post")
+    base = cyl("Base", 0.12, 0.1, loc=(0, 0, 0), material=mat("charcoal"), verts=12)
+    pole = cyl("Pole", 0.04, 2.2, loc=(0, 0, 0.1), material=mat("metal", metal=0.6, rough=0.4), verts=10)
+    arm = box("Arm", (0.06, 0.4, 0.05), loc=(0, -0.18, 2.25), material=mat("metal", metal=0.6))
+    head = box("Head", (0.22, 0.3, 0.08), loc=(0, -0.38, 2.2), material=mat("charcoal"), bevel=0.02)
+    lamp = box("Lamp", (0.18, 0.24, 0.02), loc=(0, -0.38, 2.18), material=mat("yellow", emit=3.0))
+    ob = join("lamp_post_mesh", [base, pole, arm, head, lamp])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -1729,6 +1877,15 @@ BUILDERS = {
     "bed": b_bed,
     "bookshelf": b_bookshelf,
     "cat": b_cat,
+    "delegation_1": b_delegation_1,
+    "delegation_2": b_delegation_2,
+    "delegation_3": b_delegation_3,
+    "phonecaller": b_phonecaller,
+    "smoker": b_smoker,
+    "car": b_car,
+    "van": b_van,
+    "ticket_machine": b_ticket_machine,
+    "lamp_post": b_lamp_post,
 }
 
 

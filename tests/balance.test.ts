@@ -147,3 +147,22 @@ describe('Level 6 difficulty (the first medior floor)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 7 difficulty (The Car Park)', () => {
+  const level = LEVELS[7];
+
+  it('Auto-Replies alone are not enough: fumes and Phone Callers see to that', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  it('good play wins with three stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(r.focus).toBeGreaterThanOrEqual(90);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

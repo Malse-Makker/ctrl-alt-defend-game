@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -32,6 +32,8 @@ export interface BossDef {
   towerSlow?: { radius: number; mult: number; fromPhase: 1 | 2 | 3 };
   /** A crying fit every so often: every tower this close stops for a while (The Baby). */
   cry?: { every: number; duration: number; radius: number };
+  /** Smoke around him: towers this close reach less far; and every so often he leaves a cloud. */
+  smoke?: { radius: number; rangeMult: number; cloudEvery: number; cloudRadius: number; cloudTime: number };
   intro: string;
 }
 
@@ -63,6 +65,8 @@ export interface ColleagueDef {
   stunResist?: number;
   /** Towers this close aim at him before anyone else (all the attention). */
   taunt?: number;
+  /** Takes this share of a hit from towers that hit one colleague at a time (The Phone Caller: 0.5). */
+  pointResist?: number;
   split?: { into: string; count: number };
   boss?: BossDef;
   /** Visual scale and the one loud colour that makes him readable on a busy floor. */
@@ -405,6 +409,52 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#f2c641',
     model: 'baby',
     armSwing: 0.6,
+  },
+  phonecaller: {
+    id: 'phonecaller',
+    name: 'The Phone Caller',
+    role: 'Taunt',
+    quote: 'Sorry, you are breaking up. Can you hear me now?',
+    ability: 'Every tower that deals with one colleague at a time aims at him first, and he can take it: those towers only do him half.',
+    counter: 'Anything that hits a crowd: Reply All, Self-Service, Thumbtacks, The Shredder, Delegation. Or keep your single-target towers out of his reach.',
+    hp: 34,
+    speed: 2.15,
+    focus: 5,
+    rewardRate: REWARD_SPECIAL,
+    taunt: 2.8,
+    pointResist: 0.5,
+    scale: 1,
+    accent: '#e67e3a',
+    model: 'phonecaller',
+    armSwing: 0.4,
+  },
+  smoker: {
+    id: 'smoker',
+    name: 'The Smoking Colleague',
+    role: 'Boss',
+    quote: 'Just popping out for a minute.',
+    ability:
+      'Walks through the car park in a cloud of his own smoke. Every tower near him reaches a lot less far, and wherever he stops for a puff the smoke hangs around for a while.',
+    counter: 'Long range and lots of it: Office Artillery does not care about smoke. Spread your towers out so a cloud never covers all of them.',
+    hp: 1000,
+    speed: 0.85,
+    focus: 30,
+    rewardFlat: 40,
+    boss: {
+      kind: 'smoker',
+      addType: 'chatterbox',
+      addEvery: 14,
+      addCount: 1,
+      phaseBurst: 2,
+      phase3Speed: 1.35,
+      smoke: { radius: 3.2, rangeMult: 0.6, cloudEvery: 6, cloudRadius: 2.2, cloudTime: 10 },
+      intro: 'His smoke shortens the range of every tower near him, and it lingers. Office Artillery does not mind.',
+    },
+    stunResist: 0.4,
+    scale: 1.1,
+    accent: '#a7adb5',
+    model: 'smoker',
+    armSwing: 0.3,
   },
 };
 

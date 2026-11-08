@@ -433,6 +433,11 @@ export class Session {
             sfx.play('lunch');
             this.hud?.toast(T.lunchStarts, 'warn', 3.5);
           } else this.hud?.toast(T.lunchEnds, '', 2);
+        } else if (ev.kind === 'smoke') {
+          if (ev.on) {
+            sfx.play('mop', { pitch: 0.6, gain: 0.7 });
+            this.hud?.toast(T.smokeStarts, 'warn', 3);
+          }
         } else if (ev.kind === 'nointernet') {
           if (ev.on) {
             sfx.play('bossphase', { pitch: 0.8, gain: 0.6 });
@@ -445,6 +450,9 @@ export class Session {
         } else if (!g.hazardSolved.includes(this.me)) {
           this.hud?.toast(T.projTimeout, '', 2.5);
         }
+        break;
+      case 'puff':
+        sfx.play('mop', { pitch: 0.5, gain: 0.4 });
         break;
       case 'cry':
         sfx.play('cry');

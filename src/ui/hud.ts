@@ -433,7 +433,7 @@ export class Hud {
       }
       return;
     }
-    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.quiet ?? '-'}:${t.mopped > 0 ? 1 : 0}:${t.dir}`;
+    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.quiet ?? '-'}:${this.game.rangeFactor(t) < 1 ? 's' : ''}:${t.mopped > 0 ? 1 : 0}:${t.dir}`;
     if (key !== this.towerKey) {
       this.towerKey = key;
       this.buildTowerPanel(t);
@@ -653,6 +653,7 @@ export class Hud {
 
     if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : T.silencedNote }));
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
+    else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
 
     // Targeting
     if (def.role === 'chair') {

@@ -110,9 +110,16 @@ describe('tower balance rule', () => {
   // of five.
   const ramped = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : 1);
   const aoeHits = (s: ReturnType<typeof computeStats>) => Math.min(5, s.targets * (1 + (2 * s.aoe) / 0.8));
-  /** What one copy is worth on its own terms: one target, built up, or the circle it lands on. */
-  const worth = (s: ReturnType<typeof computeStats>) => (s.damage / s.interval) * (s.aoe > 0 ? aoeHits(s) : ramped(s));
-  const reach = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : s.aoe > 0 ? aoeHits(s) : Math.min(5, s.targets + s.splash + s.bounce));
+  /** Delegation: the chain through a crowd of five, every jump harder than the last. */
+  const chain = (s: ReturnType<typeof computeStats>) => {
+    let sum = 0;
+    for (let i = 0; i <= Math.min(4, s.bounce); i++) sum += Math.pow(s.bounceMult, i);
+    return s.targets * sum;
+  };
+  /** What one copy is worth on its own terms: one target, built up, the circle it lands on, or the chain. */
+  const worth = (s: ReturnType<typeof computeStats>) => (s.damage / s.interval) * (s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : ramped(s));
+  const reach = (s: ReturnType<typeof computeStats>) =>
+    s.rampMax > 0 ? s.rampMax : s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : Math.min(5, s.targets + s.splash + s.bounce);
   const crowdDps = (def: (typeof TOWERS)[string], tiers: Tiers) => {
     const s = computeStats(def, tiers);
     const dps = s.damage / s.interval;

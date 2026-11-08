@@ -54,7 +54,19 @@ export interface NoInternetHazard {
   reward: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard;
+/** Exhaust fumes (The Car Park): clouds drift in, and towers inside them reach less far. */
+export interface SmokeHazard {
+  type: 'smoke';
+  first: number;
+  every: number;
+  window: number;
+  /** Clouds per gust, how big, and what is left of a tower's range inside one. */
+  clouds: number;
+  radius: number;
+  rangeMult: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -461,7 +473,69 @@ const L6: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6 };
+const L7: LevelDef = {
+  id: 7,
+  name: 'The Car Park',
+  block: 'medior',
+  intro: 'Everyone parks underground. Everyone also walks past your car on the way in.',
+  gimmick: 'A wide switchback between parked cars, with lanes along the walls. Exhaust fumes cut your range. Delegation arrives, and The Phone Caller wants all the attention.',
+  size: { w: 22, h: 14 },
+  paths: [
+    [
+      { x: -1.5, y: 1.5 },
+      { x: 20.5, y: 1.5 },
+      { x: 20.5, y: 5.5 },
+      { x: 2.5, y: 5.5 },
+      { x: 2.5, y: 9.5 },
+      { x: 20.5, y: 9.5 },
+      { x: 20.5, y: 12.5 },
+      { x: 10.0, y: 12.5 },
+    ],
+  ],
+  desk: { x: 9, y: 12 },
+  decor: [
+    { model: 'car', rect: { x: 4, y: 3, w: 2, h: 1 } },
+    { model: 'van', rect: { x: 8, y: 3, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 12, y: 3, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 16, y: 3, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 6, y: 7, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 10, y: 7, w: 2, h: 1 } },
+    { model: 'van', rect: { x: 14, y: 7, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 18, y: 7, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 13, y: 11, w: 2, h: 1 } },
+    { model: 'car', rect: { x: 2, y: 13, w: 2, h: 1 } },
+    { model: 'van', rect: { x: 15, y: 13, w: 2, h: 1 } },
+    { model: 'ticket_machine', rect: { x: 0, y: 3, w: 1, h: 1 } },
+    { model: 'lamp_post', rect: { x: 21, y: 0, w: 1, h: 1 } },
+    { model: 'lamp_post', rect: { x: 0, y: 11, w: 1, h: 1 } },
+    { model: 'lamp_post', rect: { x: 21, y: 13, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation'],
+  startFocus: 100,
+  // Asphalt, a green walkway for pedestrians, white edge lines, concrete walls.
+  look: { floorA: '#50555c', floorB: '#4b5057', walkway: '#4f8a63', edge: '#e9e6df', wall: '#c9c6bf' },
+  hazard: { type: 'smoke', first: 40, every: 45, window: 14, clouds: 2, radius: 2.4, rangeMult: 0.55 },
+  // Medior: about 15% a wave, a bit heavier than Work From Home. The Phone Caller from wave 3.
+  waves: [
+    'intern:18@0.48 + newhire:3@0.95 + chaser:6@0.20',
+    'intern:14@0.46 + newhire:4@0.90 + coldcaller:1@1.20 + chaser:5@0.20',
+    'chaser:15@0.15 + phonecaller:1@1.20 + newhire:5@0.85 + intern:6@0.45',
+    'oldguard:1@2.00 + intern:12@0.45 + phonecaller:1@1.10 + coldcaller:1@1.00 + chaser:3@0.18',
+    'impersonator:4@0.80 + newhire:7@0.80 + phonecaller:2@1.00 + chaser:9@0.16',
+    'boardmember:1@1.60 + coldcaller:2@0.95 + phonecaller:2@1.00 + intern:16@0.42 + chaser:10@0.14',
+    'oldguard:1@1.60 + chatterbox:2@1.60 + phonecaller:2@0.95 + coldcaller:2@0.95 + intern:14@0.42',
+    'chaser:40@0.10 + phonecaller:3@0.90 + newhire:9@0.75',
+    'requester:4@1.00 + boardmember:2@1.50 + phonecaller:3@0.85 + impersonator:5@0.60 + chaser:21@0.12',
+    'oldguard:2@1.40 + phonecaller:4@0.85 + coldcaller:3@0.85 + intern:20@0.38',
+    'chaser:50@0.09 + newhire:12@0.65 + phonecaller:4@0.80 + coldcaller:3@0.80',
+    'oldguard:2@1.30 + requester:5@0.95 + phonecaller:5@0.80 + coldcaller:4@0.80 + impersonator:5@0.55',
+    'boardmember:3@1.30 + phonecaller:6@0.75 + newhire:15@0.60 + chaser:40@0.09 + chatterbox:2@1.40',
+    'oldguard:3@1.20 + phonecaller:6@0.70 + requester:6@0.90 + chaser:40@0.09 + coldcaller:3@0.80',
+    'smoker:1@2.00 + newhire:8@0.70 + phonecaller:3@0.80',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

@@ -100,6 +100,10 @@ export class Actors {
   /** The office chair's lane: a strip instead of a circle. */
   private readonly lane: THREE.Mesh;
   private barrierViews = new Map<number, THREE.Object3D>();
+  /** Smoke: a few soft grey puffs per cloud, drawn from a shared pool. */
+  private smokeViews: THREE.Mesh[] = [];
+  private readonly smokeGeo = new THREE.SphereGeometry(1, 12, 8);
+  private readonly smokeMat = new THREE.MeshStandardMaterial({ color: '#b9bec6', transparent: true, opacity: 0.32, depthWrite: false, roughness: 1 });
   readonly ghostTile: THREE.Mesh;
   private ghost: THREE.Object3D | null = null;
   /** Multiplayer: a ring in the owner's colour under every tower. Empty in single player. */
@@ -276,9 +280,34 @@ export class Actors {
     }
     this.syncTacks(game);
     this.syncBarriers(game);
+    this.syncSmoke(game);
     this.updateShots(dt);
     this.updateScraps(dt);
     this.updatePulses(dt);
+  }
+
+  /** Smoke clouds: five puffs each, gently drifting, thinning out as the cloud runs out. */
+  private syncSmoke(game: Game): void {
+    let n = 0;
+    for (const c of game.smoke) {
+      for (let i = 0; i < 5; i++) {
+        let m = this.smokeViews[n];
+        if (!m) {
+          m = new THREE.Mesh(this.smokeGeo, this.smokeMat);
+          m.renderOrder = 6;
+          this.smokeViews.push(m);
+          this.group.add(m);
+        }
+        m.visible = true;
+        const a = i * 1.26 + this.clock * 0.25;
+        const off = i === 0 ? 0 : c.r * 0.45;
+        m.position.set(c.x + Math.cos(a) * off, 0.5 + (i % 2) * 0.25, c.y + Math.sin(a) * off);
+        const k = Math.min(1, c.life / 2);
+        m.scale.set(c.r * 0.55 * k, c.r * 0.3 * k, c.r * 0.55 * k);
+        n++;
+      }
+    }
+    for (let i = n; i < this.smokeViews.length; i++) this.smokeViews[i].visible = false;
   }
 
   /** Keyboards across the walkway, lying crosswise. They sink a little as they get kicked. */
