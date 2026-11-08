@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.3.1] - 2026-11-08
+
+### Changed
+- New lobbies start with everyone their own Coffee (income split between everyone). The host can still switch to one shared wallet.
+
 ## [0.3.0] - 2026-11-08
 
 ### New

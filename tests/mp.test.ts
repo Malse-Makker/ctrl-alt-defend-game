@@ -16,6 +16,10 @@ describe('rooms', () => {
     expect(cleanName('a'.repeat(50)).length).toBe(20);
   });
 
+  it('defaults to everyone their own wallet with split income', () => {
+    expect(new Room('ABCDE').settings.shared).toBe(false);
+  });
+
   it('only the host changes settings, and the checks hold', () => {
     const r = new Room('ABCDE');
     r.join('Host');

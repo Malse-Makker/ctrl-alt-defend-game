@@ -73,7 +73,8 @@ export class Room {
     this.settings = {
       level: 1,
       maxPlayers: 4,
-      shared: true,
+      // Everyone their own wallet with split income is the default (decided 2026-11-08).
+      shared: false,
       zoneMode: 'anywhere',
       assign: [],
       ...settings,

@@ -25,6 +25,12 @@ multiplayer. Zie CHANGELOG.md.
 - Valkuil: de server wordt gebundeld met esbuild als **CommonJS** (`npm run build:mp`); als ESM
   crasht `ws` op "Dynamic require of events".
 - In NPM moet "Websockets Support" aan staan voor game.makkers.net (staat aan sinds 2026-11-08).
+- Standaard in een nieuwe lobby: ieder eigen geld, inkomen gedeeld (besluit maker 2026-11-08).
+- **Open punt:** in een lange `uicheck --mp` ronde bleef de gast een keer hangen na Join (lobby
+  verscheen niet). Daarna 7 keer niet meer te reproduceren, ook niet live. De test bewaart bij een
+  fout nu screenshot + schermtekst van elke pagina (`mp-fail-*.png`): kijk daar eerst.
+- Testvalkuil: met twee pagina's open krijgt de achterste pagina geen animatieframes; wachten in
+  puppeteer moet dan met `polling: 250`, niet met de standaard (raf).
 Multiplayer-besluiten: de server draait de simulatie (WebSocket-container), join-code + link, tot 8
 spelers, de host kiest het aantal spelers, gedeeld geld of ieder eigen geld (inkomen gedeeld door het
 aantal spelers, Coffee geven aan elkaar), en waar je bouwt: overal, of vakken (boven/onder,

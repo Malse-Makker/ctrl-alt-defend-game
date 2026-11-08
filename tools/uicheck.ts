@@ -6,6 +6,8 @@
 //   npx tsx tools/uicheck.ts [--url http://127.0.0.1:5173/] [--out shots] [--sizes 1920x1080,1280x720]
 //
 // Needs a dev or preview server running, and Google Chrome (CHROME=/path/to/chrome to override).
+// The multiplayer flow (--mp, --mp-only) opens two pages; the one behind gets no animation frames,
+// so its waits poll on a timer instead.
 
 import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -157,11 +159,11 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   };
   const host = await open();
   await host.goto(URL_, { waitUntil: 'networkidle0' });
-  await host.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await host.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000, polling: 250 });
   await clickText(host, 'Play together');
   await host.type('#mp-name', 'Hostess');
   await clickText(host, 'Host a game');
-  await host.waitForFunction(() => document.querySelector('.big-code'), { timeout: 10000 });
+  await host.waitForFunction(() => document.querySelector('.big-code'), { timeout: 10000, polling: 250 });
   const code = await host.$eval('.big-code', (el) => el.textContent ?? '');
   // Split wallets, left and right halves.
   await host.evaluate(() => {
@@ -180,16 +182,19 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   });
   const guest = await open();
   await guest.goto(`${URL_}?join=${code}`, { waitUntil: 'networkidle0' });
-  await guest.waitForFunction(() => document.querySelector('#mp-name'), { timeout: 30000 });
+  await guest.waitForFunction(() => document.querySelector('#mp-name'), { timeout: 30000, polling: 250 });
   await guest.type('#mp-name', 'Guest');
   await clickText(guest, 'Join');
-  await guest.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000 });
-  await host.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000 });
+  await guest.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000, polling: 250 });
+  await host.waitForFunction(() => document.querySelectorAll('.lobby-player').length === 2, { timeout: 10000, polling: 250 });
+  await host.bringToFront();
   total += await check(host, 'mp-lobby-host', size);
+  await guest.bringToFront();
   total += await check(guest, 'mp-lobby-guest', size);
+  await host.bringToFront();
   await clickText(host, 'Start the day');
   try {
-    await Promise.all([host, guest].map((p) => p.waitForFunction(() => document.querySelector('.hud'), { timeout: 10000 })));
+    await Promise.all([host, guest].map((p) => p.waitForFunction(() => document.querySelector('.hud'), { timeout: 10000, polling: 250 })));
   } catch (e) {
     for (const [name, p] of [['host', host], ['guest', guest]] as const) {
       await p.screenshot({ path: join(OUT, `mp-stuck-${name}.png`) as `${string}.png` });
@@ -206,11 +211,31 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   const towers = await guest.evaluate(() => (window as unknown as { cad: { session: { game: { towers: { owner: number }[] } } } }).cad.session.game.towers.map((t) => t.owner));
   console.log(`  towers seen by the guest, by owner: ${JSON.stringify(towers)}`);
   if (towers.length !== 2) total += 1;
+  await host.bringToFront();
   total += await check(host, 'mp-game-host', size);
+  await guest.bringToFront();
   total += await check(guest, 'mp-game-guest', size);
   await host.close();
   await guest.close();
   return total;
+}
+
+/** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
+async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  try {
+    return await mpFlow(browser, errors);
+  } catch (e) {
+    const pages = await browser.pages();
+    for (let i = 0; i < pages.length; i++) {
+      const p = pages[i];
+      if (p.url() === 'about:blank') continue;
+      await p.bringToFront();
+      await p.screenshot({ path: join(OUT, `mp-fail-${i}.png`) as `${string}.png` }).catch(() => {});
+      const text = await p.evaluate(() => document.getElementById('ui')?.innerText ?? '').catch(() => '');
+      console.log(`  page ${i} (${p.url()}) shows: ${text.replace(/\s+/g, ' ').slice(0, 260)}`);
+    }
+    throw e;
+  }
 }
 
 class Done extends Error {}
@@ -225,7 +250,7 @@ async function run(): Promise<void> {
   const errors: string[] = [];
   try {
     if (args.includes('--mp-only')) {
-      total += await mpFlow(browser, errors);
+      total += await mpFlowLogged(browser, errors);
       throw new Done();
     }
     for (const [w, hgt] of SIZES) {
@@ -339,7 +364,7 @@ async function run(): Promise<void> {
     total += await check(page, 'won', size);
     await page.close();
 
-    if (args.includes('--mp')) total += await mpFlow(browser, errors);
+    if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;
   } finally {
