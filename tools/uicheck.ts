@@ -220,6 +220,88 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   return total;
 }
 
+/** Level 2: all the new towers, the first Chatterbox, The Repair Guy, and the new tower panels. */
+async function level2Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 2)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l2: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  total += await check(page, 'l2-career', size);
+  await clickText(page, 'Coffee Corner');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    start(): void;
+    step(): void;
+    phase: string;
+    waveIndex: number;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string }[];
+  };
+  const placed = await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    const g = s.game;
+    g.coffee = 3000;
+    const out: string[] = [];
+    const tryPlace = (d: string, x: number, y: number) => {
+      const r = g.place(d, x, y);
+      out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
+      return r.tower;
+    };
+    tryPlace('autoreply', 7, 5);
+    tryPlace('autoreply', 9, 4);
+    tryPlace('autoreply', 14, 4);
+    const sh = tryPlace('shredder', 7, 7);
+    const hp = tryPlace('headphones', 10, 3);
+    const art = tryPlace('artillery', 18, 5);
+    if (sh) for (let i = 0; i < 3; i++) g.upgrade(sh.id, 0);
+    if (hp) for (let i = 0; i < 2; i++) g.upgrade(hp.id, 0);
+    if (art) for (let i = 0; i < 3; i++) g.upgrade(art.id, 0);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      const end = 60 * 600;
+      for (let i = 0; i < end && g.phase === 'running'; i++) {
+        g.step();
+        if (what === 'chatter' && g.enemies.some((e) => e.type === 'chatterbox')) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave');
+      g.events.push(...keep.slice(-2));
+      return `${g.phase} wave ${g.waveIndex}`;
+    }, stop);
+  console.log(`  ${await ff('chatter')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l2-chatterbox', size);
+  for (const def of ['shredder', 'headphones', 'artillery']) {
+    await page.evaluate((d) => {
+      const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+      s.selected = s.game.towers.find((t) => t.defId === d)?.id ?? null;
+    }, def);
+    total += await check(page, `l2-panel-${def}`, size);
+  }
+  await page.keyboard.press('Escape');
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l2-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -249,6 +331,10 @@ async function run(): Promise<void> {
   let total = 0;
   const errors: string[] = [];
   try {
+    if (args.includes('--l2-only')) {
+      total += await level2Flow(browser, errors);
+      throw new Done();
+    }
     if (args.includes('--mp-only')) {
       total += await mpFlowLogged(browser, errors);
       throw new Done();
@@ -364,6 +450,7 @@ async function run(): Promise<void> {
     total += await check(page, 'won', size);
     await page.close();
 
+    total += await level2Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

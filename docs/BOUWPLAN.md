@@ -12,13 +12,14 @@ Elke fase eindigt live op game.makkers.net, met tests, balansmeting en een UI-co
 - Eindscherm (WHAT HURT YOU), feedback met één knop, rondecijfers naar de relay (SQLite).
 - Tests: regels, economie, content, balans-bots, relay, UI-controle in headless Chrome.
 
-## Fase 2: het junior-blok (v0.2 tot v0.5)
+## Tussendoor (KLAAR): upgrades zoals Bloons (v0.2) en multiplayer (v0.3)
+
+## Fase 2: het junior-blok (v0.4 en verder)
 
 Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 
-1. **Level 2 Coffee Corner**: Headphones, Office Artillery, The Shredder; The Chatterbox en
-   The Repair Guy (geen Coffee zolang hij leeft). Softlock-regel: Headphones vóór de eerste
-   Chatterbox.
+1. **Level 2 Coffee Corner** (KLAAR, v0.4.0): Headphones, Office Artillery, The Shredder; The
+   Chatterbox, The Old Guard, The Board Member en The Repair Guy.
 2. **Level 3 Meeting Room**: Quick Reply, The Presenter, de projector-mini-game.
 3. **Level 4 Canteen**: Thumbtacks, Self-Service, The Impersonator (onzichtbaar), The Cleaner,
    lunchpauze-zwerm, natte-vloer-vakken.

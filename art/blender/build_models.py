@@ -463,6 +463,258 @@ def b_door():
     return root
 
 
+# ---------------------------------------------------------------- level 2 towers
+
+def b_headphones_1():
+    root = empty("headphones_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    case = box("Case", (0.16, 0.1, 0.07), loc=(0, -0.02, h), material=mat("plastic_white"), bevel=0.03)
+    lid_line = box("CaseLine", (0.165, 0.105, 0.006), loc=(0, -0.02, h + 0.045), material=mat("metal_light"))
+    buds = [ball(f"Bud{i}", 0.035, loc=(x, 0.14, h + 0.03), material=mat("plastic_white"), subdiv=1) for i, x in enumerate((-0.08, 0.08))]
+    stems = [box(f"Stem{i}", (0.02, 0.02, 0.06), loc=(x, 0.14, h), material=mat("plastic_white")) for i, x in enumerate((-0.08, 0.08))]
+    led = box("Led", (0.02, 0.006, 0.01), loc=(0, -0.072, h + 0.03), material=mat("plant", emit=2.0))
+    ob = join("headphones_1_mesh", parts + [case, lid_line, led] + buds + stems)
+    parent(ob, root)
+    return root
+
+
+def _headset(x, y, z, scale, band_mat, cup_mat, pad_mat):
+    s = scale
+    parts = []
+    for side in (-1, 1):
+        parts.append(cyl(f"Cup{side}", 0.07 * s, 0.05 * s, loc=(x + side * 0.12 * s, y, z), material=cup_mat, verts=14, rot=(0, math.pi / 2, 0)))
+        parts.append(cyl(f"Pad{side}", 0.06 * s, 0.02 * s, loc=(x + side * 0.095 * s, y, z), material=pad_mat, verts=14, rot=(0, math.pi / 2, 0)))
+        parts.append(box(f"Arm{side}", (0.02 * s, 0.03 * s, 0.12 * s), loc=(x + side * 0.13 * s, y, z + 0.05 * s), material=band_mat))
+    parts.append(box("Band", (0.28 * s, 0.035 * s, 0.025 * s), loc=(x, y, z + 0.17 * s), material=band_mat, bevel=0.008))
+    return parts
+
+
+def b_headphones_2():
+    root = empty("headphones_2")
+    h = 0.42
+    parts = side_desk("Desk")
+    stand = box("StandBase", (0.14, 0.12, 0.02), loc=(0, 0.04, h), material=mat("wood_dark"))
+    pole = cyl("Pole", 0.015, 0.22, loc=(0, 0.04, h + 0.02), material=mat("metal"), verts=8)
+    hook = box("Hook", (0.24, 0.04, 0.02), loc=(0, 0.04, h + 0.24), material=mat("metal"))
+    parts += [stand, pole, hook]
+    parts += _headset(0, 0.04, h + 0.12, 1.0, mat("plastic_black"), mat("plastic_black"), mat("plant"))
+    ob = join("headphones_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_3():
+    root = empty("headphones_3")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_black")
+    foam = [box(f"Foam{i}", (0.18, 0.05, 0.18), loc=(-0.28 + i * 0.28, 0.27, h), material=mat("charcoal", rough=1.0), bevel=0.02) for i in range(3)]
+    parts += foam
+    parts += _headset(0, -0.02, h + 0.1, 1.45, mat("metal"), mat("plant_dark"), mat("plastic_black"))
+    meter = box("Meter", (0.2, 0.04, 0.07), loc=(0.27, -0.24, h), material=mat("plastic_black"), bevel=0.006)
+    bars = [box(f"Bar{i}", (0.02, 0.042, 0.015 + i * 0.01), loc=(0.2 + i * 0.035, -0.242, h + 0.02), material=mat("plant", emit=1.8)) for i in range(5)]
+    ob = join("headphones_3_mesh", parts + [meter] + bars)
+    parent(ob, root)
+    return root
+
+
+def b_artillery_1():
+    """Rubber Band: a wooden Y slingshot standing upright, band pulled tight."""
+    root = empty("artillery_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    foot = box("Foot", (0.16, 0.12, 0.03), loc=(0, 0.05, h), material=mat("wood_dark"), bevel=0.01)
+    handle = cyl("Handle", 0.035, 0.2, loc=(0, 0.05, h + 0.03), material=mat("wood"), verts=10)
+    top = h + 0.23
+    arms = [cyl(f"Fork{i}", 0.03, 0.18, loc=(0, 0.05, top), material=mat("wood"), verts=10, rot=(0, a, 0)) for i, a in enumerate((-0.5, 0.5))]
+    tip = 0.18 * math.sin(0.5)
+    tip_z = top + 0.18 * math.cos(0.5)
+    band = box("Band", (2 * tip + 0.04, 0.015, 0.02), loc=(0, 0.05, tip_z - 0.01), material=mat("red"))
+    pouch = box("Pouch", (0.06, 0.04, 0.04), loc=(0, -0.02, tip_z - 0.03), material=mat("red"))
+    clips = [box(f"Clip{i}", (0.05, 0.012, 0.03), loc=(-0.25 + i * 0.07, -0.22, h), material=mat("metal_light", metal=0.7, rough=0.3)) for i in range(3)]
+    ob = join("artillery_1_mesh", parts + [foot, handle, band, pouch] + arms + clips)
+    parent(ob, root)
+    return root
+
+
+def _stapler(x, y, z, s, body, top):
+    base = box("SBase", (0.12 * s, 0.4 * s, 0.03 * s), loc=(x, y, z), material=mat("plastic_black"), bevel=0.01)
+    arm = box("SArm", (0.1 * s, 0.38 * s, 0.07 * s), loc=(x, y + 0.01 * s, z + 0.035 * s), material=body, bevel=0.015)
+    cap = box("STop", (0.11 * s, 0.3 * s, 0.03 * s), loc=(x, y - 0.03 * s, z + 0.1 * s), material=top, bevel=0.01)
+    hinge = cyl("SHinge", 0.025 * s, 0.13 * s, loc=(x - 0.065 * s, y + 0.17 * s, z + 0.06 * s), material=mat("metal"), verts=10, rot=(0, math.pi / 2, 0))
+    return [base, arm, cap, hinge]
+
+
+def b_artillery_2():
+    root = empty("artillery_2")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _stapler(0, 0, h, 1.2, mat("red", rough=0.4), mat("metal_light", metal=0.7, rough=0.3))
+    box_ = box("StapleBox", (0.1, 0.06, 0.04), loc=(0.26, -0.2, h), material=mat("yellow"))
+    ob = join("artillery_2_mesh", parts + [box_])
+    parent(ob, root)
+    return root
+
+
+def b_artillery_3():
+    root = empty("artillery_3")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="metal")
+    turret = cyl("Turret", 0.16, 0.06, loc=(0, 0.02, h), material=mat("metal"), verts=12)
+    gun = box("Gun", (0.16, 0.42, 0.14), loc=(0, -0.02, h + 0.06), material=mat("red", rough=0.4), bevel=0.025)
+    nose = box("Nose", (0.1, 0.12, 0.08), loc=(0, -0.28, h + 0.09), material=mat("metal_light", metal=0.8, rough=0.3), bevel=0.01)
+    grip = box("Grip", (0.07, 0.08, 0.18), loc=(0, 0.14, h + 0.02), material=mat("plastic_black"), bevel=0.01)
+    mag = box("Mag", (0.05, 0.3, 0.05), loc=(0, -0.02, h + 0.2), material=mat("yellow"), bevel=0.008)
+    hose = cyl("Hose", 0.018, 0.4, loc=(0.1, 0.18, h + 0.05), material=mat("plastic_black"), verts=8, rot=(0, 1.3, 0))
+    ob = join("artillery_3_mesh", parts + [turret, gun, nose, grip, mag, hose])
+    parent(ob, root)
+    return root
+
+
+def b_shredder_1():
+    root = empty("shredder_1")
+    bin_ = cyl("Bin", 0.2, 0.42, loc=(0, 0, 0), material=mat("metal", rough=0.5, metal=0.4), verts=14, radius_top=0.24)
+    rim = cyl("Rim", 0.25, 0.03, loc=(0, 0, 0.42), material=mat("metal_light", metal=0.6, rough=0.3), verts=14)
+    papers = [box(f"Paper{i}", (0.16, 0.12, 0.02), loc=(0.03 * (i - 1), 0.02 * i, 0.4 + 0.02 * i), material=mat("paper"), rot_z=i * 0.7) for i in range(3)]
+    ball_ = ball("Wad", 0.06, loc=(0.06, -0.05, 0.47), material=mat("paper"), subdiv=1)
+    ob = join("shredder_1_mesh", [bin_, rim, ball_] + papers)
+    parent(ob, root)
+    return root
+
+
+def b_shredder_2():
+    root = empty("shredder_2")
+    bin_ = box("Bin", (0.42, 0.3, 0.42), loc=(0, 0, 0), material=mat("plastic_black"), bevel=0.02)
+    window = box("Window", (0.3, 0.01, 0.2), loc=(0, -0.152, 0.1), material=mat("window", rough=0.1))
+    strips = [box(f"Strip{i}", (0.008, 0.012, 0.15), loc=(-0.12 + i * 0.03, -0.153, 0.12), material=mat("paper")) for i in range(9)]
+    head = box("Head", (0.44, 0.32, 0.12), loc=(0, 0, 0.42), material=mat("teal", rough=0.5), bevel=0.02)
+    slot = box("Slot", (0.3, 0.02, 0.01), loc=(0, 0, 0.545), material=mat("plastic_black"))
+    sheet = box("Sheet", (0.2, 0.006, 0.18), loc=(0, 0, 0.55), material=mat("paper"))
+    led = box("Led", (0.02, 0.02, 0.01), loc=(0.17, -0.1, 0.545), material=mat("plant", emit=2.0))
+    ob = join("shredder_2_mesh", [bin_, window, head, slot, sheet, led] + strips)
+    parent(ob, root)
+    return root
+
+
+def b_shredder_3():
+    root = empty("shredder_3")
+    body = box("Body", (0.7, 0.55, 0.7), loc=(0, 0, 0), material=mat("teal", rough=0.5), bevel=0.03)
+    hopper = box("Hopper", (0.6, 0.45, 0.18), loc=(0, 0, 0.7), material=mat("metal_light", metal=0.6, rough=0.3), taper=1.25, bevel=0.01)
+    stripe = box("Warn", (0.72, 0.01, 0.06), loc=(0, -0.278, 0.55), material=mat("yellow"))
+    panel = box("Panel", (0.18, 0.02, 0.12), loc=(0.2, -0.28, 0.3), material=mat("plastic_black"))
+    btn = box("Btn", (0.05, 0.03, 0.05), loc=(0.2, -0.29, 0.34), material=mat("red", emit=1.2))
+    pile = [box(f"Pile{i}", (0.25, 0.2, 0.03), loc=(-0.38 + 0.02 * i, -0.2, 0.03 * i), material=mat("paper"), rot_z=0.3 * i) for i in range(4)]
+    ob = join("shredder_3_mesh", [body, hopper, stripe, panel, btn] + pile)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- level 2 colleagues
+
+def b_chatterbox():
+    s = 1.0
+    root, body, hz = person("chatterbox", "pink", "charcoal", "skin_2", "hair_blond", style="long", h=s)
+    cardigan = box("Cardigan", (0.36, 0.21, 0.3), loc=(0, 0, 0.36), material=mat("#8e6fbf"), bevel=0.02, taper=0.92)
+    acc = [cardigan]
+    # The speech bubble that never stops.
+    bubble = ball("Bubble", 0.14, loc=(0.18, 0, hz + 0.32), material=mat("plastic_white", emit=0.3), subdiv=2, scale=(1.3, 0.5, 1.0))
+    tail = box("BubbleTail", (0.06, 0.04, 0.08), loc=(0.1, 0, hz + 0.18), material=mat("plastic_white", emit=0.3), taper=0.2)
+    dots = [ball(f"Dot{i}", 0.022, loc=(0.1 + i * 0.07, -0.07, hz + 0.32), material=mat("charcoal"), subdiv=1) for i in range(3)]
+    acc += [bubble, tail] + dots
+    props = join("Props", acc)
+    parent(props, root)
+    arm = _arm(root, "L")
+    arm.rotation_euler[0] = -1.9
+    hp = _hand_world(_arm(root, "R"), s)
+    mug = cyl("Mug", 0.045, 0.1, loc=(hp.x, hp.y - 0.05, hp.z - 0.05), material=mat("teal"), verts=10)
+    _hold(root, "R", s, [mug])
+    return root
+
+
+def b_oldguard():
+    s = 0.98
+    root, body, hz = person("oldguard", "khaki", "charcoal", "skin_1", "hair_grey", style="bald", h=s, arms_forward=-1.1)
+    vest = box("Vest", (0.35, 0.21, 0.22), loc=(0, 0, 0.47 * s), material=mat("wood_dark"), bevel=0.02)
+    glasses = box("Glasses", (0.16, 0.02, 0.03), loc=(0, -0.125 * s, hz), material=mat("metal"))
+    hp = _hand_world(_arm(root, "R"), s)
+    archive = box("Archive", (0.42, 0.3, 0.28), loc=(0, hp.y - 0.08, hp.z - 0.2), material=mat("cardboard"), bevel=0.01)
+    label = box("Label", (0.18, 0.01, 0.08), loc=(0, hp.y - 0.235, hp.z - 0.1), material=mat("paper"))
+    stamp = box("Stamp", (0.1, 0.012, 0.03), loc=(0, hp.y - 0.237, hp.z - 0.08), material=mat("red"))
+    lid = box("Lid", (0.44, 0.32, 0.04), loc=(0, hp.y - 0.08, hp.z + 0.06), material=mat("cardboard"), bevel=0.008)
+    acc = join("Props", [vest, glasses, archive, label, stamp, lid])
+    parent(acc, root)
+    return root
+
+
+def b_boardmember():
+    """Never actually in the building: a telepresence robot with his face on the screen."""
+    root = empty("boardmember")
+    base = cyl("Base", 0.2, 0.08, loc=(0, 0, 0.03), material=mat("plastic_black"), verts=16)
+    wheels = [cyl(f"Wheel{i}", 0.04, 0.04, loc=(x, y, 0.0), material=mat("charcoal"), verts=8) for i, (x, y) in enumerate(((0.12, 0.08), (-0.12, 0.08), (0, -0.14)))]
+    pole = cyl("Pole", 0.025, 0.85, loc=(0, 0, 0.1), material=mat("metal_light", metal=0.7, rough=0.3), verts=10)
+    frame = box("Frame", (0.36, 0.04, 0.26), loc=(0, 0, 0.9), material=mat("plastic_black"), bevel=0.02)
+    screen = box("Screen", (0.32, 0.01, 0.22), loc=(0, -0.022, 0.92), material=mat("navy", emit=1.0))
+    face = ball("Face", 0.06, loc=(0, -0.03, 1.03), material=mat("skin_1", emit=0.6), subdiv=1, scale=(1, 0.2, 1.1))
+    tie = box("Tie", (0.03, 0.01, 0.07), loc=(0, -0.03, 0.94), material=mat("red", emit=0.6), taper=0.5)
+    suit = box("Suit", (0.18, 0.008, 0.06), loc=(0, -0.029, 0.93), material=mat("charcoal", emit=0.3))
+    cam = ball("Cam", 0.015, loc=(0, -0.025, 1.05), material=mat("plastic_white", emit=2.0), subdiv=1)
+    ob = join("Body", [base, pole, frame, screen, suit, face, tie, cam] + wheels)
+    parent(ob, root)
+    return root
+
+
+def b_repairguy():
+    s = 1.45
+    root, body, hz = person("repairguy", "orange", "denim", "skin_3", "hair_brown", style="short", h=s)
+    bib = box("Bib", (0.24 * s, 0.012 * s, 0.2 * s), loc=(0, -0.104 * s, 0.42 * s), material=mat("denim"))
+    straps = [box(f"Strap{i}", (0.03 * s, 0.012 * s, 0.14 * s), loc=(x * s, -0.104 * s, 0.56 * s), material=mat("denim")) for i, x in enumerate((-0.09, 0.09))]
+    cap = cyl("Cap", 0.12 * s, 0.06 * s, loc=(0, 0.01 * s, hz + 0.07 * s), material=mat("orange"), verts=12)
+    visor = box("Visor", (0.18 * s, 0.1 * s, 0.015 * s), loc=(0, -0.11 * s, hz + 0.07 * s), material=mat("orange"))
+    acc = join("Props", [bib, cap, visor] + straps)
+    parent(acc, root)
+    hp = _hand_world(_arm(root, "R"), s)
+    toolbox = box("Toolbox", (0.16 * s, 0.34 * s, 0.16 * s), loc=(hp.x, hp.y, hp.z - 0.2 * s), material=mat("red", rough=0.4), bevel=0.01)
+    handle = box("TBHandle", (0.03 * s, 0.2 * s, 0.04 * s), loc=(hp.x, hp.y, hp.z - 0.04 * s), material=mat("plastic_black"))
+    _hold(root, "R", s, [toolbox, handle])
+    hl = _hand_world(_arm(root, "L"), s)
+    wrench = box("Wrench", (0.03 * s, 0.03 * s, 0.22 * s), loc=(hl.x, hl.y - 0.03 * s, hl.z - 0.12 * s), material=mat("metal_light", metal=0.8, rough=0.3))
+    jaw = box("Jaw", (0.07 * s, 0.03 * s, 0.05 * s), loc=(hl.x, hl.y - 0.03 * s, hl.z - 0.15 * s), material=mat("metal_light", metal=0.8, rough=0.3))
+    _hold(root, "L", s, [wrench, jaw])
+    return root
+
+
+# ---------------------------------------------------------------- level 2 decor
+
+def b_coffee_bar():
+    root = empty("coffee_bar")
+    counter = box("Counter", (2.8, 0.7, 0.9), loc=(0, 0, 0), material=mat("wood_dark"), bevel=0.02)
+    top = box("CTop", (2.9, 0.78, 0.05), loc=(0, 0, 0.9), material=mat("plastic_white"), bevel=0.01)
+    parts = [counter, top]
+    parts += _stapler(0, 0, 0, 0.001, mat("red"), mat("red"))[:0]
+    machine = box("Machine", (0.5, 0.36, 0.38), loc=(-0.7, 0.05, 0.95), material=mat("metal_light", metal=0.7, rough=0.3), bevel=0.02)
+    cups = [cyl(f"CCup{i}", 0.04, 0.08, loc=(0.1 + 0.12 * i, -0.12, 0.95), material=mat("plastic_white"), verts=10) for i in range(5)]
+    jar = cyl("Jar", 0.08, 0.2, loc=(0.9, 0.05, 0.95), material=mat("window", rough=0.1), verts=10)
+    beans = cyl("BeansJar", 0.07, 0.12, loc=(0.9, 0.05, 0.96), material=mat("coffee"), verts=10)
+    sign = box("Sign", (0.6, 0.04, 0.3), loc=(0, 0.3, 1.1), material=mat("plastic_black"), bevel=0.01)
+    chalk = box("Chalk", (0.4, 0.045, 0.04), loc=(0, 0.28, 1.25), material=mat("plastic_white"))
+    ob = join("coffee_bar_mesh", parts + [machine, jar, beans, sign, chalk] + cups)
+    parent(ob, root)
+    return root
+
+
+def b_vending():
+    root = empty("vending")
+    body = box("Body", (0.8, 0.7, 1.7), loc=(0, 0, 0), material=mat("red", rough=0.4), bevel=0.03)
+    glass = box("Glass", (0.5, 0.02, 1.1), loc=(-0.08, -0.35, 0.45), material=mat("window", rough=0.1, emit=0.3))
+    rows = [box(f"Row{i}", (0.46, 0.03, 0.02), loc=(-0.08, -0.34, 0.6 + 0.25 * i), material=mat("metal_light")) for i in range(4)]
+    snacks = [box(f"Snack{i}{j}", (0.08, 0.04, 0.1), loc=(-0.26 + 0.12 * j, -0.33, 0.62 + 0.25 * i), material=mat(["yellow", "teal", "orange", "pink"][(i + j) % 4])) for i in range(4) for j in range(4)]
+    keypad = box("Keypad", (0.14, 0.03, 0.3), loc=(0.27, -0.35, 0.9), material=mat("plastic_black"))
+    slot = box("Slot", (0.5, 0.03, 0.12), loc=(-0.08, -0.35, 0.18), material=mat("plastic_black"))
+    ob = join("vending_mesh", [body, glass, keypad, slot] + rows + snacks)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -481,6 +733,21 @@ BUILDERS = {
     "printer": b_printer,
     "player_desk": b_player_desk,
     "door": b_door,
+    "headphones_1": b_headphones_1,
+    "headphones_2": b_headphones_2,
+    "headphones_3": b_headphones_3,
+    "artillery_1": b_artillery_1,
+    "artillery_2": b_artillery_2,
+    "artillery_3": b_artillery_3,
+    "shredder_1": b_shredder_1,
+    "shredder_2": b_shredder_2,
+    "shredder_3": b_shredder_3,
+    "chatterbox": b_chatterbox,
+    "oldguard": b_oldguard,
+    "boardmember": b_boardmember,
+    "repairguy": b_repairguy,
+    "coffee_bar": b_coffee_bar,
+    "vending": b_vending,
 }
 
 

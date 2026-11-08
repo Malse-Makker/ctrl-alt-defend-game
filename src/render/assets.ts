@@ -22,6 +22,21 @@ export const MODEL_NAMES = [
   'printer',
   'player_desk',
   'door',
+  'headphones_1',
+  'headphones_2',
+  'headphones_3',
+  'artillery_1',
+  'artillery_2',
+  'artillery_3',
+  'shredder_1',
+  'shredder_2',
+  'shredder_3',
+  'chatterbox',
+  'oldguard',
+  'boardmember',
+  'repairguy',
+  'coffee_bar',
+  'vending',
 ] as const;
 
 export class Assets {

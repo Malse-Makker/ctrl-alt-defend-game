@@ -3,6 +3,22 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.4.0] - 2026-11-08
+
+### New
+- Level 2, Coffee Corner: 22 waves on long straights. Opens once you finish level 1.
+- Headphones: every few seconds everyone in range slows right down. NOISE CANCELLING stuns (and cannot be talked quiet), VOLUME reaches further and slows all the time, FOCUS MUSIC makes every hit land harder and finally speeds up your towers nearby.
+- Office Artillery: reaches the whole floor and breaks through shields. HEAVY DUTY hits harder and pins colleagues to the carpet, RAPID FIRE reloads faster and hits three at once, PRECISION sees hidden colleagues and pays Coffee.
+- The Shredder: a zone that slows, reveals hidden colleagues and shares its damage over everyone inside. CROSS-CUT makes the damage stick after the zone, PAPER JAM stops everyone in it for a moment, CONFIDENTIAL pays Coffee for what it shreds.
+- The Chatterbox: every tower near him stops working while he talks. Only Noise Cancelling headphones shut him up.
+- The Old Guard: drags the archive box along. Light hits bounce off it, and the Shredder may not touch it.
+- The Board Member: attends on a screen. Nothing in person touches him.
+- Boss: The Repair Guy. No Coffee comes in at all while he is on the floor, and his toolbox stops light hits.
+- Stunned colleagues show stars, silenced towers show a crossed-out speech bubble, and your Coffee counter turns red while income is blocked.
+
+### Changed
+- Nothing can hit a colleague who is still outside the door.
+
 ## [0.3.1] - 2026-11-08
 
 ### Changed

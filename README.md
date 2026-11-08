@@ -17,10 +17,16 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.3.0)
+## Wat er nu in zit (v0.4.0)
 
-- **Level 1, Open-Plan Office**: 21 golven en een eindbaas.
-- **Torens**: Coffee Machine (maakt Coffee) en Auto-Reply (schiet).
+- **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
+- **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
+  als je level 1 haalt.
+- **Torens**: Coffee Machine, Auto-Reply, Headphones (vertraagt en stunt een hele straal),
+  Office Artillery (raakt de hele verdieping, breekt schilden) en The Shredder (zone die vertraagt,
+  onthult en schade verdeelt).
+- **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
+  (archiefdoos als schild, de Shredder mag er niet aan) en Board Member (immuun voor in persoon).
 - **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
   tier 4, een tweede naar tier 2, het derde blijft dicht (4-2-0). Tier 3 verandert wat de toren
   doet, tier 4 is het paradepaardje.

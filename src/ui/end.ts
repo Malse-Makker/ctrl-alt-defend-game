@@ -59,7 +59,7 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
 
   // Towers
   const rows = game.towers
-    .filter((t) => t.def.role === 'damage')
+    .filter((t) => t.def.role !== 'economy')
     .sort((a, b) => b.stats.damage - a.stats.damage)
     .map((t) =>
       h(

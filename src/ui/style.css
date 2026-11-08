@@ -428,6 +428,14 @@ button:disabled {
   color: var(--bad);
 }
 
+.stat.blocked {
+  background: rgba(229, 83, 75, 0.25);
+}
+
+.stat.blocked .v {
+  text-decoration: line-through;
+}
+
 .stat.flash {
   animation: flash 0.5s ease-out;
 }

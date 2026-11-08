@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms';
+  kind: 'headofcomms' | 'repairguy';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -16,6 +16,8 @@ export interface BossDef {
   phaseBurst: number;
   /** Speed multiplier in his last phase. */
   phase3Speed: number;
+  /** No Coffee comes in at all while he is on the floor (The Repair Guy). */
+  blocksIncome?: boolean;
   intro: string;
 }
 
@@ -37,6 +39,14 @@ export interface ColleagueDef {
   immune?: DamageClass;
   /** Cannot be targeted until revealed, unless the tower can see hidden colleagues. */
   invisible?: boolean;
+  /** Shredder zones do nothing to him (The Old Guard's archive: legally required to be kept). */
+  zoneProof?: boolean;
+  /** Towers within this radius stop working while he walks past (The Chatterbox). */
+  silence?: number;
+  /** Ignores slows, and only stuns from this tower type work on him. */
+  stunOnlyFrom?: string;
+  /** Share of a stun that still lands (bosses shrug most of it off). 1 = full. */
+  stunResist?: number;
   split?: { into: string; count: number };
   boss?: BossDef;
   /** Visual scale and the one loud colour that makes him readable on a busy floor. */
@@ -138,12 +148,98 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
       phase3Speed: 1.8,
       intro: 'His Interns walk in front of him and take your shots. Set a few towers to Most HP.',
     },
+    stunResist: 0.4,
     scale: 1,
     accent: '#c8423b',
     model: 'headofcomms',
     armSwing: 0.4,
   },
+  chatterbox: {
+    id: 'chatterbox',
+    name: 'The Chatterbox',
+    role: 'Disruptor',
+    quote: 'Did you see what happened at the party?',
+    ability: 'Every tower near him stops working while he talks. Ignores slowing down, and only proper Noise Cancelling shuts him up.',
+    counter: 'Headphones with NOISE CANCELLING at tier 2 or more: he cannot talk those quiet, and they stun him. Or keep your towers away from his route.',
+    hp: 22,
+    speed: 1.875,
+    focus: 5,
+    rewardRate: REWARD_SPECIAL,
+    silence: 2.375,
+    stunOnlyFrom: 'headphones',
+    scale: 1,
+    accent: '#b48ce0',
+    model: 'chatterbox',
+    armSwing: 0.9,
+  },
+  oldguard: {
+    id: 'oldguard',
+    name: 'The Old Guard',
+    role: 'Tank',
+    quote: 'We tried that in 1998.',
+    ability: 'Drags the archive box along. Hits under 10 bounce off it, and the Shredder may not touch it: that archive is legally required to be kept.',
+    counter: 'Office Artillery breaks the box. Light hits bounce off, so do not count on Auto-Reply alone.',
+    hp: 46,
+    shield: 30,
+    shieldMinHit: 10,
+    speed: 1.25,
+    focus: 8,
+    rewardRate: REWARD_SPECIAL,
+    zoneProof: true,
+    scale: 1,
+    accent: '#a9a6a0',
+    model: 'oldguard',
+    armSwing: 0,
+  },
+  boardmember: {
+    id: 'boardmember',
+    name: 'The Board Member',
+    role: 'Immune to in-person',
+    quote: 'Can everyone hear me? I am on the train.',
+    ability: 'Never actually in the building: he attends on a screen. Nothing in person touches him, not even the Shredder.',
+    counter: 'Write to him. Auto-Reply and everything else that is WRITTEN works. In-person towers do nothing at all.',
+    hp: 40,
+    speed: 1.5,
+    focus: 8,
+    rewardRate: REWARD_SPECIAL,
+    immune: 'in_person',
+    scale: 1,
+    accent: '#2f3d5c',
+    model: 'boardmember',
+    armSwing: 0,
+  },
+  repairguy: {
+    id: 'repairguy',
+    name: 'The Repair Guy',
+    role: 'Boss',
+    quote: 'Who touched the machine?',
+    ability:
+      'Here to "repair" the coffee machine. No Coffee comes in at all while he is on the floor. His toolbox stops hits under 10, and the queue for the coffee follows him in.',
+    counter: 'Office Artillery breaks the toolbox. Save up before he arrives: you will not earn a thing until he is gone.',
+    hp: 520,
+    shield: 100,
+    shieldMinHit: 10,
+    speed: 1.2,
+    focus: 25,
+    rewardFlat: 30,
+    boss: {
+      kind: 'repairguy',
+      addType: 'chaser',
+      addEvery: 6,
+      addCount: 3,
+      phaseBurst: 5,
+      phase3Speed: 1.6,
+      blocksIncome: true,
+      intro: 'No Coffee until he is gone, and light hits bounce off his toolbox. Office Artillery.',
+    },
+    stunResist: 0.3,
+    scale: 1,
+    accent: '#e67e3a',
+    model: 'repairguy',
+    armSwing: 0.4,
+  },
 };
+
 
 export function killReward(def: ColleagueDef): number {
   if (def.rewardFlat !== undefined) return def.rewardFlat;

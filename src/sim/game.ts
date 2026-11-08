@@ -59,6 +59,18 @@ export interface Enemy {
   /** Speed factor from slowing auras this tick (Legal Hold). 1 = none. */
   aura: number;
   revealed: boolean;
+  /** Extra damage from every hit while this lasts (Focus Music). */
+  vulnerable: number;
+  vulnerableTime: number;
+  /** Stunned colleagues take this much more damage (Soundproof Booth). */
+  stunnedTakes: number;
+  /** Shredder damage that keeps going after leaving the zone (Sticky Paper). */
+  bleedDps: number;
+  bleedTime: number;
+  bleedTower: number;
+  /** Repeated stuns land shorter; recovers after a while without one. */
+  stunFalloff: number;
+  stunRecover: number;
   phase: 1 | 2 | 3;
   addTimer: number;
   /** Spawned mid-route (split or boss add) rather than at the door. */
@@ -89,6 +101,11 @@ export interface Tower {
   abilityTimer: number;
   /** Expense Claim: Coffee waiting to be claimed. */
   pot: number;
+  /** A Chatterbox is talking next to it: it does nothing this tick. */
+  silenced: boolean;
+  /** Reload multiplier from Flow State headphones nearby (1 = none). */
+  rateBuff: number;
+  pulseTimer: number;
   invested: number;
   placedAtWave: number;
   stats: TowerStats;
@@ -110,6 +127,22 @@ export interface LiveTowerStats {
   bank: Effect['bank'] | null;
   tip: number;
   tipEverywhere: number;
+  global: boolean;
+  stunOnHit: number;
+  slow: number;
+  slowTime: number;
+  stun: number;
+  vulnerable: number;
+  stunnedTakes: number;
+  buffRate: number;
+  dot: number;
+  bleed: number;
+  unshared: boolean;
+  stunPulse: Effect['stunPulse'] | null;
+  hpPulse: Effect['hpPulse'] | null;
+  killCoffee: number;
+  waveIncome: number;
+  silenceProof: boolean;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -137,6 +170,7 @@ export type GameEvent =
   | { t: 'coffee'; towerId: number; amount: number; x: number; y: number; toPot: boolean }
   | { t: 'claim'; towerId: number; amount: number; x: number; y: number }
   | { t: 'ability'; towerId: number; x: number; y: number; range: number; hits: number }
+  | { t: 'pulse'; towerId: number; x: number; y: number; range: number; stun: boolean }
   | { t: 'salary'; amount: number; wave: number }
   | { t: 'wave'; index: number; total: number; boss: boolean; early: boolean; points: number }
   | { t: 'bossPhase'; enemyId: number; phase: 2 | 3; called: number }
@@ -196,12 +230,14 @@ export interface TowerSnap {
   dmg: number;
   kills: number;
   coffee: number;
+  /** 1 while a Chatterbox silences it. */
+  sil: number;
 }
 
 /**
  * Everything a player's screen needs, sent by the multiplayer server about ten times a second.
  * Colleagues are packed as number arrays to keep it small:
- * [id, typeIndex, x, y, dirX, dirY, hp, maxHp, shield, maxShield, phase, isAdd, pathIndex, dist]
+ * [id, typeIndex, x, y, dirX, dirY, hp, maxHp, shield, maxShield, phase, isAdd, pathIndex, dist, stunned, slowed]
  */
 export interface Snapshot {
   time: number;
@@ -257,8 +293,42 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     bank: null,
     tip: 0,
     tipEverywhere: 0,
+    global: b.global ?? false,
+    stunOnHit: 0,
+    slow: b.slow ?? 1,
+    slowTime: b.slowTime ?? 0,
+    stun: 0,
+    vulnerable: 0,
+    stunnedTakes: 1,
+    buffRate: 1,
+    dot: b.dot ?? 0,
+    bleed: 0,
+    unshared: false,
+    stunPulse: null,
+    hpPulse: null,
+    killCoffee: 0,
+    waveIncome: 0,
+    silenceProof: false,
   };
+  let dotAdd = 0;
+  let dotMult = 1;
   for (const e of boughtEffects(def, tiers)) {
+    dotAdd += e.dotAdd ?? 0;
+    dotMult *= e.dotMult ?? 1;
+    s.slowTime += e.slowTimeAdd ?? 0;
+    s.vulnerable += e.vulnerableAdd ?? 0;
+    s.killCoffee += e.killCoffee ?? 0;
+    s.waveIncome += e.waveIncome ?? 0;
+    if (e.slow !== undefined) s.slow = Math.min(s.slow, e.slow);
+    if (e.stun !== undefined) s.stun = Math.max(s.stun, e.stun);
+    if (e.stunOnHit !== undefined) s.stunOnHit = Math.max(s.stunOnHit, e.stunOnHit);
+    if (e.stunnedTakes !== undefined) s.stunnedTakes = Math.max(s.stunnedTakes, e.stunnedTakes);
+    if (e.buffRate !== undefined) s.buffRate = Math.min(s.buffRate, e.buffRate);
+    if (e.bleed !== undefined) s.bleed = Math.max(s.bleed, e.bleed);
+    if (e.unshared) s.unshared = true;
+    if (e.silenceProof) s.silenceProof = true;
+    if (e.stunPulse) s.stunPulse = e.stunPulse;
+    if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
     damageMult *= e.damageMult ?? 1;
     intervalMult *= e.intervalMult ?? 1;
@@ -277,7 +347,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.bank) s.bank = e.bank;
   }
   s.damage = (s.damage + damageAdd) * damageMult;
-  s.range *= rangeMult;
+  s.dot = (s.dot + dotAdd) * dotMult;
+  s.range = s.global ? Infinity : s.range * rangeMult;
   if (def.role === 'economy') s.coffeeInterval *= intervalMult;
   else s.interval *= intervalMult;
   s.coffeeAmount = (s.coffeeAmount + coffeeAdd) * coffeeMult;
@@ -388,14 +459,28 @@ export class Game {
     return this.sharedWallet ? 0 : Math.max(0, Math.min(this.wallets.length - 1, player));
   }
 
-  /** Income for the team: in a split game everyone gets an equal share. */
-  private earn(amount: number): void {
-    if (this.sharedWallet) this.wallets[0] += amount;
-    else for (let i = 0; i < this.wallets.length; i++) this.wallets[i] += amount / this.players;
+  /** The Repair Guy is on the floor: no Coffee comes in at all. */
+  get incomeBlocked(): boolean {
+    return this.enemies.some((e) => e.alive && e.def.boss?.blocksIncome);
   }
 
-  /** Income for one player (their own machine, their own sale). */
-  private earnFor(player: number, amount: number): void {
+  /** Income for the team: in a split game everyone gets an equal share. Returns what was paid. */
+  private earn(amount: number): number {
+    if (this.incomeBlocked) return 0;
+    if (this.sharedWallet) this.wallets[0] += amount;
+    else for (let i = 0; i < this.wallets.length; i++) this.wallets[i] += amount / this.players;
+    return amount;
+  }
+
+  /** Income for one player (their own machine). Returns what was paid. */
+  private earnFor(player: number, amount: number): number {
+    if (this.incomeBlocked) return 0;
+    this.wallets[this.walletIndex(player)] += amount;
+    return amount;
+  }
+
+  /** Money that is not income (a sale, a claimed pot): never blocked. */
+  private payTo(player: number, amount: number): void {
     this.wallets[this.walletIndex(player)] += amount;
   }
 
@@ -485,7 +570,7 @@ export class Game {
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
-    if (def.role === 'damage') {
+    if (def.role !== 'economy' && !def.base.global) {
       const reach = def.base.range - 0.2;
       if (this.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > reach) {
         return { ok: false, reason: 'Too far from the walkway to reach anyone.', cost };
@@ -529,6 +614,9 @@ export class Game {
       coffeeTimer: 0,
       abilityTimer: 0,
       pot: 0,
+      silenced: false,
+      rateBuff: 1,
+      pulseTimer: 0,
       invested: check.cost,
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -572,7 +660,7 @@ export class Game {
     if (this.over) return { ok: false, reason: 'The day is over.' };
     if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
     const value = this.sellValueFor(t);
-    this.earnFor(t.owner, value);
+    this.payTo(t.owner, value);
     this.stats.coffeeFromSales += value;
     this.stats.sold++;
     this.towers = this.towers.filter((x) => x !== t);
@@ -588,7 +676,7 @@ export class Game {
     const amount = Math.floor(t.pot);
     if (amount <= 0) return { ok: false, reason: 'The pot is empty.' };
     t.pot -= amount;
-    this.earnFor(t.owner, amount);
+    this.payTo(t.owner, amount);
     this.stats.coffeeFromBank += amount;
     t.stats.coffee += amount;
     this.events.push({ t: 'claim', towerId: t.id, amount, x: t.x, y: t.y });
@@ -671,6 +759,7 @@ export class Game {
         dmg: Math.round(t.stats.damage),
         kills: t.stats.kills,
         coffee: r3(t.stats.coffee),
+        sil: t.silenced ? 1 : 0,
       })),
       enemies: this.enemies.map((e) => [
         e.id,
@@ -687,6 +776,8 @@ export class Game {
         e.isAdd ? 1 : 0,
         e.pathIndex,
         r3(e.dist),
+        e.stunTime > 0 ? 1 : 0,
+        e.slowTime > 0 || e.aura < 1 ? 1 : 0,
       ]),
       stats: this.stats,
     };
@@ -721,6 +812,9 @@ export class Game {
         coffeeTimer: 0,
         abilityTimer: 0,
         pot: 0,
+        silenced: false,
+        rateBuff: 1,
+        pulseTimer: 0,
         invested: 0,
         placedAtWave: s.waveIndex,
         stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -733,6 +827,7 @@ export class Game {
       t.stats.damage = ts.dmg;
       t.stats.kills = ts.kills;
       t.stats.coffee = ts.coffee;
+      t.silenced = ts.sil === 1;
       return t;
     });
     this.enemies = s.enemies.map((a) => {
@@ -756,10 +851,18 @@ export class Game {
         dist: a[13],
         alive: true,
         slowMult: 1,
-        slowTime: 0,
-        stunTime: 0,
+        slowTime: a[15] === 1 ? 0.5 : 0,
+        stunTime: a[14] === 1 ? 0.5 : 0,
         aura: 1,
         revealed: false,
+        vulnerable: 0,
+        vulnerableTime: 0,
+        stunnedTakes: 1,
+        bleedDps: 0,
+        bleedTime: 0,
+        bleedTower: 0,
+        stunFalloff: 1,
+        stunRecover: 0,
         addTimer: 0,
         spawnedAt: 0,
       };
@@ -824,12 +927,18 @@ export class Game {
     this.events.push({ t: 'wave', index: this.waveIndex, total: this.totalWaves, boss, early, points });
   }
 
-  /** Expense Claim pots: a deposit and interest at the start of every wave, never past the cap. */
+  /** Start of a wave: Expense Claim deposits and interest, and Supply Drops. Blocked by the Repair Guy. */
   private payInterest(): void {
+    if (this.incomeBlocked) return;
     for (const t of this.towers) {
-      const bank = this.liveStats(t).bank;
-      if (!bank) continue;
-      t.pot = Math.min(bank.cap, (t.pot + bank.perWave) * (1 + bank.interest));
+      const s = this.liveStats(t);
+      if (s.bank) t.pot = Math.min(s.bank.cap, (t.pot + s.bank.perWave) * (1 + s.bank.interest));
+      if (s.waveIncome > 0) {
+        this.earnFor(t.owner, s.waveIncome);
+        this.stats.coffeeFromMachines += s.waveIncome;
+        t.stats.coffee += s.waveIncome;
+        this.events.push({ t: 'coffee', towerId: t.id, amount: s.waveIncome, x: t.x, y: t.y, toPot: false });
+      }
     }
   }
 
@@ -866,6 +975,14 @@ export class Game {
       stunTime: 0,
       aura: 1,
       revealed: false,
+      vulnerable: 0,
+      vulnerableTime: 0,
+      stunnedTakes: 1,
+      bleedDps: 0,
+      bleedTime: 0,
+      bleedTower: 0,
+      stunFalloff: 1,
+      stunRecover: 0,
       phase: 1,
       addTimer: 4,
       isAdd,
@@ -878,8 +995,10 @@ export class Game {
 
   private speedOf(e: Enemy): number {
     if (e.stunTime > 0) return 0;
-    let s = e.def.speed * e.aura;
-    if (e.slowTime > 0) s *= e.slowMult;
+    // The Chatterbox ignores every slow; only a proper stun stops him.
+    const slowable = !e.def.stunOnlyFrom;
+    let s = e.def.speed * (slowable ? e.aura : 1);
+    if (e.slowTime > 0 && slowable) s *= e.slowMult;
     if (e.def.boss && e.phase >= 3) s *= e.def.boss.phase3Speed;
     return s;
   }
@@ -888,7 +1007,21 @@ export class Game {
     for (const e of this.enemies) {
       if (!e.alive) continue;
       if (e.stunTime > 0) e.stunTime = Math.max(0, e.stunTime - dt);
+      else if ((e.stunRecover -= dt) <= 0) e.stunFalloff = 1;
       if (e.slowTime > 0) e.slowTime = Math.max(0, e.slowTime - dt);
+      if (e.vulnerableTime > 0 && (e.vulnerableTime -= dt) <= 0) e.vulnerable = 0;
+      if (e.bleedTime > 0) {
+        // Sticky Paper: the shredder's damage keeps going after the zone.
+        e.bleedTime -= dt;
+        const owner = this.tower(e.bleedTower);
+        const { dealt } = this.damage(e, e.bleedDps * dt, 'in_person', false);
+        if (owner) owner.stats.damage += dealt;
+        if (!e.alive) {
+          if (owner) owner.stats.kills++;
+          this.onKill(e, 0, owner);
+          continue;
+        }
+      }
       const path = this.paths[e.pathIndex];
       e.dist += this.speedOf(e) * dt;
       if (e.dist >= path.length) {
@@ -903,19 +1036,52 @@ export class Game {
     }
   }
 
-  /** Slowing auras (Legal Hold): the strongest one around a colleague counts. */
+  /**
+   * Everything that works by standing near something, recomputed every tick:
+   * slowing auras (Legal Hold, Party Mode), faster reloads (Flow State), and the Chatterbox
+   * silencing every tower around him unless he is stunned.
+   */
   private updateAuras(): void {
-    const auras: { x: number; y: number; r: number; f: number }[] = [];
+    const slows: { x: number; y: number; r: number; f: number }[] = [];
+    const buffs: { x: number; y: number; r: number; f: number; id: number }[] = [];
     for (const t of this.towers) {
-      if (t.def.role !== 'damage') continue;
+      if (t.def.role === 'economy') continue;
       const s = this.liveStats(t);
-      if (s.slowAura < 1) auras.push({ x: t.x, y: t.y, r: s.range, f: s.slowAura });
+      if (s.slowAura < 1) slows.push({ x: t.x, y: t.y, r: s.range, f: s.slowAura });
+      if (s.buffRate < 1) buffs.push({ x: t.x, y: t.y, r: s.range, f: s.buffRate, id: t.id });
     }
     for (const e of this.enemies) {
       let f = 1;
-      for (const a of auras) if (Math.hypot(e.x - a.x, e.y - a.y) <= a.r) f = Math.min(f, a.f);
+      for (const a of slows) if (Math.hypot(e.x - a.x, e.y - a.y) <= a.r) f = Math.min(f, a.f);
       e.aura = f;
     }
+    const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
+    for (const t of this.towers) {
+      let r = 1;
+      for (const b of buffs) if (b.id !== t.id && Math.hypot(t.x - b.x, t.y - b.y) <= b.r) r = Math.min(r, b.f);
+      t.rateBuff = r;
+      t.silenced =
+        t.def.role !== 'economy' && talkers.length > 0 && !this.liveStats(t).silenceProof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!);
+    }
+  }
+
+  /** A stun from a tower: bosses resist, repeats land shorter, the Chatterbox only fears headphones. */
+  private stunEnemy(e: Enemy, duration: number, from: Tower, takes = 1): boolean {
+    if (e.def.stunOnlyFrom && e.def.stunOnlyFrom !== from.defId) return false;
+    const d = duration * (e.def.stunResist ?? 1) * e.stunFalloff;
+    if (d <= 0.02) return false;
+    const already = e.stunTime > 0;
+    e.stunTime = Math.max(e.stunTime, d);
+    e.stunFalloff = Math.max(0.15, e.stunFalloff * 0.5);
+    e.stunRecover = 5;
+    e.stunnedTakes = already ? Math.max(e.stunnedTakes, takes) : takes;
+    return true;
+  }
+
+  private slowEnemy(e: Enemy, mult: number, duration: number): void {
+    if (e.def.stunOnlyFrom || duration <= 0) return;
+    if (e.slowTime <= 0 || mult <= e.slowMult) e.slowMult = mult;
+    e.slowTime = Math.max(e.slowTime, duration);
   }
 
   private leak(e: Enemy): void {
@@ -959,12 +1125,21 @@ export class Game {
   // ------------------------------------------------------------------ towers
 
   private updateTowers(dt: number): void {
+    // Shredder zones reveal hidden colleagues; recomputed every tick.
+    for (const e of this.enemies) e.revealed = false;
+    for (const t of this.towers) {
+      if (t.def.role === 'zone' && !t.silenced) {
+        const r = this.liveStats(t).range;
+        for (const e of this.enemies) if (Math.hypot(e.x - t.x, e.y - t.y) <= r) e.revealed = true;
+      }
+    }
     for (const t of this.towers) {
       const s = this.liveStats(t);
       if (t.def.role === 'economy') {
         t.coffeeTimer += dt;
         if (t.coffeeTimer >= s.coffeeInterval) {
           t.coffeeTimer -= s.coffeeInterval;
+          if (this.incomeBlocked) continue;
           if (s.bank) {
             t.pot = Math.min(s.bank.cap, t.pot + s.coffeeAmount);
           } else {
@@ -974,6 +1149,15 @@ export class Game {
           }
           this.events.push({ t: 'coffee', towerId: t.id, amount: s.coffeeAmount, x: t.x, y: t.y, toPot: s.bank !== null });
         }
+        continue;
+      }
+      if (t.silenced) continue;
+      if (t.def.role === 'pulse') {
+        this.updatePulse(t, s, dt);
+        continue;
+      }
+      if (t.def.role === 'zone') {
+        this.updateZone(t, s, dt);
         continue;
       }
       if (s.ability) this.updateAbility(t, s, dt);
@@ -986,8 +1170,82 @@ export class Game {
       }
       for (const e of targets) this.fire(t, e, s);
       t.stats.shots++;
-      t.cooldown += s.interval;
-      if (t.cooldown < 0) t.cooldown = s.interval;
+      const interval = s.interval * t.rateBuff;
+      t.cooldown += interval;
+      if (t.cooldown < 0) t.cooldown = interval;
+    }
+  }
+
+  /** Headphones: every few seconds, everyone in range slows (or is stunned), no damage. */
+  private updatePulse(t: Tower, s: LiveTowerStats, dt: number): void {
+    t.pulseTimer -= dt;
+    if (t.pulseTimer > 0) return;
+    const inRange = this.enemies.filter((e) => e.alive && this.onFloor(e) && Math.hypot(e.x - t.x, e.y - t.y) <= s.range);
+    if (inRange.length === 0) {
+      t.pulseTimer = 0;
+      return;
+    }
+    let stunned = 0;
+    for (const e of inRange) {
+      this.slowEnemy(e, s.slow, s.slowTime);
+      if (s.stun > 0 && this.stunEnemy(e, s.stun, t, s.stunnedTakes)) stunned++;
+      if (s.vulnerable > 0 && !e.def.stunOnlyFrom) {
+        e.vulnerable = Math.max(e.vulnerable, s.vulnerable);
+        e.vulnerableTime = Math.max(e.vulnerableTime, s.slowTime);
+      }
+      if (s.seesHidden) e.revealed = true;
+    }
+    t.stats.shots++;
+    t.pulseTimer = s.interval * t.rateBuff;
+    this.events.push({ t: 'pulse', towerId: t.id, x: t.x, y: t.y, range: s.range, stun: stunned > 0 });
+  }
+
+  /** The Shredder: slows and damages everyone inside. Damage is shared out unless upgraded. */
+  private updateZone(t: Tower, s: LiveTowerStats, dt: number): void {
+    const inside = this.enemies.filter(
+      (e) => e.alive && this.onFloor(e) && !e.def.zoneProof && e.def.immune !== t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
+    );
+    if (inside.length > 0) {
+      const each = s.unshared ? s.dot : s.dot / inside.length;
+      for (const e of inside) {
+        this.slowEnemy(e, s.slow, 0.25);
+        if (s.bleed > 0) {
+          e.bleedDps = Math.max(e.bleedDps, each);
+          e.bleedTime = s.bleed;
+          e.bleedTower = t.id;
+        }
+        const { dealt } = this.damage(e, each * dt, t.def.damageClass, false);
+        t.stats.damage += dealt;
+        if (!e.alive) {
+          t.stats.kills++;
+          this.onKill(e, 0, t);
+        }
+      }
+    }
+    t.pulseTimer += dt;
+    t.abilityTimer += dt;
+    if (s.stunPulse && t.pulseTimer >= s.stunPulse.every) {
+      if (inside.length > 0) {
+        t.pulseTimer = 0;
+        for (const e of inside) if (e.alive) this.stunEnemy(e, s.stunPulse.duration, t);
+        this.events.push({ t: 'pulse', towerId: t.id, x: t.x, y: t.y, range: s.range, stun: true });
+      } else t.pulseTimer = s.stunPulse.every;
+    }
+    if (s.hpPulse && t.abilityTimer >= s.hpPulse.every) {
+      const live = inside.filter((e) => e.alive);
+      if (live.length > 0) {
+        t.abilityTimer = 0;
+        for (const e of live) {
+          const share = e.def.boss ? s.hpPulse.bossShare : s.hpPulse.share;
+          const { dealt } = this.damage(e, Math.max(1, (e.hp + e.shield) * share), t.def.damageClass, false);
+          t.stats.damage += dealt;
+          if (!e.alive) {
+            t.stats.kills++;
+            this.onKill(e, 0.2, t);
+          }
+        }
+        this.events.push({ t: 'ability', towerId: t.id, x: t.x, y: t.y, range: s.range, hits: live.length });
+      } else t.abilityTimer = s.hpPulse.every;
     }
   }
 
@@ -1006,18 +1264,24 @@ export class Game {
     for (const e of inRange) {
       const share = e.def.boss ? ab.bossShare : ab.hpShare;
       const amount = Math.max(1, (e.hp + e.shield) * share);
-      const { dealt } = this.damage(e, amount, t.def.damageClass);
+      const { dealt } = this.damage(e, amount, t.def.damageClass, false);
       t.stats.damage += dealt;
       if (!e.alive) {
         t.stats.kills++;
-        this.onKill(e, 0.2);
+        this.onKill(e, 0.2, t);
       }
     }
     this.events.push({ t: 'ability', towerId: t.id, x: t.x, y: t.y, range: s.range, hits: inRange.length });
   }
 
+  /** Colleagues outside the office (still behind the door) are not at work yet: nothing touches them. */
+  onFloor(e: Enemy): boolean {
+    const { w, h } = this.level.size;
+    return e.x >= 0 && e.y >= 0 && e.x <= w && e.y <= h;
+  }
+
   private visibleTo(e: Enemy, seesHidden: boolean): boolean {
-    return !e.def.invisible || e.revealed || seesHidden;
+    return this.onFloor(e) && (!e.def.invisible || e.revealed || seesHidden);
   }
 
   /** Valid targets in range, best first according to the tower's targeting mode. */
@@ -1055,7 +1319,8 @@ export class Game {
 
   /** One reply: hit the target, then the splash next to it, then the bounces. */
   private fire(t: Tower, target: Enemy, s: LiveTowerStats): void {
-    const travel = dist(t, target) / SHOT_SPEED;
+    // Office Artillery fires across the whole floor: its staples fly faster.
+    const travel = dist(t, target) / (s.global ? SHOT_SPEED * 2.5 : SHOT_SPEED);
     const hit = new Set<Enemy>();
     this.hitOne(t, target, s, t.x, t.y, travel, 'reply', hit);
     let from: Enemy = target;
@@ -1093,17 +1358,21 @@ export class Game {
     const { dealt, result } = this.damage(e, amount, t.def.damageClass);
     t.stats.damage += dealt;
     const killed = !e.alive;
+    if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
     this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx, fy, tx: e.x, ty: e.y, travel, damage: dealt, result, killed, kind });
     if (killed) {
       t.stats.kills++;
-      this.onKill(e, travel);
+      this.onKill(e, travel, t);
     }
   }
 
   /** Apply damage. One checkpoint for shields and immunities, so no damage source can skip them. */
-  damage(e: Enemy, amount: number, cls?: string): { dealt: number; result: ShotResult } {
+  damage(e: Enemy, amount: number, cls?: string, isHit = true): { dealt: number; result: ShotResult } {
     if (!e.alive) return { dealt: 0, result: 'hit' };
     if (e.def.immune && cls === e.def.immune) return { dealt: 0, result: 'immune' };
+    // Focus Music: every hit lands a bit harder. Soundproof Booth: stunned colleagues take more.
+    if (isHit && e.vulnerableTime > 0) amount += e.vulnerable;
+    if (e.stunTime > 0 && e.stunnedTakes > 1) amount *= e.stunnedTakes;
     let dealt = 0;
     if (e.shield > 0) {
       if (e.def.shieldMinHit !== undefined && amount < e.def.shieldMinHit) return { dealt: 0, result: 'blocked' };
@@ -1146,10 +1415,18 @@ export class Game {
     return Math.min(MAX_TIP, local + everywhere);
   }
 
-  private onKill(e: Enemy, delay: number): void {
+  private onKill(e: Enemy, delay: number, by?: Tower): void {
     const reward = killReward(e.def) * killIncomeMult(this.waveIndex) * (1 + this.tipBonusAt(e.x, e.y));
-    this.earn(reward);
-    this.stats.coffeeFromKills += reward;
+    this.stats.coffeeFromKills += this.earn(reward);
+    // Expense the Staples, Recycling: the tower that did it earns its owner a little extra.
+    if (by) {
+      const bonus = this.liveStats(by).killCoffee;
+      if (bonus > 0) {
+        const paid = this.earnFor(by.owner, bonus);
+        this.stats.coffeeFromKills += paid;
+        by.stats.coffee += paid;
+      }
+    }
     this.stats.kills[e.type] = (this.stats.kills[e.type] ?? 0) + 1;
     this.score += 1;
     this.events.push({ t: 'kill', enemyId: e.id, type: e.type, x: e.x, y: e.y, reward, delay });

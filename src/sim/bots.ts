@@ -3,7 +3,7 @@
 // Measure, do not guess.
 
 import type { LevelDef } from './data/levels';
-import { TOWERS } from './data/towers';
+import { TOWERS, pathBlock } from './data/towers';
 import { Game, type Tower } from './game';
 
 export interface BotResult {
@@ -138,6 +138,99 @@ export const beginnerBot: Bot = {
   },
 };
 
+// ------------------------------------------------------------------ scripted build orders
+
+type Step =
+  | { place: string; spot: 'cover' | 'far' | 'zone'; from?: number }
+  | { up: string; path: number; all?: boolean };
+
+/** A good player's build order for a level, step by step; each step waits until it is affordable. */
+const SCRIPTS: Record<number, Step[]> = {
+  2: [
+    { place: 'autoreply', spot: 'cover' },
+    { place: 'autoreply', spot: 'cover' },
+    { place: 'shredder', spot: 'zone' },
+    { up: 'autoreply', path: 1, all: true },
+    { place: 'coffee', spot: 'far' },
+    { up: 'autoreply', path: 0, all: true },
+    { place: 'artillery', spot: 'far' },
+    { place: 'headphones', spot: 'cover' },
+    { up: 'headphones', path: 0 },
+    { up: 'headphones', path: 0 },
+    { up: 'artillery', path: 0 },
+    { up: 'shredder', path: 0 },
+    { up: 'autoreply', path: 1, all: true },
+    { up: 'autoreply', path: 0, all: true },
+    { place: 'autoreply', spot: 'cover' },
+    { up: 'artillery', path: 0 },
+    { up: 'shredder', path: 0 },
+    { up: 'autoreply', path: 0, all: true },
+    { place: 'autoreply', spot: 'cover' },
+    { up: 'artillery', path: 0 },
+    { up: 'autoreply', path: 1, all: true },
+    { up: 'autoreply', path: 1, all: true },
+    { place: 'artillery', spot: 'far' },
+    { up: 'artillery', path: 1 },
+    { up: 'artillery', path: 1 },
+    { up: 'autoreply', path: 1, all: true },
+  ],
+};
+
+/** Could this tower stand here, money aside? Finding a spot must not depend on the wallet. */
+function placeable(g: Game, def: string, tx: number, ty: number): boolean {
+  const c = g.canPlace(def, tx, ty);
+  return c.ok || c.reason === 'Not enough Coffee.';
+}
+
+function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone'): Spot | undefined {
+  if (kind === 'far') {
+    for (let ty = g.level.size.h - 1; ty >= 0; ty--) {
+      for (let tx = 0; tx < g.level.size.w; tx++) {
+        if (placeable(g, def, tx, ty) && g.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > 2.5) return { tx, ty, cover: 0 };
+      }
+    }
+  }
+  return rankSpots(g, Math.min(TOWERS[def].base.range, 4)).find((p) => placeable(g, def, p.tx, p.ty));
+}
+
+/** Runs a script; once it is done, keeps buying Auto-Replies and their upgrades. */
+function runScript(g: Game, steps: Step[], state: { i: number }): void {
+  const autos = g.towers.filter((t) => t.defId === 'autoreply');
+  const boss = g.enemies.some((e) => e.def.boss);
+  autos.forEach((t, i) => g.setTargeting(t.id, boss && i % 2 === 0 ? 'strongest' : 'first'));
+  for (let guard = 0; guard < 5 && state.i < steps.length; guard++) {
+    const st = steps[state.i];
+    if ('place' in st) {
+      if (st.from !== undefined && g.waveIndex < st.from) return;
+      const spot = spotFor(g, st.place, st.spot);
+      if (!spot) {
+        state.i++;
+        continue;
+      }
+      if (!g.canPlace(st.place, spot.tx, spot.ty).ok) return;
+      g.place(st.place, spot.tx, spot.ty);
+      state.i++;
+      continue;
+    }
+    // Towers of that type that may still take this path (the 4-2-0 rule allows it).
+    const open = g.towers.filter((t) => t.defId === st.up && pathBlock(t.tiers, st.path) === null);
+    if (open.length === 0) {
+      state.i++;
+      continue;
+    }
+    const lowest = Math.min(...open.map((t) => t.tiers[st.path]));
+    const target = open.find((t) => t.tiers[st.path] === lowest)!;
+    if (!g.canUpgrade(target, st.path).ok) return;
+    g.upgrade(target.id, st.path);
+    // "all": stay on this step until every tower of that type reached the same tier.
+    const behind = st.all && open.some((t) => t !== target && t.tiers[st.path] < target.tiers[st.path]);
+    if (!behind) state.i++;
+  }
+  if (state.i >= steps.length) solidL1(g);
+}
+
+const scriptState = new WeakMap<Game, { i: number }>();
+
 /**
  * A sensible player: two Auto-Replies on the best spots, one Coffee Machine early, then the
  * cheapest planned upgrade first, a new tower once every tower is well on its way, and half the
@@ -146,6 +239,13 @@ export const beginnerBot: Bot = {
 export const solidBot: Bot = {
   name: 'solid',
   plan(g) {
+    const script = SCRIPTS[g.level.id];
+    if (script) {
+      const st = { i: 0 };
+      scriptState.set(g, st);
+      runScript(g, script, st);
+      return;
+    }
     const spots = rankSpots(g, RANGE);
     for (let i = 0; i < 2; i++) {
       const s = freeSpot(g, spots, 'autoreply');
@@ -153,6 +253,16 @@ export const solidBot: Bot = {
     }
   },
   act(g) {
+    const script = SCRIPTS[g.level.id];
+    const st = scriptState.get(g);
+    if (script && st) return runScript(g, script, st);
+    solidL1(g);
+  },
+};
+
+/** The Level 1 way of playing: Auto-Replies, one machine, cheapest planned upgrade first. */
+function solidL1(g: Game): void {
+  {
     const autos = g.towers.filter((t) => t.defId === 'autoreply');
     const machines = g.towers.filter((t) => t.defId === 'coffee');
     const boss = g.enemies.some((e) => e.def.boss);
@@ -184,8 +294,8 @@ export const solidBot: Bot = {
     }
     const m = machines.find((t) => t.tiers[0] < 3);
     if (m && g.waveIndex <= 8 && autos.every((t) => stepsDone(t) >= 3) && g.canUpgrade(m, 0).ok) g.upgrade(m.id, 0);
-  },
-};
+  }
+}
 
 /**
  * Goes heavy on Coffee first: one machine brewing, a second one on the Expense Claim, claimed when
@@ -194,6 +304,13 @@ export const solidBot: Bot = {
 export const greedyBot: Bot = {
   name: 'greedy',
   plan(g) {
+    if (SCRIPTS[g.level.id]) {
+      // Same build as the solid player, with the Coffee first.
+      const e = economySpot(g);
+      if (e) g.place('coffee', e.tx, e.ty);
+      solidBot.plan(g);
+      return;
+    }
     const s = freeSpot(g, rankSpots(g, RANGE), 'autoreply');
     if (s) g.place('autoreply', s.tx, s.ty);
     const e = economySpot(g);
@@ -204,6 +321,13 @@ export const greedyBot: Bot = {
     for (const m of machines) {
       const bank = g.liveStats(m).bank;
       if (bank && (m.pot >= bank.cap * 0.9 || g.waveIndex >= g.totalWaves - 1)) g.claim(m.id);
+    }
+    if (SCRIPTS[g.level.id]) {
+      // Scripted levels: the machine goes on the Expense Claim once there is money to spare.
+      const m = machines[0];
+      if (m && g.waveIndex >= 3 && g.waveIndex <= 10 && m.tiers[1] < 3 && g.coffee >= 45 && g.canUpgrade(m, 1).ok) g.upgrade(m.id, 1);
+      else solidBot.act(g);
+      return;
     }
     // Saves up for a second machine around wave 3, then puts it on the Expense Claim.
     if (g.waveIndex >= 2 && g.waveIndex <= 5 && machines.length < 2) {

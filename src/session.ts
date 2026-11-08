@@ -278,7 +278,7 @@ export class Session {
     const st = this.host.save.settings;
     switch (ev.t) {
       case 'shot':
-        sfx.play('shot');
+        sfx.play(ev.kind === 'reply' && g.tower(ev.towerId)?.defId === 'artillery' ? 'staple' : 'shot');
         if (ev.result === 'blocked') this.popups.spawn('BLOCKED', ev.tx, ev.ty, 1.1, 'warn', { delay: ev.travel });
         else if (ev.result === 'immune') this.popups.spawn('IMMUNE', ev.tx, ev.ty, 1.1, 'info', { delay: ev.travel });
         else if (st.damageNumbers && this.speed <= 2) this.popups.spawn(ev.damage >= 10 ? ev.damage.toFixed(0) : ev.damage.toFixed(1), ev.tx, ev.ty, 1.0, 'dmg', { delay: ev.travel, life: 0.6 });
@@ -374,6 +374,9 @@ export class Session {
         break;
       case 'ability':
         sfx.play('bossphase', { pitch: 1.6, gain: 0.6 });
+        break;
+      case 'pulse':
+        sfx.play('pulse', { pitch: ev.stun ? 0.8 : 1 });
         break;
       case 'sold':
         sfx.play('sell', { gain: ev.player === this.me ? 1 : 0.5 });

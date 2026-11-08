@@ -3,13 +3,32 @@
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
 
-## Stand: v0.3.0 (2026-11-08)
+## Stand: v0.4.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
 multiplayer. Zie CHANGELOG.md.
 
-**Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15.**
+**Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
+(level 2 klaar in v0.4.0; volgende: level 3 Meeting Room met Quick Reply, The Presenter en de
+projector-mini-game).**
+
+### Level 2 (v0.4.0): ontwerpkeuzes die ik maakte
+- Nieuwe torensoorten in de simulatie: `pulse` (Headphones: elke paar seconden iedereen in de straal)
+  en `zone` (Shredder: werkt doorlopend op wie erin staat, schade gedeeld tenzij `unshared`).
+- Stuns: bosses hebben `stunResist`, herhaalde stuns landen korter (`stunFalloff`, herstelt na 5 s).
+- De Chatterbox negeert vertraging en alleen stuns van Headphones werken. **Afwijking van de oude
+  versie:** Headphones met NOISE CANCELLING tier 2+ zijn immuun voor zijn geklets. In Godot moest je
+  ze net buiten zijn praatafstand zetten; dat bleek in de test onvindbaar en botste met de
+  speeltestklacht "onduidelijk wat er gebeurt". Terugdraaien = `silenceProof` weghalen.
+- The Repair Guy blokkeert alle inkomsten (kills, salaris, machines, rente, Supply Drop). Verkopen,
+  pot claimen en Coffee geven werken wel: dat is geen inkomen.
+- Niets raakt een collega die nog buiten de deur staat (`onFloor`): de Artillery schoot ze anders al
+  achter de muur neer.
+- Golftabel L2 opnieuw opgebouwd vanuit de vertaalde v0.88-tabel tot een vloeiende curve (4-12% per
+  golf, piek vlak voor de boss); de oude zaagde van -46% naar +209%.
+- Levels openen pas als het vorige level gehaald is (sterren > 0), zodat torens een voor een komen.
+- Bots: de "goede speler" volgt per level een bouwvolgorde (`SCRIPTS` in `src/sim/bots.ts`).
 
 ### Hoe multiplayer werkt
 - `server/mp/rooms.ts` (kamers, pure logica) + `server/mp/server.ts` (WebSockets op `/mp`). De server
@@ -68,6 +87,9 @@ Level 1, totaal HP-equivalent 4234, golven stijgen vloeiend 10-20% per golf (gee
 | spam (alleen kale torens) | wint, 80 Focus, 2 sterren (boss lekt) |
 | solid (4 torens naar 3-2-0, half op Most HP bij de boss) | foutloos, verste collega op 44% |
 | greedy (koffie + Expense Claim, twee torens naar 4-2-0) | foutloos, meeste Coffee (736) |
+
+Level 2: idle verliest op golf 7, alleen Auto-Replies (beginner, spam) verliest (Old Guard), goed
+spelen foutloos (verste 38%), eerst koffie wint met 81 Focus en de meeste Coffee (783).
 
 Prijsregels in `tests/economy.test.ts`: tier 1 van een schadepad is beter dan een derde kopie, tier 3
 en 4 zijn tegen een groep beter dan hetzelfde geld in kopieen, elke brouw-upgrade verdient zich binnen

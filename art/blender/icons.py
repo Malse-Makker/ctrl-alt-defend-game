@@ -17,15 +17,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_models as bm  # noqa: E402
 import kit  # noqa: E402
 
-ICONS = ["intern", "newhire", "requester", "chaser", "headofcomms",
-         "coffee_1", "coffee_2", "coffee_3", "autoreply_1", "autoreply_2", "autoreply_3"]
+PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy"]
+ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3", "autoreply_1", "autoreply_2", "autoreply_3",
+                  "headphones_1", "headphones_2", "headphones_3", "artillery_1", "artillery_2", "artillery_3",
+                  "shredder_1", "shredder_2", "shredder_3"]
 
 
 def render_icon(key, out_dir, size):
     kit.reset()
     root = bm.BUILDERS[key]()
     # Colleagues look a bit towards the camera.
-    root.rotation_euler[2] = math.radians(-25) if key in ("intern", "newhire", "requester", "chaser", "headofcomms") else 0
+    root.rotation_euler[2] = math.radians(-25) if key in PEOPLE else 0
     bpy.context.view_layer.update()
     pts = []
     for o in bpy.data.objects:

@@ -33,6 +33,8 @@ interface EnemyView {
   vx: number;
   vy: number;
   boss: boolean;
+  /** Little stars circling the head while stunned. */
+  stars: THREE.Group | null;
 }
 
 interface TowerView {
@@ -42,6 +44,10 @@ interface TowerView {
   modelKey: string;
   pop: number;
   recoil: number;
+  /** The Shredder's zone on the floor. */
+  zone: THREE.Mesh | null;
+  /** Shown while a Chatterbox silences the tower. */
+  mute: THREE.Sprite | null;
 }
 
 interface Shot {
@@ -151,7 +157,8 @@ export class Actors {
   }
 
   showRange(x: number | null, y: number, r: number, color = '#ffffff'): void {
-    if (x === null || r <= 0) {
+    // Office Artillery reaches the whole floor: no ring to draw.
+    if (x === null || r <= 0 || !Number.isFinite(r) || r > 50) {
       this.rangeRing.visible = false;
       return;
     }
@@ -191,10 +198,29 @@ export class Actors {
       v.recoil = Math.max(0, v.recoil - dt * 6);
       const s = 1 + Math.sin(v.pop * Math.PI) * 0.18;
       v.model.scale.set(s, s * (1 - v.recoil * 0.06), s);
+      if (t.def.role === 'zone') {
+        if (!v.zone) {
+          v.zone = this.makeZone();
+          this.group.add(v.zone);
+          v.zone.position.set(t.x, 0.015, t.y);
+        }
+        v.zone.scale.setScalar(game.liveStats(t).range);
+        (v.zone.material as THREE.MeshBasicMaterial).opacity = t.silenced ? 0.05 : 0.16 + Math.sin(this.clock * 6) * 0.03;
+      }
+      if (t.silenced && !v.mute) {
+        v.mute = new THREE.Sprite(this.muteMat());
+        v.mute.scale.set(0.42, 0.42, 1);
+        v.mute.position.set(0, 1.25, 0);
+        v.mute.renderOrder = 12;
+        v.root.add(v.mute);
+      }
+      if (v.mute) v.mute.visible = t.silenced;
     }
+    this.clock += dt;
     for (const [id, v] of this.towers) {
       if (!game.tower(id)) {
         this.group.remove(v.root);
+        if (v.zone) this.group.remove(v.zone);
         this.towers.delete(id);
       }
     }
@@ -207,7 +233,9 @@ export class Actors {
     switch (ev.t) {
       case 'shot': {
         const travel = ev.travel;
-        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel);
+        const staple = game.tower(ev.towerId)?.defId === 'artillery';
+        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, staple ? 'staple' : 'reply');
+        if (staple) this.burst(ev.tx, 0.5, ev.ty, 5, '#a7adb5');
         const tv = this.towers.get(ev.towerId);
         if (tv) tv.recoil = 1;
         const v = this.enemies.get(ev.enemyId);
@@ -228,7 +256,10 @@ export class Actors {
         break;
       }
       case 'ability':
-        this.pulse(ev.x, ev.y, ev.range);
+        this.pulse(ev.x, ev.y, ev.range, '#bfe2ff');
+        break;
+      case 'pulse':
+        this.pulse(ev.x, ev.y, ev.range, ev.stun ? '#f2c641' : '#6fcf7f');
         break;
       case 'placed':
       case 'upgraded': {
@@ -275,7 +306,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0 };
+    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null };
     this.towers.set(t.id, v);
     return v;
   }
@@ -349,6 +380,7 @@ export class Actors {
       vx: 0,
       vy: 0,
       boss,
+      stars: null,
     };
     // Arms rest in whatever pose Blender gave them (holding a phone, a megaphone).
     for (const a of arms) a.userData.rest = a.rotation.x;
@@ -390,6 +422,23 @@ export class Actors {
     const sq = v.squash * 0.12;
     v.model.scale.set(grown * (1 + sq), grown * (1 - sq), grown * (1 + sq));
     v.model.position.y = Math.abs(Math.cos(v.walk)) * 0.035;
+    // Stunned: three little stars circle the head.
+    if (e.stunTime > 0 && !v.stars) {
+      v.stars = new THREE.Group();
+      const geo = new THREE.OctahedronGeometry(0.05);
+      const mat = new THREE.MeshBasicMaterial({ color: '#f2c641' });
+      for (let i = 0; i < 3; i++) {
+        const st = new THREE.Mesh(geo, mat);
+        st.position.set(Math.cos((i * Math.PI * 2) / 3) * 0.2, 0, Math.sin((i * Math.PI * 2) / 3) * 0.2);
+        v.stars.add(st);
+      }
+      v.stars.position.y = v.barY - 0.12;
+      v.root.add(v.stars);
+    }
+    if (v.stars) {
+      v.stars.visible = e.stunTime > 0;
+      v.stars.rotation.y += dt * 6;
+    }
     // HP bar: only when hurt (bosses always).
     const ratio = Math.max(0, e.hp / e.maxHp);
     const hurt = ratio < 0.999 || v.boss || e.shield < e.maxShield;
@@ -446,11 +495,55 @@ export class Actors {
 
   private pulses: { mesh: THREE.Mesh; t: number; r: number }[] = [];
 
-  /** Inbox Zero: a ring that sweeps out over everyone it just hit. */
-  private pulse(x: number, y: number, r: number): void {
+  private clock = 0;
+  private muteMaterial: THREE.SpriteMaterial | null = null;
+
+  /** A speech bubble with a line through it, drawn once on a canvas. */
+  private muteMat(): THREE.SpriteMaterial {
+    if (this.muteMaterial) return this.muteMaterial;
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d')!;
+    x.fillStyle = '#f6f3ea';
+    x.beginPath();
+    x.ellipse(32, 28, 24, 18, 0, 0, Math.PI * 2);
+    x.fill();
+    x.beginPath();
+    x.moveTo(20, 40);
+    x.lineTo(14, 56);
+    x.lineTo(30, 44);
+    x.fill();
+    x.strokeStyle = '#e5534b';
+    x.lineWidth = 7;
+    x.beginPath();
+    x.moveTo(12, 50);
+    x.lineTo(52, 8);
+    x.stroke();
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.muteMaterial = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+    return this.muteMaterial;
+  }
+
+  private makeZone(): THREE.Mesh {
+    const zone = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: '#3fa7a0', transparent: true, opacity: 0.16, depthWrite: false }),
+    );
+    const edge = new THREE.Mesh(
+      new THREE.RingGeometry(0.95, 1, 48).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: '#3fa7a0', transparent: true, opacity: 0.6, depthWrite: false }),
+    );
+    zone.add(edge);
+    zone.renderOrder = 1;
+    return zone;
+  }
+
+  /** Inbox Zero and Headphones: a ring that sweeps out over everyone it just hit. */
+  private pulse(x: number, y: number, r: number, color: string): void {
     const mesh = new THREE.Mesh(
       new THREE.RingGeometry(0.85, 1, 64).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: '#bfe2ff', transparent: true, opacity: 0.9, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false }),
     );
     mesh.position.set(x, 0.05, y);
     mesh.renderOrder = 4;
@@ -474,14 +567,24 @@ export class Actors {
     this.pulses = keep;
   }
 
-  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number): void {
-    let mesh = this.shotPool.pop();
+  private staplePool: THREE.Group[] = [];
+  private readonly stapleGeo = new THREE.BoxGeometry(0.22, 0.04, 0.05);
+  private readonly stapleMat = new THREE.MeshStandardMaterial({ color: '#c8ccd2', metalness: 0.8, roughness: 0.3 });
+
+  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number, kind: 'reply' | 'staple' = 'reply'): void {
+    const pool = kind === 'staple' ? this.staplePool : this.shotPool;
+    let mesh = pool.pop();
     if (!mesh) {
       mesh = new THREE.Group();
-      const env = new THREE.Mesh(this.envGeo, this.envMat);
-      const flap = new THREE.Mesh(this.flapGeo, this.flapMat);
-      flap.position.set(0, 0.012, -0.045);
-      mesh.add(env, flap);
+      mesh.userData.kind = kind;
+      if (kind === 'staple') {
+        mesh.add(new THREE.Mesh(this.stapleGeo, this.stapleMat));
+      } else {
+        const env = new THREE.Mesh(this.envGeo, this.envMat);
+        const flap = new THREE.Mesh(this.flapGeo, this.flapMat);
+        flap.position.set(0, 0.012, -0.045);
+        mesh.add(env, flap);
+      }
     }
     mesh.visible = true;
     this.group.add(mesh);
@@ -501,7 +604,7 @@ export class Actors {
       s.mesh.rotation.z = Math.sin(s.t * 20) * 0.3;
       if (k >= 1) {
         this.group.remove(s.mesh);
-        this.shotPool.push(s.mesh);
+        (s.mesh.userData.kind === 'staple' ? this.staplePool : this.shotPool).push(s.mesh);
         this.burst(s.tx, 0.5, s.ty, 2, '#f6f3ea');
       } else keep.push(s);
     }
@@ -561,7 +664,10 @@ export class Actors {
 
   clear(): void {
     for (const v of this.enemies.values()) this.group.remove(v.root);
-    for (const v of this.towers.values()) this.group.remove(v.root);
+    for (const v of this.towers.values()) {
+      this.group.remove(v.root);
+      if (v.zone) this.group.remove(v.zone);
+    }
     for (const s of this.shots) this.group.remove(s.mesh);
     for (const s of this.scraps) this.group.remove(s.mesh);
     this.enemies.clear();

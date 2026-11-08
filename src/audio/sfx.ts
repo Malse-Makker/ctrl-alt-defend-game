@@ -19,6 +19,8 @@ export const SOUNDS = [
   'win',
   'lose',
   'split',
+  'pulse',
+  'staple',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
@@ -30,6 +32,8 @@ const THROTTLE: Partial<Record<SoundName, number>> = {
   coffee: 0.15,
   leak: 0.12,
   split: 0.1,
+  pulse: 0.2,
+  staple: 0.08,
 };
 
 const GAIN: Partial<Record<SoundName, number>> = {
@@ -40,6 +44,8 @@ const GAIN: Partial<Record<SoundName, number>> = {
   leak: 0.8,
   wave: 0.6,
   boss: 0.8,
+  pulse: 0.35,
+  staple: 0.5,
 };
 
 export class Sfx {

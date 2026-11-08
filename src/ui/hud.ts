@@ -52,6 +52,7 @@ export class Hud {
   private readonly act: HudActions;
 
   private focusStat!: HTMLElement;
+  private coffeeStat!: HTMLElement;
   private focusV!: HTMLElement;
   private coffeeV!: HTMLElement;
   private waveV!: HTMLElement;
@@ -117,6 +118,7 @@ export class Hud {
     const w = stat('wave', 'people-group', T.wave);
     const s = stat('score', 'star', T.score);
     this.focusStat = f.el;
+    this.coffeeStat = c.el;
     this.focusV = f.v;
     this.coffeeV = c.v;
     this.waveV = w.v;
@@ -216,6 +218,9 @@ export class Hud {
     this.lastFocus = g.focus;
     toggle(this.focusStat, 'low', g.focus <= g.startFocus * 0.25);
     setText(this.coffeeV, String(Math.floor(g.walletOf(this.me))));
+    const blocked = g.incomeBlocked;
+    toggle(this.coffeeStat, 'blocked', blocked);
+    this.coffeeStat.title = blocked ? T.incomeBlocked : T.coffee;
     setText(this.waveV, `${g.waveIndex}/${g.totalWaves}`);
     setText(this.waveTimer, g.phase === 'running' && g.waveIndex < g.totalWaves ? `next in ${Math.max(0, Math.ceil(g.nextWaveTimer))}s` : '');
     setText(this.scoreV, String(g.score));
@@ -396,7 +401,33 @@ export class Hud {
     const dyn: (() => void)[] = [];
 
     const stats = h('div', { class: 'kv' });
-    if (def.role === 'damage') {
+    if (def.role === 'pulse') {
+      stats.append(
+        h('span', { class: 'k', text: 'Every' }),
+        h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
+        h('span', { class: 'k', text: T.range }),
+        h('span', { class: 'v', text: fmt(s.range, 2) }),
+        h('span', { class: 'k', text: 'Slows to' }),
+        h('span', { class: 'v', text: `${Math.round(s.slow * 100)}% for ${fmt(s.slowTime, 1)}s` }),
+      );
+      if (s.stun > 0) stats.append(h('span', { class: 'k', text: 'Stuns' }), h('span', { class: 'v', text: `${fmt(s.stun, 1)}s` }));
+      const extra = [s.vulnerable > 0 ? `+${s.vulnerable} damage taken` : '', s.slowAura < 1 ? 'slows all the time' : '', s.buffRate < 1 ? 'towers nearby faster' : '', s.silenceProof ? 'Chatterbox-proof' : '', s.seesHidden ? 'reveals hidden' : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+    } else if (def.role === 'zone') {
+      stats.append(
+        h('span', { class: 'k', text: 'Damage per second' }),
+        h('span', { class: 'v', text: `${fmt(s.dot, 1)}${s.unshared ? ' each' : ' shared'}` }),
+        h('span', { class: 'k', text: 'Zone size' }),
+        h('span', { class: 'v', text: fmt(s.range, 2) }),
+        h('span', { class: 'k', text: 'Slows to' }),
+        h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%` }),
+      );
+      const extra = [s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.stunPulse ? `stops everyone every ${s.stunPulse.every}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      const dealt = h('span', { class: 'v' });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
+    } else if (def.role === 'damage') {
       const extra = [s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
       stats.append(
         h('span', { class: 'k', text: T.damage }),
@@ -404,8 +435,11 @@ export class Hud {
         h('span', { class: 'k', text: T.rate }),
         h('span', { class: 'v', text: fmt(1 / s.interval, 2) }),
         h('span', { class: 'k', text: T.range }),
-        h('span', { class: 'v', text: fmt(s.range, 2) }),
+        h('span', { class: 'v', text: s.global ? 'the whole floor' : fmt(s.range, 2) }),
       );
+      if (s.stunOnHit > 0) extra.push(`pins for ${s.stunOnHit}s`);
+      if (s.killCoffee > 0) extra.push(`+${s.killCoffee} Coffee per colleague`);
+      if (s.waveIncome > 0) extra.push(`+${s.waveIncome} Coffee per wave`);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
       const per = h('span', { class: 'v' });
@@ -479,8 +513,10 @@ export class Hud {
       parts.push(card);
     });
 
+    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: T.silencedNote }));
+
     // Targeting
-    if (def.role === 'damage') {
+    if (def.role === 'damage' && !s.global) {
       const tg = h('div', { class: 'targets', attrs: { role: 'group', 'aria-label': T.targeting } });
       for (const mode of TARGET_MODES) {
         tg.append(h('button', { class: `btn${t.target === mode ? ' active' : ''}`, text: TARGET_LABELS[mode], title: TARGET_HELP[mode], on: { click: () => this.act.target(t.id, mode) } }));

@@ -84,17 +84,21 @@ export function careerScreen(save: SaveData, play: (id: number) => void, back: (
     for (let id = b.from; id < b.from + 5; id++) {
       const level = LEVELS[id];
       const stars = save.stars[String(id)] ?? 0;
+      // A level opens once the one before it is done (any stars), so towers arrive one by one.
+      const open = level !== undefined && (id === 1 || (save.stars[String(id - 1)] ?? 0) > 0);
       const card = h(
         'button',
-        { class: 'level-card', disabled: !level, on: { click: () => level && play(id) } },
+        { class: 'level-card', disabled: !open, on: { click: () => open && play(id) } },
         h('span', { class: 'num', text: `Level ${id}` }),
         h('span', { class: 'name', text: LEVEL_NAMES[id - 1] }),
       );
-      if (level) {
+      if (level && open) {
         const st = h('span', { class: 'stars', attrs: { 'aria-label': `${stars} of 3 stars` } });
         for (let i = 1; i <= 3; i++) st.append(icon('star', i <= stars ? '' : 'faint'));
         card.append(st);
         card.title = level.gimmick;
+      } else if (level) {
+        card.append(h('span', { class: 'faint', attrs: { style: 'font-size:12px' } }, icon('lock'), ` ${T.levelLocked}`));
       } else {
         card.append(h('span', { class: 'faint', attrs: { style: 'font-size:12px' }, text: T.inTheWorks }));
       }

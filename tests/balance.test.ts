@@ -39,3 +39,28 @@ describe('Level 1 difficulty', () => {
     expect(r.stars).toBe(3);
   });
 });
+
+describe('Level 2 difficulty', () => {
+  const level = LEVELS[2];
+
+  it('doing nothing loses', () => {
+    expect(runBot(level, idleBot).won).toBe(false);
+  });
+
+  it('Auto-Replies alone are not enough: the level teaches the new towers', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  it('good play with the new towers is flawless, with a safety margin', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.focus).toBe(100);
+    expect(r.deepest).toBeLessThan(0.8);
+  });
+
+  it('going for Coffee first still wins, at a cost', () => {
+    const r = runBot(level, greedyBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+});

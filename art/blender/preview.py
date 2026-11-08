@@ -60,7 +60,16 @@ def main():
 
     kit.reset()
     closeup = "--closeup" in argv
+    lineup_arg = argv[argv.index("--lineup") + 1].split(",") if "--lineup" in argv else None
     W, D = 9, 7
+    if lineup_arg:
+        # Any models side by side: two rows of up to six.
+        W, D = 7, 3
+        floor(W, D)
+        for i, key in enumerate(lineup_arg):
+            place(bm.BUILDERS[key], (0.7 + (i % 6) * 1.15, 0.4 + (i // 6) * 1.4), rot_z=math.radians(-20))
+        _camera_and_render(W, D, out, engine, 6.6)
+        return
     if closeup:
         W, D = 6, 2
         floor(W, D)

@@ -10,7 +10,8 @@
 // stretch of the floor. tests/economy.test.ts checks this.
 
 export type DamageClass = 'written' | 'in_person';
-export type TowerRole = 'economy' | 'damage';
+/** damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on everyone standing in it. */
+export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone';
 export type TargetMode = 'first' | 'last' | 'closest' | 'farthest' | 'strongest' | 'weakest';
 export type Tiers = [number, number, number];
 
@@ -65,6 +66,37 @@ export interface Effect {
   tip?: number;
   /** Every colleague dealt with anywhere pays this much extra. */
   tipEverywhere?: number;
+  /** Damage towers: each hit stops the target for this long (bosses resist). */
+  stunOnHit?: number;
+  // Pulse towers (Headphones)
+  /** Slow factor while slowed (lowest counts). */
+  slow?: number;
+  slowTimeAdd?: number;
+  /** A real stun of this many seconds (highest counts). */
+  stun?: number;
+  /** Colleagues hit take this much extra damage from every hit while slowed. */
+  vulnerableAdd?: number;
+  /** Stunned colleagues take this much more damage (2 = double). */
+  stunnedTakes?: number;
+  /** Towers in range fire this much faster (0.8 = 20% shorter reload; lowest counts). */
+  buffRate?: number;
+  /** The Chatterbox cannot silence this tower. */
+  silenceProof?: boolean;
+  // Zone towers (The Shredder)
+  dotAdd?: number;
+  dotMult?: number;
+  /** Damage keeps going this many seconds after leaving the zone. */
+  bleed?: number;
+  /** Everyone in the zone takes the full damage instead of a share. */
+  unshared?: boolean;
+  /** Every few seconds everyone in the zone stops for a moment. */
+  stunPulse?: { every: number; duration: number };
+  /** Every few seconds everyone in range loses a share of their current HP (not bosses' full share). */
+  hpPulse?: { every: number; share: number; bossShare: number };
+  /** Coffee for every colleague this tower deals with. */
+  killCoffee?: number;
+  /** Coffee at the start of every wave, for the owner. */
+  waveIncome?: number;
 }
 
 export interface UpgradeDef {
@@ -89,6 +121,13 @@ export interface TowerBase {
   damage?: number;
   coffeeAmount?: number;
   coffeeInterval?: number;
+  /** Reaches the whole floor (Office Artillery). */
+  global?: boolean;
+  /** Pulse: slow factor and how long it lasts. */
+  slow?: number;
+  slowTime?: number;
+  /** Zone: damage per second, shared over everyone inside. */
+  dot?: number;
 }
 
 export interface TowerDef {
@@ -211,6 +250,151 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  headphones: {
+    id: 'headphones',
+    name: 'Headphones',
+    flavour: "Can't quite hear you.",
+    verb: 'Every few seconds everyone in range slows right down. No damage. Proper Noise Cancelling stuns, and shuts up the Chatterbox.',
+    role: 'pulse',
+    unlockLevel: 2,
+    accent: '#6fcf7f',
+    models: ['headphones_1', 'headphones_2', 'headphones_3'],
+    base: { cost: 20, range: 3.0, interval: 3.0, slow: 0.65, slowTime: 1.6 },
+    paths: [
+      {
+        name: 'NOISE CANCELLING',
+        quote: 'Blissful silence.',
+        color: '#6fcf7f',
+        tiers: [
+          { name: 'Over-Ear', desc: 'Slows harder and for longer.', cost: 22, effect: { slow: 0.45, slowTimeAdd: 0.6, intervalMult: 0.9 } },
+          {
+            name: 'Noise Cancelling',
+            desc: 'A real stun of 1.5 seconds. The Chatterbox cannot talk these quiet, and it is the only thing that shuts him up.',
+            cost: 35,
+            effect: { stun: 1.5, silenceProof: true },
+          },
+          { name: 'Studio Monitors', desc: 'Stuns for 2.2 seconds, more often.', cost: 80, effect: { stun: 2.2, intervalMult: 0.8 } },
+          { name: 'Soundproof Booth', desc: 'Stuns for 3 seconds, and stunned colleagues take double damage.', cost: 200, effect: { stun: 3, stunnedTakes: 2 } },
+        ],
+      },
+      {
+        name: 'VOLUME',
+        quote: 'Can you hear me now?',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Volume Up', desc: '+20% range.', cost: 15, effect: { rangeMult: 1.2 } },
+          { name: 'Bass Boost', desc: 'Pulses 25% more often.', cost: 25, effect: { intervalMult: 0.75 } },
+          { name: 'Party Mode', desc: 'Everyone in range walks 25% slower all the time, between pulses too.', cost: 70, effect: { slowAura: 0.75 } },
+          { name: 'Open-Plan Speakers', desc: 'Half again the range, and a pulse every 1.5 seconds.', cost: 180, effect: { rangeMult: 1.5, intervalMult: 0.6 } },
+        ],
+      },
+      {
+        name: 'FOCUS MUSIC',
+        quote: 'Lo-fi beats to defend your desk to.',
+        color: '#b48ce0',
+        tiers: [
+          { name: 'Lo-fi Beats', desc: 'Colleagues it slows take +1 damage from every hit.', cost: 15, effect: { vulnerableAdd: 1 } },
+          { name: 'Brown Noise', desc: 'Reveals hidden colleagues in range.', cost: 25, effect: { seesHidden: true } },
+          { name: 'Deep Focus', desc: '+2 more damage from every hit on colleagues it slows.', cost: 60, effect: { vulnerableAdd: 2 } },
+          { name: 'Flow State', desc: 'Towers in range fire 25% faster.', cost: 170, effect: { buffRate: 0.8 } },
+        ],
+      },
+    ],
+  },
+  artillery: {
+    id: 'artillery',
+    name: 'Office Artillery',
+    flavour: 'Ow. That actually stung.',
+    verb: 'Reaches the ENTIRE floor: it does not matter where you put it. Slow to reload, one enormous hit. Breaks through shields.',
+    role: 'damage',
+    damageClass: 'in_person',
+    unlockLevel: 2,
+    accent: '#e5534b',
+    models: ['artillery_1', 'artillery_2', 'artillery_3'],
+    base: { cost: 25, range: 99, interval: 3.2, damage: 15, global: true },
+    paths: [
+      {
+        name: 'HEAVY DUTY',
+        quote: "It's a Swingline.",
+        color: '#e5534b',
+        tiers: [
+          { name: 'Stapler', desc: '+20 damage.', cost: 28, effect: { damageAdd: 20 } },
+          { name: 'Heavy Duty Stapler', desc: '+20 damage.', cost: 40, effect: { damageAdd: 20 } },
+          { name: 'Industrial Tacker', desc: '+45 damage, and it pins the target to the carpet for a second.', cost: 85, effect: { damageAdd: 45, stunOnHit: 1 } },
+          { name: 'Nail Gun', desc: '+150 damage, and it goes through two more colleagues standing behind the target.', cost: 230, effect: { damageAdd: 150, splash: 2 } },
+        ],
+      },
+      {
+        name: 'RAPID FIRE',
+        quote: 'Out of staples. Again.',
+        color: '#e5a04b',
+        tiers: [
+          { name: 'Spring Loaded', desc: 'Reloads 40% faster.', cost: 15, effect: { intervalMult: 0.7 } },
+          { name: 'Double Staple', desc: 'Reloads 40% faster again.', cost: 25, effect: { intervalMult: 0.7 } },
+          { name: 'Staple Spray', desc: 'Hits 3 colleagues per shot.', cost: 75, effect: { targetsAdd: 2 } },
+          { name: 'Auto Stapler', desc: 'Reloads more than twice as fast.', cost: 210, effect: { intervalMult: 0.4 } },
+        ],
+      },
+      {
+        name: 'PRECISION',
+        quote: 'Measure twice, staple once.',
+        color: '#b48ce0',
+        tiers: [
+          { name: 'Reading Glasses', desc: 'Can see hidden colleagues.', cost: 15, effect: { seesHidden: true } },
+          { name: 'Weak Spot', desc: '+10 damage.', cost: 25, effect: { damageAdd: 10 } },
+          { name: 'Expense the Staples', desc: 'Every colleague it deals with pays 2 extra Coffee.', cost: 60, effect: { killCoffee: 2 } },
+          { name: 'Supply Drop', desc: '+20 Coffee at the start of every wave, and 1 more per colleague it deals with (3 in total).', cost: 170, effect: { waveIncome: 20, killCoffee: 1 } },
+        ],
+      },
+    ],
+  },
+  shredder: {
+    id: 'shredder',
+    name: 'The Shredder',
+    flavour: 'Round filing.',
+    verb: 'A zone that slows everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside. It may not touch the Old Guard archive.',
+    role: 'zone',
+    damageClass: 'in_person',
+    unlockLevel: 2,
+    accent: '#3fa7a0',
+    models: ['shredder_1', 'shredder_2', 'shredder_3'],
+    base: { cost: 30, range: 2.375, dot: 2, slow: 0.6 },
+    paths: [
+      {
+        name: 'CROSS-CUT',
+        quote: 'Cross-cut, obviously.',
+        color: '#3fa7a0',
+        tiers: [
+          { name: 'Paper Shredder', desc: '+3 damage per second.', cost: 30, effect: { dotAdd: 3 } },
+          { name: 'Micro-Cut', desc: '+4 damage per second.', cost: 40, effect: { dotAdd: 4 } },
+          { name: 'Sticky Paper', desc: 'Damage keeps going for 3 seconds after leaving the zone.', cost: 90, effect: { bleed: 3 } },
+          { name: 'Industrial Shredder', desc: 'Two and a half times the damage, and everyone inside takes all of it.', cost: 230, effect: { dotMult: 2.5, unshared: true } },
+        ],
+      },
+      {
+        name: 'PAPER JAM',
+        quote: 'PC LOAD LETTER.',
+        color: '#e5a04b',
+        tiers: [
+          { name: 'Jam', desc: 'Slows harder.', cost: 20, effect: { slow: 0.45 } },
+          { name: 'Bigger Bin', desc: '+25% zone size.', cost: 30, effect: { rangeMult: 1.25 } },
+          { name: 'Paper Jam', desc: 'Every 6 seconds, everyone in the zone stops for a second.', cost: 80, effect: { stunPulse: { every: 6, duration: 1 } } },
+          { name: 'Out of Order', desc: 'Slows to a crawl, and the zone grows again.', cost: 180, effect: { slow: 0.25, rangeMult: 1.3 } },
+        ],
+      },
+      {
+        name: 'CONFIDENTIAL',
+        quote: 'For your eyes only. And the bin.',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Recycling', desc: 'Every colleague dealt with by the zone pays 1 extra Coffee.', cost: 15, effect: { killCoffee: 1 } },
+          { name: 'Confidential Bin', desc: '+2 damage per second.', cost: 25, effect: { dotAdd: 2 } },
+          { name: 'Compactor', desc: '+3 damage per second, and 2 more Coffee per colleague it deals with.', cost: 60, effect: { dotAdd: 3, killCoffee: 2 } },
+          { name: 'Document Destruction', desc: 'Every 10 seconds, everyone in the zone loses a quarter of their HP (bosses 5%).', cost: 170, effect: { hpPulse: { every: 10, share: 0.25, bossShare: 0.05 } } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (any path at 2-3), top (any path at 4). */
@@ -239,13 +423,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Headphones', unlockLevel: 2 },
-  { name: 'Office Artillery', unlockLevel: 2 },
-  { name: 'The Shredder', unlockLevel: 2 },
   { name: 'Quick Reply', unlockLevel: 3 },
   { name: 'Thumbtacks', unlockLevel: 4 },
   { name: 'Self-Service', unlockLevel: 4 },
