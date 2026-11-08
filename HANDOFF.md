@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.14.0 (2026-11-08)
+## Stand: v0.15.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,24 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 6 (v0.15.0): ontwerpkeuzes die ik maakte
+- Zichtmuren: `level.walls` (tegels). Blokkeren bouwen en zicht (`lineOfSight`, monsters om de
+  0,2 tegel); alleen niet-globale schietende torens hebben zicht nodig (Artillery lobt erover),
+  pulsen/zones/punaises niet. De stoel stopt bij een muur. Bots tellen met muren alleen zichtbaar
+  looppad (`seenCoverage`).
+- No Internet (`type: 'nointernet'`): WRITTEN-torens van spelers die nog niet opgelost hebben zijn
+  stil (`quiet = 'net'`). De dino-minigame (`src/ui/dino.ts`) vult in ~6 s schoon rennen;
+  `hazardOpenFor(player)` toont de juiste minigame. **Bots lossen deze na 8 s op** (een echte speler
+  doet dat ook); de projector laten ze liggen (zwaarste geval).
+- Waarom een toren stil is: `tower.quiet` = chat / cry / net, in de snapshot als `sil` 1/2/3.
+- Reply All: `aoe` (iedereen binnen de straal van het doelwit). Economie-test telt aoe als het
+  verwachte aantal geraakten in een groep met 0,8 tegel tussenruimte. Het cirkel-pad staat op
+  plek 3 (nut), zoals bij andere torens.
+- The Baby: `taunt` (torens binnen 3 richten eerst op hem) en `cry` (elke 11 s 2,5 s stil binnen
+  2,8; Noise Cancelling hoort het niet). Geen hulpjes (`addCount: 0`).
+- Medior-curve: 15 golven, start ~110 HP-eq, ~15% per golf. Goed spelen: 92 Focus en 3 sterren
+  (één Old Guard glipt door tijdens de Baby-golf: zijn mechaniek). Eerst koffie wint met 1 ster.
 
 ### Geluid (v0.14.0, wens van de maker)
 - Kantoorgeluiden opnieuw gemaakt met de sfx-MCP (zie `art/SOUND.md`).

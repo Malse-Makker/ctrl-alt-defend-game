@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.14.0)
+## Wat er nu in zit (v0.15.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy
@@ -28,6 +28,8 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
   bouwen, de lunchpauze (een stoet Interns en iedereen loopt even sneller) en The Cleaner.
 - **Level 5, Boardroom**: 22 golven in een lus rond de vergadertafel, de twee specials en Your
   Line Manager.
+- **Level 6, Work From Home** (medior): 15 golven door je eigen huis, muren waar je torens niet
+  doorheen kijken, de No Internet-dino, Reply All, The Cold Caller en The Baby.
 - **Torens**: Coffee Machine, Auto-Reply, Headphones (zet iedereen in een straal even stil),
   Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die schade
   verdeelt en onzichtbaren laat zien; vertraagt alleen als je hem laat vastlopen), Quick Reply (bouwt schade op tegen hetzelfde doelwit), Thumbtacks

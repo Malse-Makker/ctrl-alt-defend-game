@@ -33,7 +33,10 @@ Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 Per level: modellen in Blender (zelfde stijl), golven vertaald uit v0.88 en daarna gemeten met de
 bots, een eigen boss-mechaniek die een andere aanpak afdwingt.
 
-## Fase 3: medior en senior (v0.6 tot v1.0)
+## Fase 3: medior en senior
+
+KLAAR: Level 6 Work From Home (v0.15.0): zichtmuren, No Internet-dino, Reply All, The Cold Caller,
+The Baby.
 
 Levels 6-15 met hun hazards en mini-games (No Internet-dino, telefoon, brandalarm, formulier,
 pizza, oververhitting), de resterende torens (Reply All, Delegation, Pomodoro, Motivational Poster,

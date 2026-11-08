@@ -128,3 +128,22 @@ describe('Level 5 difficulty', () => {
     expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Level 6 difficulty (the first medior floor)', () => {
+  const level = LEVELS[6];
+
+  it('Auto-Replies alone are not enough: walls, outages and Cold Callers see to that', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  it('good play wins with three stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(r.focus).toBeGreaterThanOrEqual(90);
+  });
+
+  it('going for Coffee first still wins, if only just: on a medior floor that is a risk', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

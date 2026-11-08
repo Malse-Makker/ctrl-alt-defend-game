@@ -45,7 +45,16 @@ export interface LunchHazard {
   haste: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard;
+/** No Internet (Work From Home): your WRITTEN towers send nothing until you reconnect. */
+export interface NoInternetHazard {
+  type: 'nointernet';
+  first: number;
+  every: number;
+  window: number;
+  reward: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -72,6 +81,8 @@ export interface LevelDef {
   hazard?: HazardDef;
   /** Leave out for the grey office carpet. */
   look?: LevelLook;
+  /** Walls inside the floor: nothing is built on them, and towers cannot shoot through them. */
+  walls?: TileRect[];
 }
 
 export function startCoffee(levelId: number): number {
@@ -386,7 +397,71 @@ const L5: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5 };
+const L6: LevelDef = {
+  id: 6,
+  name: 'Work From Home',
+  block: 'medior',
+  intro: 'You thought working from home would be quiet. Your colleagues found the address.',
+  gimmick: 'A spiral through your house, with walls your towers cannot see through. The internet keeps dropping out. Reply All arrives, and so does The Cold Caller.',
+  size: { w: 18, h: 14 },
+  paths: [
+    [
+      { x: -1.5, y: 12.5 },
+      { x: 16.5, y: 12.5 },
+      { x: 16.5, y: 1.5 },
+      { x: 1.5, y: 1.5 },
+      { x: 1.5, y: 9.5 },
+      { x: 13.5, y: 9.5 },
+      { x: 13.5, y: 4.5 },
+      { x: 5.5, y: 4.5 },
+      { x: 5.5, y: 7.0 },
+    ],
+  ],
+  desk: { x: 5, y: 7 },
+  walls: [
+    { x: 3, y: 11, w: 10, h: 1 },
+    { x: 15, y: 3, w: 1, h: 7 },
+    { x: 4, y: 2, w: 9, h: 1 },
+  ],
+  decor: [
+    { model: 'sofa', rect: { x: 4, y: 10, w: 2, h: 1 } },
+    { model: 'tv_stand', rect: { x: 8, y: 10, w: 2, h: 1 } },
+    { model: 'plant', rect: { x: 11, y: 10, w: 1, h: 1 } },
+    { model: 'fridge', rect: { x: 14, y: 2, w: 1, h: 1 } },
+    { model: 'kitchen_counter', rect: { x: 14, y: 4, w: 1, h: 4 }, turn: 1 },
+    { model: 'bed', rect: { x: 2, y: 5, w: 2, h: 2 } },
+    { model: 'bookshelf', rect: { x: 12, y: 8, w: 1, h: 1 } },
+    { model: 'cat', rect: { x: 8, y: 6, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 17, y: 13, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall'],
+  startFocus: 100,
+  // Oak floorboards, and a green runner in the hall.
+  look: { floorA: '#b98d5f', floorB: '#ad8256', walkway: '#6f8f7a', edge: '#56705f', wall: '#ece6da' },
+  hazard: { type: 'nointernet', first: 60, every: 55, window: 12, reward: 6 },
+  // Medior: 15 waves that start where the junior floors left off and climb about 15% a wave.
+  // The Cold Caller (only IN PERSON hurts him) from wave 3.
+  waves: [
+    'intern:16@0.50 + newhire:3@0.95 + chaser:4@0.20',
+    'intern:14@0.48 + newhire:4@0.90 + chaser:4@0.20',
+    'chaser:12@0.16 + coldcaller:1@1.10 + newhire:5@0.85',
+    'oldguard:1@2.00 + intern:12@0.45 + coldcaller:1@1.00 + chaser:3@0.18',
+    'impersonator:4@0.80 + newhire:6@0.80 + coldcaller:2@1.00 + chaser:4@0.18',
+    'boardmember:1@1.60 + coldcaller:3@0.95 + intern:16@0.42 + chaser:10@0.14',
+    'oldguard:1@1.60 + chatterbox:2@1.60 + coldcaller:3@0.95 + intern:14@0.42',
+    'chaser:40@0.10 + coldcaller:3@0.90 + newhire:8@0.75',
+    'requester:4@1.00 + boardmember:2@1.50 + coldcaller:4@0.85 + impersonator:4@0.60 + chaser:10@0.12',
+    'oldguard:2@1.40 + coldcaller:5@0.85 + intern:20@0.38 + chaser:12@0.12',
+    'chaser:50@0.09 + newhire:12@0.65 + coldcaller:5@0.80 + chatterbox:1@1.50',
+    'oldguard:2@1.30 + requester:4@0.95 + coldcaller:6@0.80 + impersonator:5@0.55 + newhire:5@0.70',
+    'boardmember:3@1.30 + coldcaller:7@0.75 + newhire:14@0.60 + chaser:40@0.09',
+    'oldguard:2@1.20 + coldcaller:7@0.70 + requester:5@0.90 + chaser:34@0.09 + newhire:8@0.65',
+    'baby:1@2.00 + newhire:6@0.70 + coldcaller:3@0.80',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

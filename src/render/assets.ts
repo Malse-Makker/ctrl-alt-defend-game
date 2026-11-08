@@ -75,6 +75,16 @@ export const MODEL_NAMES = [
   'linemanager',
   'boardroom_table',
   'sideboard',
+  'replyall_1',
+  'replyall_2',
+  'replyall_3',
+  'coldcaller',
+  'baby',
+  'sofa',
+  'tv_stand',
+  'bed',
+  'bookshelf',
+  'cat',
 ] as const;
 
 export class Assets {

@@ -70,6 +70,21 @@ export class World {
       g.add(door);
     }
 
+    // Walls inside the floor (Work From Home): lower than the outer walls, so you can still see
+    // over them, and with a light cap so the line reads from above.
+    const capMat = new THREE.MeshStandardMaterial({ color: PAL.wallTrim, roughness: 0.8 });
+    for (const r of level.walls ?? []) {
+      const alongX = r.w >= r.h;
+      const len = alongX ? r.w : r.h;
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.2, 1.1, alongX ? 0.2 : len), wallMat);
+      wall.position.set(r.x + r.w / 2, 0.55, r.y + r.h / 2);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len + 0.04 : 0.26, 0.05, alongX ? 0.26 : len + 0.04), capMat);
+      cap.position.set(r.x + r.w / 2, 1.12, r.y + r.h / 2);
+      g.add(wall, cap);
+    }
+
     for (const d of level.decor) {
       const obj = assets.clone(d.model);
       obj.position.set(d.rect.x + d.rect.w / 2, 0, d.rect.y + d.rect.h / 2);

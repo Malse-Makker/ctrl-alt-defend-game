@@ -26,3 +26,4 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | roll | de bureaustoel gaat rijden | preset `swoosh`, profiel `mechanical-click`, 420 Hz, tremolo (wieltjes) |
 | cash | pot claimen, Coffee krijgen van een collega | preset `coin`, profiel `bright-ui-tick` |
 | key1-3, keyspace | iemand typt op de achtergrond; sneller en harder bij weinig Focus (`setTyping` in `sfx.ts`) | preset `click`, profiel `mechanical-click`, 1500-2300 Hz; spatie 700 Hz |
+| cry | The Baby krijgt een huilbui | preset `alarm`, profiel `soft-notification`, 620 Hz met trillende toonhoogte |

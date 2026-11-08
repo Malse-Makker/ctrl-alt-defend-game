@@ -140,6 +140,8 @@ export interface Effect {
   pilesAdd?: number;
   /** Hits get through a shield no matter how light they are (the Old Guard's archive box). */
   ignoresMinHit?: boolean;
+  /** Reply All: a wider circle around the target. */
+  aoeMult?: number;
   // Keyboard Smash
   /** Bigger slam. */
   radiusMult?: number;
@@ -187,6 +189,8 @@ export interface TowerBase {
   rollSpeed?: number;
   /** How many colleagues one shot hits (Self-Service answers everyone around it). */
   targets?: number;
+  /** Reply All: everyone within this distance of the target is hit too, as many as there are. */
+  aoe?: number;
   /** Trap: tacks per pile, and how long a pile stays on the floor. */
   pierce?: number;
   pileLife?: number;
@@ -726,6 +730,54 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  replyall: {
+    id: 'replyall',
+    name: 'Reply All',
+    flavour: 'Adding a few more people.',
+    verb: 'Slow, but every email lands on everyone standing near the colleague it was meant for. The bigger the crowd, the better.',
+    role: 'damage',
+    damageClass: 'written',
+    unlockLevel: 6,
+    accent: '#e2557a',
+    models: ['replyall_1', 'replyall_2', 'replyall_3'],
+    base: { cost: 26, range: 3.0, interval: 1.4, damage: 3, aoe: 0.9 },
+    paths: [
+      {
+        name: 'URGENT',
+        quote: 'Marked as high importance.',
+        color: '#e5534b',
+        tiers: [
+          { name: 'High Priority', desc: '+2 damage.', cost: 15, effect: { damageAdd: 2 } },
+          { name: 'Read Receipt', desc: '+3 damage.', cost: 35, effect: { damageAdd: 3 } },
+          { name: 'URGENT', desc: '+7 damage, and it gets through any shield.', cost: 100, effect: { damageAdd: 7, ignoresMinHit: true } },
+          { name: 'Escalated', desc: '+16 damage, and bosses take double.', cost: 260, effect: { damageAdd: 16, bossMult: 2 } },
+        ],
+      },
+      {
+        name: 'THREAD',
+        quote: 'Re: Re: Re: Fwd:',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Reply', desc: 'Sends 33% more often.', cost: 12, effect: { intervalMult: 0.75 } },
+          { name: 'Reply Again', desc: 'Sends 33% more often again.', cost: 25, effect: { intervalMult: 0.75 } },
+          { name: 'Reply Storm', desc: 'Two emails at once, to two different colleagues, a bit faster and +1 damage.', cost: 90, effect: { targetsAdd: 1, intervalMult: 0.85, damageAdd: 1 } },
+          { name: 'Infinite Loop', desc: 'Sends twice as often.', cost: 230, effect: { intervalMult: 0.5 } },
+        ],
+      },
+      {
+        name: 'EVERYONE',
+        quote: 'Looping in the wider team.',
+        color: '#e2557a',
+        tiers: [
+          { name: 'CC the Team', desc: 'Lands 30% wider.', cost: 15, effect: { aoeMult: 1.3 } },
+          { name: 'Distribution List', desc: 'Lands 30% wider again.', cost: 30, effect: { aoeMult: 1.3 } },
+          { name: 'Company-Wide Email', desc: 'Everyone it hits slows down while they read it, and it lands a bit wider.', cost: 90, effect: { slowOnHit: { mult: 0.65, time: 1.2 }, aoeMult: 1.2 } },
+          { name: 'All Staff', desc: 'Lands twice as wide, and +6 damage.', cost: 240, effect: { aoeMult: 2, damageAdd: 6 } },
+        ],
+      },
+    ],
+  },
+
 };
 
 /** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
@@ -755,11 +807,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Reply All', unlockLevel: 6 },
   { name: 'Delegation', unlockLevel: 7 },
   { name: 'Pomodoro Timer', unlockLevel: 8 },
   { name: 'Motivational Poster', unlockLevel: 9 },

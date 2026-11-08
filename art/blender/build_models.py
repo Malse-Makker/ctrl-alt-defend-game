@@ -1470,6 +1470,184 @@ def b_sideboard():
     return root
 
 
+# ---------------------------------------------------------------- level 6: working from home
+
+def _envelope_fan(x, y, z, n, spread, seed=0):
+    out = []
+    for i in range(n):
+        a = -spread / 2 + spread * i / max(1, n - 1)
+        r = 0.18 + (i % 3) * 0.05
+        ex, ez = x + math.sin(a) * r, z + 0.12 + math.cos(a) * r * 0.8
+        env = box(f"Env{seed}_{i}", (0.12, 0.012, 0.08), loc=(ex, y, ez), material=mat(["paper", "pink", "paper"][i % 3], emit=0.2))
+        kit.tilt([env], ry=a, pivot=(ex, y, ez + 0.04))
+        flap = box(f"Flap{seed}_{i}", (0.12, 0.014, 0.025), loc=(ex, y - 0.001, ez + 0.055), material=mat("pink"), taper=0.3)
+        kit.tilt([flap], ry=a, pivot=(ex, y, ez + 0.04))
+        out += [env, flap]
+    return out
+
+
+def b_replyall_1():
+    root = empty("replyall_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _laptop(0, 0.05, h)
+    parts += _envelope_fan(0, 0.05, h + 0.25, 3, 1.0)
+    ob = join("replyall_1_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_replyall_2():
+    root = empty("replyall_2")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    parts += _monitor(0, 0.15, h, screen_key="pink", emit=1.2)
+    parts += _envelope_fan(0, 0.12, h + 0.42, 5, 1.6, seed=1)
+    at = cyl("At", 0.05, 0.02, loc=(0.22, -0.15, h), material=mat("pink", emit=0.8), verts=16)
+    ob = join("replyall_2_mesh", parts + [at])
+    parent(ob, root)
+    return root
+
+
+def b_replyall_3():
+    root = empty("replyall_3")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_white")
+    parts += _monitor(-0.18, 0.15, h, screen_key="pink", emit=1.4)
+    parts += _monitor(0.18, 0.15, h, screen_key="pink", emit=1.4)
+    horn = cyl("Megaphone", 0.04, 0.22, loc=(0.0, -0.1, h + 0.12), material=mat("red", rough=0.4), verts=12, radius_top=0.1, rot=(math.pi / 2 + 0.3, 0, 0))
+    parts.append(horn)
+    parts += _envelope_fan(0, 0.12, h + 0.55, 8, 2.4, seed=2)
+    ob = join("replyall_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_coldcaller():
+    s = 1.0
+    root, body, hz = person("coldcaller", "teal", "charcoal", "skin_2", "hair_dark", style="short", h=s)
+    band = box("Band", (0.28, 0.03, 0.03), loc=(0, 0.01, hz + 0.13), material=mat("plastic_black"))
+    cup = ball("Cup", 0.045, loc=(-0.13, 0, hz), material=mat("plastic_black"), subdiv=1)
+    mic = box("Mic", (0.02, 0.12, 0.02), loc=(-0.12, -0.08, hz - 0.06), material=mat("plastic_black"))
+    badge = box("Badge", (0.06, 0.012, 0.04), loc=(0.08, -0.106, 0.6), material=mat("plastic_white"))
+    acc = join("Props", [band, cup, mic, badge])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -2.4
+    hp = _hand_world(arm, s)
+    phone = box("Phone", (0.04, 0.02, 0.12), loc=(hp.x, hp.y, hp.z - 0.04), material=mat("plastic_black"), bevel=0.006)
+    _hold(root, "R", s, [phone])
+    return root
+
+
+def b_baby():
+    s = 1.0
+    root = empty("baby")
+    yellow = mat("yellow", rough=0.7)
+    skin = mat("skin_1")
+    body = box("Body", (0.34, 0.26, 0.3), loc=(0, 0, 0.16), material=yellow, bevel=0.08)
+    head = ball("Head", 0.17, loc=(0, -0.02, 0.6), material=skin, subdiv=2, scale=(1, 0.95, 1.0))
+    tuft = ball("Tuft", 0.04, loc=(0, 0, 0.79), material=mat("hair_blond"), subdiv=1, scale=(1, 1, 1.6))
+    eyes = [box(f"Eye{i}", (0.03, 0.01, 0.035), loc=(x, -0.17, 0.62), material=mat("plastic_black")) for i, x in enumerate((-0.06, 0.06))]
+    paci = cyl("Pacifier", 0.045, 0.02, loc=(0, -0.2, 0.53), material=mat("pink", rough=0.4), verts=14, rot=(math.pi / 2, 0, 0))
+    ring = cyl("PaciRing", 0.03, 0.012, loc=(0, -0.22, 0.53), material=mat("teal"), verts=12, rot=(math.pi / 2, 0, 0))
+    bib = box("Bib", (0.18, 0.01, 0.12), loc=(0, -0.13, 0.33), material=mat("plastic_white"), bevel=0.02)
+    parts = [body, head, tuft, paci, ring, bib] + eyes
+    ob = join("Body", parts)
+    parent(ob, root)
+    for side, x in (("L", 0.09), ("R", -0.09)):
+        leg = box(f"Leg{side}", (0.11, 0.13, 0.16), loc=(x, 0, 0), material=yellow, bevel=0.03)
+        parent(leg, root)
+        set_origin(leg, (x, 0, 0.16))
+    for side, x in (("L", 0.2), ("R", -0.2)):
+        arm = box(f"Arm{side}", (0.08, 0.08, 0.2), loc=(x, 0, 0.2), material=yellow, bevel=0.03)
+        hand = ball(f"Hand{side}", 0.045, loc=(x, 0, 0.2), material=skin, subdiv=1)
+        parts2 = [arm, hand]
+        if side == "R":
+            parts2.append(cyl("Rattle", 0.012, 0.1, loc=(x, -0.02, 0.1), material=mat("plastic_white"), verts=6))
+            parts2.append(ball("RattleTop", 0.04, loc=(x, -0.02, 0.08), material=mat("red"), subdiv=1))
+        a = join(f"Arm{side}", parts2)
+        set_origin(a, (x, 0, 0.4))
+        parent(a, root)
+    return root
+
+
+def b_sofa():
+    root = empty("sofa")
+    base = box("Base", (1.8, 0.8, 0.4), loc=(0, 0.05, 0.06), material=mat("#5d7a99", rough=0.8), bevel=0.04)
+    back = box("Back", (1.8, 0.22, 0.45), loc=(0, 0.35, 0.36), material=mat("#5d7a99", rough=0.8), bevel=0.05)
+    arms = [box(f"Arm{i}", (0.2, 0.8, 0.3), loc=(x, 0.05, 0.36), material=mat("#56718e", rough=0.8), bevel=0.05) for i, x in enumerate((-0.85, 0.85))]
+    cushions = [box(f"Cushion{i}", (0.72, 0.6, 0.12), loc=(x, -0.02, 0.46), material=mat("#6c8bab", rough=0.85), bevel=0.04) for i, x in enumerate((-0.37, 0.37))]
+    pillow = box("Pillow", (0.3, 0.12, 0.28), loc=(-0.55, 0.18, 0.55), material=mat("yellow", rough=0.8), bevel=0.05)
+    feet = [cyl(f"Foot{i}", 0.03, 0.06, loc=(x, y, 0), material=mat("wood_dark"), verts=8) for i, (x, y) in enumerate(((0.8, 0.35), (-0.8, 0.35), (0.8, -0.3), (-0.8, -0.3)))]
+    ob = join("sofa_mesh", [base, back, pillow] + arms + cushions + feet)
+    parent(ob, root)
+    return root
+
+
+def b_tv_stand():
+    root = empty("tv_stand")
+    cab = box("Cabinet", (1.7, 0.45, 0.42), loc=(0, 0.1, 0), material=mat("wood", rough=0.6), bevel=0.02)
+    doors = [box(f"Door{i}", (0.8, 0.01, 0.32), loc=(x, -0.125, 0.05), material=mat("wood_dark", rough=0.6)) for i, x in enumerate((-0.42, 0.42))]
+    stand = box("TvStand", (0.3, 0.2, 0.04), loc=(0, 0.12, 0.42), material=mat("plastic_black"))
+    neck = box("TvNeck", (0.06, 0.04, 0.15), loc=(0, 0.14, 0.44), material=mat("plastic_black"))
+    tv = box("Tv", (1.3, 0.05, 0.75), loc=(0, 0.14, 0.58), material=mat("plastic_black"), bevel=0.01)
+    screen = box("Screen", (1.22, 0.006, 0.67), loc=(0, 0.112, 0.62), material=mat("blue", emit=0.8))
+    call = [box(f"Tile{i}{j}", (0.28, 0.008, 0.14), loc=(-0.45 + i * 0.3, 0.108, 0.68 + j * 0.18), material=mat(["skin_1", "skin_2", "teal", "orange"][(i + j) % 4], emit=0.6)) for i in range(4) for j in range(3)]
+    ob = join("tv_stand_mesh", [cab, stand, neck, tv, screen] + doors + call)
+    parent(ob, root)
+    return root
+
+
+def b_bed():
+    root = empty("bed")
+    frame = box("Frame", (1.7, 1.9, 0.3), loc=(0, 0, 0.05), material=mat("wood", rough=0.6), bevel=0.03)
+    head = box("Headboard", (1.7, 0.1, 0.7), loc=(0, 0.95, 0.05), material=mat("wood_dark", rough=0.6), bevel=0.03)
+    mattress = box("Mattress", (1.6, 1.8, 0.16), loc=(0, -0.02, 0.35), material=mat("plastic_white", rough=0.9), bevel=0.04)
+    duvet = box("Duvet", (1.62, 1.2, 0.08), loc=(0, -0.3, 0.48), material=mat("#8e6fbf", rough=0.9), bevel=0.04)
+    pillows = [box(f"Pillow{i}", (0.6, 0.35, 0.12), loc=(x, 0.65, 0.5), material=mat("plastic_white", rough=0.9), bevel=0.05) for i, x in enumerate((-0.38, 0.38))]
+    laptop = _laptop(0.3, -0.3, 0.56)[:2]
+    ob = join("bed_mesh", [frame, head, mattress, duvet] + pillows + laptop)
+    parent(ob, root)
+    return root
+
+
+def b_bookshelf():
+    root = empty("bookshelf")
+    body = box("Body", (0.8, 0.35, 1.6), loc=(0, 0.1, 0), material=mat("wood", rough=0.6), bevel=0.01)
+    back = box("Back", (0.76, 0.02, 1.56), loc=(0, 0.26, 0.02), material=mat("wood_dark"))
+    parts = [body, back]
+    for r in range(4):
+        z = 0.08 + r * 0.38
+        parts.append(box(f"Shelf{r}", (0.74, 0.32, 0.03), loc=(0, 0.08, z), material=mat("wood_dark")))
+        x = -0.32
+        i = 0
+        while x < 0.3:
+            w = 0.05 + ((r * 7 + i * 3) % 4) * 0.015
+            hgt = 0.22 + ((r + i) % 3) * 0.04
+            parts.append(box(f"Book{r}_{i}", (w, 0.24, hgt), loc=(x + w / 2, 0.05, z + 0.03), material=mat(["red", "blue", "yellow", "teal", "pink", "orange", "navy"][(r * 3 + i) % 7], rough=0.7)))
+            x += w + 0.01
+            i += 1
+    ob = join("bookshelf_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_cat():
+    """A cat asleep on a cushion, right where you wanted to put something."""
+    root = empty("cat")
+    cushion = cyl("Cushion", 0.32, 0.08, loc=(0, 0, 0), material=mat("#c96a3d", rough=0.9), verts=20)
+    fur = mat("#3b3f46", rough=0.9)
+    body = ball("CatBody", 0.18, loc=(0, 0.02, 0.16), material=fur, subdiv=2, scale=(1.2, 0.9, 0.6))
+    head = ball("CatHead", 0.1, loc=(0.16, -0.08, 0.2), material=fur, subdiv=2)
+    ears = [box(f"Ear{i}", (0.05, 0.03, 0.06), loc=(0.16 + dx, -0.08, 0.27), material=fur, taper=0.1) for i, dx in enumerate((-0.05, 0.05))]
+    tail = cyl("Tail", 0.03, 0.3, loc=(-0.2, -0.05, 0.1), material=fur, verts=8, rot=(0, math.pi / 2, 0.6))
+    eyes = [box(f"CatEye{i}", (0.03, 0.01, 0.006), loc=(0.16 + dx, -0.175, 0.21), material=mat("plastic_white")) for i, dx in enumerate((-0.03, 0.03))]
+    ob = join("cat_mesh", [cushion, body, head, tail] + ears + eyes)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -1541,6 +1719,16 @@ BUILDERS = {
     "linemanager": b_linemanager,
     "boardroom_table": b_boardroom_table,
     "sideboard": b_sideboard,
+    "replyall_1": b_replyall_1,
+    "replyall_2": b_replyall_2,
+    "replyall_3": b_replyall_3,
+    "coldcaller": b_coldcaller,
+    "baby": b_baby,
+    "sofa": b_sofa,
+    "tv_stand": b_tv_stand,
+    "bed": b_bed,
+    "bookshelf": b_bookshelf,
+    "cat": b_cat,
 }
 
 

@@ -105,13 +105,19 @@ describe('upgrade paths (Bloons rule: 4-2-0)', () => {
 
 describe('tower balance rule', () => {
   // Ramping towers (Quick Reply) are built for one big target: count them fully built up, with any
-  // extra targets unramped. Everything else is measured against a crowd of five.
+  // extra targets unramped. Reply All lands on everyone near its target: count the colleagues an
+  // email catches in a crowd spaced 0.8 tiles apart. Everything else is measured against a crowd
+  // of five.
   const ramped = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : 1);
+  const aoeHits = (s: ReturnType<typeof computeStats>) => Math.min(5, s.targets * (1 + (2 * s.aoe) / 0.8));
+  /** What one copy is worth on its own terms: one target, built up, or the circle it lands on. */
+  const worth = (s: ReturnType<typeof computeStats>) => (s.damage / s.interval) * (s.aoe > 0 ? aoeHits(s) : ramped(s));
+  const reach = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : s.aoe > 0 ? aoeHits(s) : Math.min(5, s.targets + s.splash + s.bounce));
   const crowdDps = (def: (typeof TOWERS)[string], tiers: Tiers) => {
     const s = computeStats(def, tiers);
     const dps = s.damage / s.interval;
     if (s.rampMax > 0) return dps * s.rampMax + dps * (s.targets - 1);
-    return dps * Math.min(5, s.targets + s.splash + s.bounce);
+    return dps * reach(s);
   };
   const copiesDps = (def: (typeof TOWERS)[string], coffee: number) => {
     const b = computeStats(def, [0, 0, 0]);
@@ -119,8 +125,7 @@ describe('tower balance rule', () => {
     let spent = 0;
     while (spent + placeCost(def, n) <= coffee) spent += placeCost(def, n++);
     // Copies hit the crowd the same way the tower itself does (Self-Service answers all five).
-    const reach = b.rampMax > 0 ? b.rampMax : Math.min(5, b.targets + b.splash + b.bounce);
-    return n * (b.damage / b.interval) * reach;
+    return n * (b.damage / b.interval) * reach(b);
   };
   // Thumbtacks: what the piles can deal per second if every tack lands (a dense crowd).
   const tackCapacity = (def: (typeof TOWERS)[string], tiers: Tiers) => {
@@ -132,12 +137,12 @@ describe('tower balance rule', () => {
     for (const def of Object.values(TOWERS)) {
       if (def.role !== 'damage') continue;
       const b = computeStats(def, [0, 0, 0]);
-      const copy = ((b.damage / b.interval) * ramped(b)) / placeCost(def, 2);
+      const copy = worth(b) / placeCost(def, 2);
       for (const p of [0, 1]) {
         const tiers: Tiers = [0, 0, 0];
         tiers[p] = 1;
         const s = computeStats(def, tiers);
-        const gain = ((s.damage / s.interval) * ramped(s) - (b.damage / b.interval) * ramped(b)) / def.paths[p].tiers[0].cost;
+        const gain = (worth(s) - worth(b)) / def.paths[p].tiers[0].cost;
         expect(gain, `${def.id} path ${p}`).toBeGreaterThan(copy);
       }
     }

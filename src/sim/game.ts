@@ -90,6 +90,8 @@ export interface Enemy {
   stunRecover: number;
   phase: 1 | 2 | 3;
   addTimer: number;
+  /** The Baby: seconds until the next crying fit. */
+  cryTimer: number;
   /** Spawned mid-route (split or boss add) rather than at the door. */
   isAdd: boolean;
   spawnedAt: number;
@@ -120,6 +122,10 @@ export interface Tower {
   pot: number;
   /** A Chatterbox is talking next to it: it does nothing this tick. */
   silenced: boolean;
+  /** Why it is quiet: a Chatterbox, a crying Baby, or no internet. Null when it works. */
+  quiet: 'chat' | 'cry' | 'net' | null;
+  /** Seconds left of a crying fit it has to sit through. */
+  hushed: number;
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
   rateBuff: number;
   pulseTimer: number;
@@ -209,6 +215,8 @@ export interface LiveTowerStats {
   rampMax: number;
   rampKeep: number;
   slowOnHit: Effect['slowOnHit'] | null;
+  /** Reply All: radius of the hit around the target. */
+  aoe: number;
   /** Thumbtacks: tacks per pile, seconds a pile lasts, piles per drop, and hits that ignore shields. */
   pierce: number;
   pileLife: number;
@@ -265,6 +273,7 @@ export type GameEvent =
   | { t: 'mopped'; towerId: number; enemyId: number }
   | { t: 'smash'; towerId: number; x: number; y: number; radius: number }
   | { t: 'chairRoll'; towerId: number }
+  | { t: 'cry'; enemyId: number; x: number; y: number; radius: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -321,7 +330,7 @@ export interface TowerSnap {
   dmg: number;
   kills: number;
   coffee: number;
-  /** 1 while a Chatterbox silences it. */
+  /** Why it is quiet: 0 working, 1 a Chatterbox, 2 a crying Baby, 3 no internet. */
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
@@ -416,6 +425,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rampMax: b.ramp?.max ?? 0,
     rampKeep: 0,
     slowOnHit: null,
+    aoe: b.aoe ?? 0,
     pierce: b.pierce ?? 0,
     pileLife: b.pileLife ?? 0,
     piles: 1,
@@ -430,6 +440,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rollBack: false,
   };
   let radiusMult = 1;
+  let aoeMult = 1;
   let barrierHpMult = 1;
   let chairHpMult = 1;
   let speedMult = 1;
@@ -462,6 +473,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     pileLifeMult *= e.pileLifeMult ?? 1;
     if (e.ignoresMinHit) s.ignoresMinHit = true;
     radiusMult *= e.radiusMult ?? 1;
+    aoeMult *= e.aoeMult ?? 1;
     s.barrierHp += e.barrierHpAdd ?? 0;
     barrierHpMult *= e.barrierHpMult ?? 1;
     s.barrierTime += e.barrierTimeAdd ?? 0;
@@ -495,6 +507,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
   s.dot = (s.dot + dotAdd) * dotMult;
   s.range = s.global ? Infinity : (s.range + rangeAdd) * rangeMult;
   s.smashRadius *= radiusMult;
+  s.aoe *= aoeMult;
   s.barrierHp *= barrierHpMult;
   s.chairHp *= chairHpMult;
   s.rollSpeed *= speedMult;
@@ -538,6 +551,7 @@ export class Game {
   private nextId = 1;
   private rng: Rng;
   private tiles: Uint8Array;
+  private walls: Uint8Array | null = null;
 
   constructor(level: LevelDef, opts: GameOptions = {}) {
     this.level = level;
@@ -576,6 +590,12 @@ export class Game {
     };
     this.tiles = new Uint8Array(level.size.w * level.size.h);
     for (const d of level.decor) this.markRect(d.rect.x, d.rect.y, d.rect.w, d.rect.h, TILE_BLOCKED);
+    // Walls block building, and sight.
+    this.walls = level.walls && level.walls.length ? new Uint8Array(level.size.w * level.size.h) : null;
+    for (const r of level.walls ?? []) {
+      this.markRect(r.x, r.y, r.w, r.h, TILE_BLOCKED);
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (this.inBounds(x, y)) this.walls![y * level.size.w + x] = 1;
+    }
     this.markRect(level.desk.x, level.desk.y, 1, 1, TILE_BLOCKED);
     for (let ty = 0; ty < level.size.h; ty++) {
       for (let tx = 0; tx < level.size.w; tx++) {
@@ -669,6 +689,22 @@ export class Game {
 
   isPathTile(tx: number, ty: number): boolean {
     return this.inBounds(tx, ty) && (this.tiles[ty * this.level.size.w + tx] & TILE_PATH) !== 0;
+  }
+
+  isWall(tx: number, ty: number): boolean {
+    return this.walls !== null && this.inBounds(tx, ty) && this.walls[ty * this.level.size.w + tx] === 1;
+  }
+
+  /** Can a tower at a see a colleague at b, or is there a wall in between? */
+  lineOfSight(ax: number, ay: number, bx: number, by: number): boolean {
+    if (!this.walls) return true;
+    const d = Math.hypot(bx - ax, by - ay);
+    const steps = Math.ceil(d / 0.2);
+    for (let i = 1; i < steps; i++) {
+      const k = i / steps;
+      if (this.isWall(Math.floor(ax + (bx - ax) * k), Math.floor(ay + (by - ay) * k))) return false;
+    }
+    return true;
   }
 
   isBlockedTile(tx: number, ty: number): boolean {
@@ -772,6 +808,8 @@ export class Game {
       abilityTimer: 0,
       pot: 0,
       silenced: false,
+      quiet: null,
+      hushed: 0,
       rateBuff: 1,
       pulseTimer: 0,
       rampTarget: 0,
@@ -971,7 +1009,7 @@ export class Game {
         dmg: Math.round(t.stats.damage),
         kills: t.stats.kills,
         coffee: r3(t.stats.coffee),
-        sil: t.silenced ? 1 : 0,
+        sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : 1,
         mop: t.mopped > 0 ? 1 : 0,
         dir: t.dir,
         roll: r3(t.roll),
@@ -1036,6 +1074,8 @@ export class Game {
         abilityTimer: 0,
         pot: 0,
         silenced: false,
+        quiet: null,
+        hushed: 0,
         rateBuff: 1,
         pulseTimer: 0,
         rampTarget: 0,
@@ -1059,7 +1099,8 @@ export class Game {
       t.stats.damage = ts.dmg;
       t.stats.kills = ts.kills;
       t.stats.coffee = ts.coffee;
-      t.silenced = ts.sil === 1;
+      t.silenced = ts.sil > 0;
+      t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 1 ? 'chat' : null;
       t.mopped = ts.mop === 1 ? 1 : 0;
       t.dir = ts.dir ?? 0;
       t.roll = ts.roll ?? 0;
@@ -1101,6 +1142,7 @@ export class Game {
         stunFalloff: 1,
         stunRecover: 0,
         addTimer: 0,
+        cryTimer: 0,
         spawnedAt: 0,
       };
     });
@@ -1120,6 +1162,12 @@ export class Game {
     return this.hazardOn && this.level.hazard?.type === 'projector' && !this.hazardSolved.includes(player);
   }
 
+  /** Is there a mini-game waiting for this player (the projector, or getting back online)? */
+  hazardOpenFor(player: number): boolean {
+    const type = this.level.hazard?.type;
+    return this.hazardOn && (type === 'projector' || type === 'nointernet') && !this.hazardSolved.includes(player);
+  }
+
   /** Lunch break: everyone on the floor walks faster while it lasts. */
   get lunchHaste(): number {
     const hz = this.level.hazard;
@@ -1129,7 +1177,7 @@ export class Game {
   /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
   solveHazard(player: number): Check {
     const hz = this.level.hazard;
-    if (!hz || hz.type !== 'projector' || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
+    if (!hz || hz.type === 'lunch' || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
     if (this.hazardSolved.includes(player)) return { ok: false, reason: 'You already did your part.' };
     this.hazardSolved.push(player);
     const bonus = hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time));
@@ -1296,6 +1344,7 @@ export class Game {
       stunRecover: 0,
       phase: 1,
       addTimer: 4,
+      cryTimer: def.boss?.cry?.every ?? 0,
       isAdd,
       spawnedAt: this.time,
     };
@@ -1395,6 +1444,7 @@ export class Game {
       e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
+    const offline = this.hazardOn && this.level.hazard?.type === 'nointernet';
     // Your Line Manager's last phase: towers near him reload slower.
     const nags = this.enemies.filter((e) => e.alive && e.def.boss?.towerSlow && e.phase >= e.def.boss.towerSlow.fromPhase);
     for (const t of this.towers) {
@@ -1405,8 +1455,15 @@ export class Game {
         if (Math.hypot(t.x - n.x, t.y - n.y) <= ts.radius) r *= ts.mult;
       }
       t.rateBuff = r;
-      t.silenced =
-        t.def.role !== 'economy' && talkers.length > 0 && !this.liveStats(t).silenceProof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!);
+      // Quiet for one of three reasons. Coffee Machines never are.
+      t.quiet = null;
+      if (t.def.role !== 'economy') {
+        const proof = this.liveStats(t).silenceProof;
+        if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!)) t.quiet = 'chat';
+        else if (!proof && t.hushed > 0) t.quiet = 'cry';
+        else if (offline && t.def.damageClass === 'written' && !this.hazardSolved.includes(t.owner)) t.quiet = 'net';
+      }
+      t.silenced = t.quiet !== null;
     }
   }
 
@@ -1453,6 +1510,16 @@ export class Game {
       const b = e.def.boss;
       if (!e.alive || !b) continue;
       if (b.sweep && this.onFloor(e)) this.sweep(e, b.sweep);
+      if (b.cry && this.onFloor(e) && (e.cryTimer -= dt) <= 0) {
+        // A crying fit: every tower nearby has to stop and look. Noise Cancelling does not hear it.
+        e.cryTimer = b.cry.every;
+        for (const t of this.towers) {
+          if (t.def.role === 'economy' || Math.hypot(t.x - e.x, t.y - e.y) > b.cry.radius || this.liveStats(t).silenceProof) continue;
+          t.hushed = Math.max(t.hushed, b.cry.duration);
+        }
+        this.events.push({ t: 'cry', enemyId: e.id, x: e.x, y: e.y, radius: b.cry.radius });
+      }
+      if (b.addCount <= 0) continue;
       if (b.addsFromPhase && e.phase < b.addsFromPhase) continue;
       e.addTimer -= dt;
       if (e.addTimer <= 0) {
@@ -1492,6 +1559,7 @@ export class Game {
     for (const e of this.enemies) e.revealed = false;
     for (const t of this.towers) {
       if (t.mopped > 0) t.mopped = Math.max(0, t.mopped - dt);
+      if (t.hushed > 0) t.hushed = Math.max(0, t.hushed - dt);
       if (t.def.role === 'zone' && !t.silenced && t.mopped <= 0) {
         const r = this.liveStats(t).range;
         for (const e of this.enemies) if (Math.hypot(e.x - t.x, e.y - t.y) <= r) e.revealed = true;
@@ -1735,7 +1803,16 @@ export class Game {
   laneLength(t: Tower, range: number): number {
     const d = CHAIR_DIRS[t.dir];
     const { w, h } = this.level.size;
-    const room = d.x > 0 ? w - t.x : d.x < 0 ? t.x : d.y > 0 ? h - t.y : t.y;
+    let room = d.x > 0 ? w - t.x : d.x < 0 ? t.x : d.y > 0 ? h - t.y : t.y;
+    // A wall stops it too.
+    if (this.walls) {
+      for (let k = 0.5; k < room; k += 0.25) {
+        if (this.isWall(Math.floor(t.x + d.x * k), Math.floor(t.y + d.y * k))) {
+          room = k;
+          break;
+        }
+      }
+    }
     return Math.max(0, Math.min(range, room - 0.3));
   }
 
@@ -1982,7 +2059,11 @@ export class Game {
       if (!this.visibleTo(e, seesHidden)) continue;
       const d = dist(t, e);
       if (d > range) continue;
-      cands.push({ e, d, score: this.targetScore(t.target, e, d) });
+      // Walls: no shooting through them (Office Artillery lobs over).
+      if (this.walls && !t.def.base.global && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
+      // All the attention: towers close to a taunting colleague aim at him first.
+      const taunt = e.def.taunt !== undefined && d <= e.def.taunt ? 1e6 : 0;
+      cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });
     }
     cands.sort((a, b) => b.score - a.score || a.e.id - b.e.id);
     return cands.slice(0, n).map((c) => c.e);
@@ -2014,6 +2095,14 @@ export class Game {
     this.hitOne(t, target, s, t.x, t.y, travel, 'reply', hit, mult);
     let from: Enemy = target;
     let delay = travel;
+    if (s.aoe > 0) {
+      // Reply All: everyone near the target gets it too.
+      for (const e of this.enemies) {
+        if (!e.alive || hit.has(e) || !this.visibleTo(e, s.seesHidden) || Math.hypot(e.x - target.x, e.y - target.y) > s.aoe) continue;
+        if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
+        this.hitOne(t, e, s, target.x, target.y, travel + 0.03, 'hop', hit);
+      }
+    }
     if (s.splash > 0) {
       const near = this.enemies
         .filter((e) => e.alive && !hit.has(e) && this.visibleTo(e, s.seesHidden) && Math.hypot(e.x - target.x, e.y - target.y) <= SPLASH_RADIUS)
@@ -2088,7 +2177,7 @@ export class Game {
     while (e.phase < want && e.hp > 1e-9) {
       e.phase = (e.phase + 1) as 2 | 3;
       if (b.shieldRecharge) e.shield = e.maxShield;
-      this.callIn(e, b.addType, b.phaseBurst);
+      if (b.phaseBurst > 0) this.callIn(e, b.addType, b.phaseBurst);
       this.events.push({ t: 'bossPhase', enemyId: e.id, phase: e.phase as 2 | 3, called: b.phaseBurst });
     }
   }

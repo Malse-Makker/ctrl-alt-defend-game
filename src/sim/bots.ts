@@ -38,13 +38,25 @@ interface Spot {
 }
 
 /** Buildable tiles sorted by how much walkway an Auto-Reply would cover from there. */
+function seenCoverage(g: Game, c: { x: number; y: number }, range: number): number {
+  let n = 0;
+  for (const path of g.paths) {
+    for (let d = 0; d <= path.length; d += 0.25) {
+      const p = path.pointAt(d);
+      if (Math.hypot(p.x - c.x, p.y - c.y) <= range && g.lineOfSight(c.x, c.y, p.x, p.y)) n++;
+    }
+  }
+  return n * 0.25;
+}
+
 export function rankSpots(g: Game, range: number): Spot[] {
   const spots: Spot[] = [];
   for (let ty = 0; ty < g.level.size.h; ty++) {
     for (let tx = 0; tx < g.level.size.w; tx++) {
       if (g.isPathTile(tx, ty) || g.isBlockedTile(tx, ty)) continue;
       const c = { x: tx + 0.5, y: ty + 0.5 };
-      const cover = g.paths.reduce((s, p) => s + p.coverage(c, range, 0.25), 0);
+      // With walls on the floor, only walkway the tower can actually see counts.
+      const cover = g.level.walls?.length ? seenCoverage(g, c, range) : g.paths.reduce((s, p) => s + p.coverage(c, range, 0.25), 0);
       if (cover > 0) spots.push({ tx, ty, cover });
     }
   }
@@ -284,6 +296,46 @@ SCRIPTS[5] = [
   { up: 'autoreply', path: 0, all: true },
 ];
 
+SCRIPTS[6] = [
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { place: 'artillery', spot: 'far' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'keyboardsmash', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'replyall', path: 0 },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { place: 'shredder', spot: 'zone' },
+  { up: 'replyall', path: 1 },
+  { up: 'thumbtacks', path: 1, all: true },
+  { place: 'chair', spot: 'cover' },
+  { up: 'replyall', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'replyall', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'replyall', path: 0, all: true },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'replyall', path: 0 },
+  { up: 'keyboardsmash', path: 1 },
+  { up: 'chair', path: 2 },
+  { up: 'shredder', path: 0 },
+  { up: 'keyboardsmash', path: 1 },
+  { up: 'chair', path: 2 },
+  { up: 'shredder', path: 0 },
+  { up: 'artillery', path: 1 },
+  { up: 'autoreply', path: 1, all: true },
+  { up: 'artillery', path: 0 },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'): Spot | undefined {
   if (kind === 'desk') {
     // The best spot that still covers the last stretch before your desk.
@@ -364,12 +416,22 @@ export const solidBot: Bot = {
     }
   },
   act(g) {
+    reconnect(g);
     const script = SCRIPTS[g.level.id];
     const st = scriptState.get(g);
     if (script && st) return runScript(g, script, st);
     solidL1(g);
   },
 };
+
+/**
+ * Getting back online takes a real player about eight seconds of dinosaur. The good players do
+ * that; the projector they leave alone, so its numbers stay the worst case.
+ */
+function reconnect(g: Game): void {
+  const hz = g.level.hazard;
+  if (hz?.type === 'nointernet' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 8) g.solveHazard(0);
+}
 
 /** The Level 1 way of playing: Auto-Replies, one machine, cheapest planned upgrade first. */
 function solidL1(g: Game): void {
@@ -428,6 +490,7 @@ export const greedyBot: Bot = {
     if (e) g.place('coffee', e.tx, e.ty);
   },
   act(g) {
+    reconnect(g);
     const machines = g.towers.filter((t) => t.defId === 'coffee');
     for (const m of machines) {
       const bank = g.liveStats(m).bank;

@@ -3,6 +3,16 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.15.0] - 2026-11-08
+
+### New
+- Level 6, Work From Home: the first medior floor. 15 waves on a spiral through your own house, with walls your towers cannot see through (Office Artillery lobs over them). Opens once you finish level 5.
+- No Internet: every so often the connection drops and your WRITTEN towers send nothing. Run the dinosaur over the cacti until it reconnects and you get Coffee for it; leave it and it comes back by itself. Online everyone reconnects their own.
+- Reply All: slow, but every email lands on everyone standing near the colleague it was meant for. URGENT hits harder, THREAD sends faster and to two at once, EVERYONE lands wider.
+- The Cold Caller: he does not read email, he calls. Nothing WRITTEN touches him.
+- Boss: The Baby. Every tower near him aims at him and nobody else, and every so often he has a crying fit that stops every tower close by. Noise Cancelling headphones do not hear it.
+- The tower panel says why a tower is quiet: a Chatterbox, the Baby, or no internet.
+
 ## [0.14.0] - 2026-11-08
 
 ### New

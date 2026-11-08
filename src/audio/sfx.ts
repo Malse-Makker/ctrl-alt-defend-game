@@ -31,6 +31,7 @@ export const SOUNDS = [
   'key2',
   'key3',
   'keyspace',
+  'cry',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
@@ -49,6 +50,7 @@ const THROTTLE: Partial<Record<SoundName, number>> = {
   smash: 0.15,
   roll: 0.3,
   cash: 0.12,
+  cry: 1.0,
 };
 
 const GAIN: Partial<Record<SoundName, number>> = {
@@ -68,6 +70,7 @@ const GAIN: Partial<Record<SoundName, number>> = {
   roll: 0.5,
   cash: 0.6,
   place: 0.8,
+  cry: 0.6,
 };
 
 /** Keys someone types on in the background; the space bar comes between words. */

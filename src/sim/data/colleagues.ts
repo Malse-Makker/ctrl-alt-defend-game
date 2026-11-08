@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -30,6 +30,8 @@ export interface BossDef {
   addsFromPhase?: 2 | 3;
   /** From this phase on, towers this close to him reload this much slower (1.6 = 60% slower). */
   towerSlow?: { radius: number; mult: number; fromPhase: 1 | 2 | 3 };
+  /** A crying fit every so often: every tower this close stops for a while (The Baby). */
+  cry?: { every: number; duration: number; radius: number };
   intro: string;
 }
 
@@ -59,6 +61,8 @@ export interface ColleagueDef {
   stunOnlyFrom?: string;
   /** Share of a stun that still lands (bosses shrug most of it off). 1 = full. */
   stunResist?: number;
+  /** Towers this close aim at him before anyone else (all the attention). */
+  taunt?: number;
   split?: { into: string; count: number };
   boss?: BossDef;
   /** Visual scale and the one loud colour that makes him readable on a busy floor. */
@@ -355,6 +359,52 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#8e6fbf',
     model: 'linemanager',
     armSwing: 0.3,
+  },
+  coldcaller: {
+    id: 'coldcaller',
+    name: 'The Cold Caller',
+    role: 'Immune to WRITTEN',
+    quote: 'Is this a good time? Great.',
+    ability: 'He does not read email. He calls. Nothing WRITTEN touches him: no Auto-Reply, no Quick Reply, no Reply All.',
+    counter: 'Anything IN PERSON: Office Artillery, The Shredder, Thumbtacks, Keyboard Smash, the Office Chair.',
+    hp: 24,
+    speed: 2.3,
+    focus: 4,
+    rewardRate: REWARD_SPECIAL,
+    immune: 'written',
+    scale: 1,
+    accent: '#3fa7a0',
+    model: 'coldcaller',
+    armSwing: 0.5,
+  },
+  baby: {
+    id: 'baby',
+    name: 'The Baby',
+    role: 'Boss',
+    quote: 'Waaaah.',
+    ability:
+      'Demands all the attention. Every tower near him aims at him and nobody else, and every so often he has a crying fit: all towers close by stop until it is over.',
+    counter: 'Keep most of your towers out of his reach, so they keep dealing with everyone else. Office Artillery from across the house. Noise Cancelling headphones do not hear the crying.',
+    hp: 950,
+    speed: 0.6,
+    focus: 30,
+    rewardFlat: 40,
+    taunt: 3.0,
+    boss: {
+      kind: 'baby',
+      addType: 'intern',
+      addEvery: 99,
+      addCount: 0,
+      phaseBurst: 0,
+      phase3Speed: 1.4,
+      cry: { every: 11, duration: 2.5, radius: 2.8 },
+      intro: 'All the attention, and a crying fit every few seconds. Keep most towers out of his reach.',
+    },
+    stunResist: 0.4,
+    scale: 0.9,
+    accent: '#f2c641',
+    model: 'baby',
+    armSwing: 0.6,
   },
 };
 

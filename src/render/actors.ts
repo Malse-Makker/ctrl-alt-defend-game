@@ -380,6 +380,9 @@ export class Actors {
       case 'ability':
         this.pulse(ev.x, ev.y, ev.range, '#bfe2ff');
         break;
+      case 'cry':
+        this.pulse(ev.x, ev.y, ev.radius, '#e2557a');
+        break;
       case 'smash':
         this.pulse(ev.x, ev.y, ev.radius, '#e5534b');
         this.burst(ev.x, 0.3, ev.y, 10, '#f2c641');

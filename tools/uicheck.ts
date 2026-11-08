@@ -640,6 +640,96 @@ async function level5Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+/** Level 6: the house with walls, the No Internet dinosaur (Space jumps, not next wave), The Baby. */
+async function level6Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 6)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l6: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3, '5': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'Work From Home');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    hazardUntil: number;
+    waveIndex: number;
+    phase: string;
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string; quiet: string | null }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    const want: [string, number, number][] = [
+      ['autoreply', 7, 10],
+      ['replyall', 9, 6],
+      ['thumbtacks', 3, 8],
+      ['artillery', 0, 13],
+      ['autoreply', 14, 11],
+      ['keyboardsmash', 11, 3],
+    ];
+    const out = want.map(([d, x, y]) => {
+      const r = g.place(d, x, y);
+      if (r.tower) for (let i = 0; i < 2; i++) g.upgrade(r.tower.id, 0);
+      return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
+    });
+    out.push(`on a wall: ${g.place('autoreply', 5, 11).reason}`);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  total += await check(page, 'l6-house', size);
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'offline' && g.hazardOn) {
+          g.hazardUntil = g.time + 600;
+          break;
+        }
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      g.events.push(...keep.slice(-3));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)}`;
+    }, stop);
+  console.log(`  ${await ff('offline')}`);
+  await page.waitForSelector('.dino-canvas', { timeout: 5000 });
+  const before = await page.evaluate(() => (window as unknown as { cad: { session: { game: G } } }).cad.session.game.waveIndex);
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('Space');
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  const after = await page.evaluate(() => (window as unknown as { cad: { session: { game: G } } }).cad.session.game.waveIndex);
+  if (after !== before) errors.push(`l6: Space called a wave while the dinosaur was running (${before} -> ${after})`);
+  const offline = await page.evaluate(() => (window as unknown as { cad: { session: { game: G } } }).cad.session.game.towers.filter((t) => t.quiet === 'net').length);
+  if (offline === 0) errors.push('l6: no tower went offline during the outage');
+  total += await check(page, 'l6-offline', size);
+  // Reconnect (the solve command, as the full bar would) and carry on.
+  await page.evaluate(() => (window as unknown as { cad: { session: { run(c: { c: string }): void } } }).cad.session.run({ c: 'solve' }));
+  await page.waitForFunction(() => !document.querySelector('.dino-canvas'), { timeout: 3000 });
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l6-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -671,6 +761,10 @@ async function run(): Promise<void> {
   try {
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
+      throw new Done();
+    }
+    if (args.includes('--l6-only')) {
+      total += await level6Flow(browser, errors);
       throw new Done();
     }
     if (args.includes('--l5-only')) {
@@ -835,6 +929,7 @@ async function run(): Promise<void> {
     total += await level3Flow(browser, errors);
     total += await level4Flow(browser, errors);
     total += await level5Flow(browser, errors);
+    total += await level6Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

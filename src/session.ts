@@ -25,7 +25,8 @@ import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
 import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
-import { projectorGame, type ProjectorGame } from './ui/projector';
+import { dinoGame } from './ui/dino';
+import { projectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
 
 export interface SessionHost {
@@ -66,7 +67,8 @@ export class Session {
   private readonly hud: Hud | null;
   private readonly root: HTMLElement;
   private overlay: HTMLElement | null = null;
-  private qte: ProjectorGame | null = null;
+  /** The mini-game that is open for you right now (projector or no internet). */
+  private qte: { el: HTMLElement; setTimeLeft(s: number): void; close(): void; wantsSpace?: boolean } | null = null;
   private speed = 1;
   private paused = false;
   private selected: number | null = null;
@@ -224,12 +226,11 @@ export class Session {
   /** The projector mini-game follows the game state, so it also survives a reconnect online. */
   private updateHazard(): void {
     const g = this.game;
-    const want = this.hud !== null && !this.ended && g.hazardBlocks(this.me);
+    const want = this.hud !== null && !this.ended && g.hazardOpenFor(this.me);
     if (want && !this.qte) {
-      this.qte = projectorGame(
-        () => this.run({ c: 'solve' }),
-        (msg) => this.refuse(msg),
-      );
+      const solve = () => this.run({ c: 'solve' });
+      const say = (msg: string) => this.refuse(msg);
+      this.qte = g.level.hazard?.type === 'nointernet' ? dinoGame(solve, say) : projectorGame(solve, say);
       this.root.append(this.qte.el);
     } else if (!want && this.qte) {
       this.qte.close();
@@ -432,6 +433,11 @@ export class Session {
             sfx.play('lunch');
             this.hud?.toast(T.lunchStarts, 'warn', 3.5);
           } else this.hud?.toast(T.lunchEnds, '', 2);
+        } else if (ev.kind === 'nointernet') {
+          if (ev.on) {
+            sfx.play('bossphase', { pitch: 0.8, gain: 0.6 });
+            this.hud?.toast(T.netStarts, 'warn', 3.5);
+          } else if (!g.hazardSolved.includes(this.me)) this.hud?.toast(T.netTimeout, '', 2.5);
         } else if (ev.on) {
           sfx.play('bossphase', { pitch: 1.3, gain: 0.7 });
           this.hud?.toast(T.projStarts, 'warn', 3);
@@ -439,6 +445,10 @@ export class Session {
         } else if (!g.hazardSolved.includes(this.me)) {
           this.hud?.toast(T.projTimeout, '', 2.5);
         }
+        break;
+      case 'cry':
+        sfx.play('cry');
+        this.toastOnce('cry', T.babyCries, 15);
         break;
       case 'smash':
         sfx.play('smash');
@@ -458,11 +468,14 @@ export class Session {
         this.toastOnce('mopped', T.zoneMopped, 12);
         break;
       case 'hazardSolved':
-        if (ev.player === this.me) {
-          sfx.play('upgrade', { pitch: 1.2 });
-          this.hud?.toast(T.projFixed.replace('{n}', String(ev.bonus)), 'good', 3);
-        } else if (this.mp) {
-          this.hud?.toast(T.projOtherFixed.replace('{name}', this.nameOf(ev.player)), '', 2.2);
+        {
+          const net = g.level.hazard?.type === 'nointernet';
+          if (ev.player === this.me) {
+            sfx.play('upgrade', { pitch: 1.2 });
+            this.hud?.toast((net ? T.netFixed : T.projFixed).replace('{n}', String(ev.bonus)), 'good', 3);
+          } else if (this.mp) {
+            this.hud?.toast((net ? T.netOtherFixed : T.projOtherFixed).replace('{name}', this.nameOf(ev.player)), '', 2.2);
+          }
         }
         break;
       case 'end':
@@ -790,6 +803,7 @@ export class Session {
       return;
     }
     if (this.overlay) return;
+    if (k === ' ' && this.qte?.wantsSpace) return;
     if (k === ' ') {
       this.startOrNext();
       e.preventDefault();
