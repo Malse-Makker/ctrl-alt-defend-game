@@ -34,6 +34,8 @@ export const SPLASH_RADIUS = 0.8;
 export const BOUNCE_RANGE = 2.0;
 /** Tip bonuses never go past this, however many tip jars and franchises you stack. */
 export const MAX_TIP = 3.0;
+/** Focus Music: how long stopped colleagues keep taking extra damage after the stop ends. */
+export const VULNERABLE_AFTER = 1.5;
 /** How close a colleague has to walk past a tack pile to step on it. */
 export const PILE_RADIUS = 0.42;
 /** A Thumbtacks tower keeps at most this many piles on the floor; the oldest goes first. */
@@ -155,6 +157,8 @@ export interface LiveTowerStats {
   slow: number;
   slowTime: number;
   stun: number;
+  /** Headphones: tiles each pulse pushes colleagues back (bosses a fifth). */
+  knockback: number;
   vulnerable: number;
   stunnedTakes: number;
   buffRate: number;
@@ -341,7 +345,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     stunOnHit: 0,
     slow: b.slow ?? 1,
     slowTime: b.slowTime ?? 0,
-    stun: 0,
+    stun: b.stun ?? 0,
+    knockback: 0,
     vulnerable: 0,
     stunnedTakes: 1,
     buffRate: 1,
@@ -374,6 +379,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     s.waveIncome += e.waveIncome ?? 0;
     if (e.slow !== undefined) s.slow = Math.min(s.slow, e.slow);
     if (e.stun !== undefined) s.stun = Math.max(s.stun, e.stun);
+    if (e.knockback !== undefined) s.knockback = Math.max(s.knockback, e.knockback);
     if (e.stunOnHit !== undefined) s.stunOnHit = Math.max(s.stunOnHit, e.stunOnHit);
     if (e.stunnedTakes !== undefined) s.stunnedTakes = Math.max(s.stunnedTakes, e.stunnedTakes);
     if (e.buffRate !== undefined) s.buffRate = Math.min(s.buffRate, e.buffRate);
@@ -1484,11 +1490,19 @@ export class Game {
     }
     let stunned = 0;
     for (const e of inRange) {
-      this.slowEnemy(e, s.slow, s.slowTime);
+      if (s.slow < 1) this.slowEnemy(e, s.slow, s.slowTime);
       if (s.stun > 0 && this.stunEnemy(e, s.stun, t, s.stunnedTakes)) stunned++;
       if (s.vulnerable > 0 && !e.def.stunOnlyFrom) {
         e.vulnerable = Math.max(e.vulnerable, s.vulnerable);
-        e.vulnerableTime = Math.max(e.vulnerableTime, s.slowTime);
+        e.vulnerableTime = Math.max(e.vulnerableTime, s.stun + VULNERABLE_AFTER);
+      }
+      if (s.knockback > 0) {
+        // Drop the Bass: back towards the door. Bosses barely budge.
+        const path = this.paths[e.pathIndex];
+        e.dist = Math.max(0, e.dist - s.knockback * (e.def.boss ? 0.2 : 1));
+        const pt = path.pointAt(e.dist);
+        e.x = pt.x;
+        e.y = pt.y;
       }
       if (s.seesHidden) e.revealed = true;
     }
@@ -1505,7 +1519,8 @@ export class Game {
     if (inside.length > 0) {
       const each = s.unshared ? s.dot : s.dot / inside.length;
       for (const e of inside) {
-        this.slowEnemy(e, s.slow, 0.25);
+        // Only a jammed Shredder slows; Paper Trail makes it linger after the zone.
+        if (s.slow < 1) this.slowEnemy(e, s.slow, Math.max(0.25, s.slowTime));
         if (s.bleed > 0) {
           e.bleedDps = Math.max(e.bleedDps, each);
           e.bleedTime = s.bleed;

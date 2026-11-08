@@ -1689,3 +1689,24 @@ select {
 .settings-card {
   width: min(440px, 100%);
 }
+
+.screen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kv .v.good {
+  color: var(--ok);
+}
+
+.kv .shield-k,
+.kv .shield-v {
+  color: #4aa3ff;
+}
+
+.shield-note {
+  font-size: 12px;
+  color: #4aa3ff;
+}

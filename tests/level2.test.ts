@@ -27,26 +27,37 @@ function put(g: Game, type: string, d: number, hp?: number): Enemy {
 }
 
 describe('Headphones', () => {
-  it('slows everyone in range at once, no damage', () => {
+  it('stops everyone in range at once: no damage, no slowing', () => {
     const { g } = setup('headphones');
     const a = put(g, 'newhire', 8.5);
     const b = put(g, 'newhire', 10);
     g.step(TICK);
-    expect(a.slowTime).toBeGreaterThan(0);
-    expect(b.slowTime).toBeGreaterThan(0);
-    expect(a.slowMult).toBeCloseTo(0.65);
+    expect(a.stunTime).toBeGreaterThan(0.5);
+    expect(b.stunTime).toBeGreaterThan(0.5);
+    expect(a.slowTime).toBe(0);
     expect(a.hp).toBe(12);
     expect(g.drainEvents().some((e) => e.t === 'pulse')).toBe(true);
   });
 
-  it('Noise Cancelling (tier 2) really stuns, and bosses shrug most of it off', () => {
+  it('Noise Cancelling (tier 2) stops them for longer, and bosses shrug most of it off', () => {
     const { g } = setup('headphones', [2, 0, 0]);
     const n = put(g, 'newhire', 8.5);
     const boss = put(g, 'repairguy', 9.5);
     boss.addTimer = 1e9;
     g.step(TICK);
-    expect(n.stunTime).toBeGreaterThan(1.4);
+    expect(n.stunTime).toBeGreaterThan(1.1);
     expect(boss.stunTime).toBeLessThan(0.5);
+  });
+
+  it('Drop the Bass pushes colleagues back towards the door; bosses barely move', () => {
+    const { g } = setup('headphones', [0, 3, 0]);
+    const n = put(g, 'newhire', 8.5);
+    const boss = put(g, 'repairguy', 9.5);
+    boss.addTimer = 1e9;
+    g.step(TICK);
+    expect(n.dist).toBeCloseTo(8.0, 2);
+    expect(boss.dist).toBeGreaterThan(9.35);
+    expect(boss.dist).toBeLessThan(9.5);
   });
 
   it('repeated stuns on the same colleague land shorter', () => {
@@ -68,11 +79,15 @@ describe('Headphones', () => {
     expect(g.damage(n, 2).dealt).toBe(3);
   });
 
-  it('Flow State makes towers in range reload faster', () => {
-    const { g } = setup('headphones', [0, 2, 4]);
+  it('Deep Focus and Flow State make towers in range reload faster', () => {
+    const { g } = setup('headphones', [0, 2, 3]);
     const r = g.place('autoreply', 9, 1);
     g.step(TICK);
     expect(r.tower!.rateBuff).toBeCloseTo(0.8);
+    const flow = setup('headphones', [0, 2, 4]);
+    const r2 = flow.g.place('autoreply', 9, 1);
+    flow.g.step(TICK);
+    expect(r2.tower!.rateBuff).toBeCloseTo(0.67);
   });
 });
 
@@ -163,15 +178,29 @@ describe('Office Artillery', () => {
 });
 
 describe('The Shredder', () => {
-  it('shares its damage over everyone inside and slows them', () => {
+  it('shares its damage over everyone inside, and does not slow them', () => {
     const { g } = setup('shredder', [0, 0, 0], 8, 1);
     const a = put(g, 'newhire', 8.6, 100);
     const b = put(g, 'newhire', 9.4, 100);
     a.stunTime = b.stunTime = 1e9;
     for (let i = 0; i < 60; i++) g.step(TICK);
-    expect(100 - a.hp).toBeCloseTo(1, 1);
-    expect(100 - b.hp).toBeCloseTo(1, 1);
-    expect(a.slowTime).toBeGreaterThan(0);
+    expect(100 - a.hp).toBeCloseTo(1.5, 1);
+    expect(100 - b.hp).toBeCloseTo(1.5, 1);
+    expect(a.slowTime).toBe(0);
+  });
+
+  it('only PAPER JAM slows, and Paper Trail makes it linger after the zone', () => {
+    const jam = setup('shredder', [0, 1, 0], 8, 1);
+    const a = put(jam.g, 'newhire', 9, 100);
+    a.stunTime = 1e9;
+    jam.g.step(TICK);
+    expect(a.slowMult).toBeCloseTo(0.6);
+    expect(a.slowTime).toBeLessThan(0.3);
+    const trail = setup('shredder', [0, 3, 0], 8, 1);
+    const b = put(trail.g, 'newhire', 9, 100);
+    b.stunTime = 1e9;
+    trail.g.step(TICK);
+    expect(b.slowTime).toBeGreaterThan(2.9);
   });
 
   it('may not touch the Old Guard archive, and does nothing to the Board Member', () => {
@@ -200,7 +229,7 @@ describe('The Shredder', () => {
     g.step(TICK);
     // Set to 3 s, and the first tick already counts down.
     expect(e.bleedTime).toBeCloseTo(3, 1);
-    expect(e.bleedDps).toBeCloseTo(9);
+    expect(e.bleedDps).toBeCloseTo(10);
   });
 
   it('Recycling pays its owner extra for every colleague it deals with', () => {

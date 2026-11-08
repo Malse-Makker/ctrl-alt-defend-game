@@ -19,6 +19,7 @@ interface EnemyView {
   hpBack: THREE.Sprite;
   hpFill: THREE.Sprite;
   shieldFill: THREE.Sprite | null;
+  shieldBack: THREE.Sprite | null;
   barWidth: number;
   barY: number;
   walk: number;
@@ -410,14 +411,23 @@ export class Actors {
     hpFill.position.copy(this.camRight).multiplyScalar(-barWidth / 2).setY(barY);
     hpFill.renderOrder = 11;
     root.add(hpBack, hpFill);
+    // A shield is a bright blue bar on top of the HP bar, so it reads at a glance.
     let shieldFill: THREE.Sprite | null = null;
+    let shieldBack: THREE.Sprite | null = null;
     if (e.maxShield > 0) {
+      const sh = boss ? 0.08 : 0.06;
+      const sy = barY + (boss ? 0.12 : 0.09);
+      shieldBack = new THREE.Sprite(this.hpBackMat);
+      shieldBack.center.set(0, 0.5);
+      shieldBack.scale.set(barWidth + 0.04, sh + 0.03, 1);
+      shieldBack.position.copy(this.camRight).multiplyScalar(-(barWidth + 0.04) / 2).setY(sy);
+      shieldBack.renderOrder = 10;
       shieldFill = new THREE.Sprite(this.hpMats.shield);
       shieldFill.center.set(0, 0.5);
-      shieldFill.scale.set(barWidth, 0.04, 1);
-      shieldFill.position.copy(this.camRight).multiplyScalar(-barWidth / 2).setY(barY + 0.09);
+      shieldFill.scale.set(barWidth, sh, 1);
+      shieldFill.position.copy(this.camRight).multiplyScalar(-barWidth / 2).setY(sy);
       shieldFill.renderOrder = 11;
-      root.add(shieldFill);
+      root.add(shieldBack, shieldFill);
     }
     const legs = ['LegL', 'LegR'].map((n) => part(model, n)).filter((x): x is THREE.Object3D => !!x);
     const arms = ['ArmL', 'ArmR'].map((n) => part(model, n)).filter((x): x is THREE.Object3D => !!x);
@@ -432,6 +442,7 @@ export class Actors {
       hpBack,
       hpFill,
       shieldFill,
+      shieldBack,
       barWidth,
       barY,
       walk: Math.random() * 6,
@@ -526,13 +537,14 @@ export class Actors {
     if (v.ghostMats) for (const m of v.ghostMats) m.opacity = hidden ? 0.28 : 1;
     // HP bar: only when hurt (bosses always).
     const ratio = Math.max(0, e.hp / e.maxHp);
-    const hurt = !hidden && (ratio < 0.999 || v.boss || e.shield < e.maxShield);
+    const hurt = !hidden && (ratio < 0.999 || v.boss || e.maxShield > 0);
     v.hpBack.visible = hurt;
     v.hpFill.visible = hurt && ratio > 0;
     v.hpFill.scale.x = Math.max(0.001, v.barWidth * ratio);
     v.hpFill.material = ratio > 0.5 ? this.hpMats.ok : ratio > 0.25 ? this.hpMats.low : this.hpMats.crit;
     if (v.shieldFill) {
-      v.shieldFill.visible = e.shield > 0;
+      v.shieldFill.visible = !hidden && e.shield > 0;
+      if (v.shieldBack) v.shieldBack.visible = v.shieldFill.visible;
       v.shieldFill.scale.x = Math.max(0.001, v.barWidth * (e.shield / Math.max(1, e.maxShield)));
     }
   }
@@ -543,6 +555,8 @@ export class Actors {
       const k = Math.min(1, v.leaking / 0.35);
       v.model.scale.setScalar(Math.max(0.001, (1 - k) * PERSON_SCALE));
       v.hpBack.visible = v.hpFill.visible = false;
+      if (v.shieldFill) v.shieldFill.visible = false;
+      if (v.shieldBack) v.shieldBack.visible = false;
       if (k >= 1) this.removeEnemy(v);
       return;
     }
@@ -559,6 +573,7 @@ export class Actors {
       this.burst(v.root.position.x, v.root.position.y + 0.5, v.root.position.z, v.boss ? 26 : 9, this.accentOf(v));
       v.hpBack.visible = v.hpFill.visible = false;
       if (v.shieldFill) v.shieldFill.visible = false;
+      if (v.shieldBack) v.shieldBack.visible = false;
     }
     v.dying += dt;
     const k = Math.min(1, v.dying / 0.28);

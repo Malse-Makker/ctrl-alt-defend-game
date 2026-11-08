@@ -138,6 +138,7 @@ export class Session {
         deselect: () => this.select(null),
         gift: (to, amount) => this.run({ c: 'gift', to, amount }),
         settings: () => this.openSettings(false),
+        leave: () => this.confirmLeave(),
       },
       this.me,
     );
@@ -578,20 +579,32 @@ export class Session {
                 () => this.togglePauseMenu(),
               ),
             ),
-          quit: () => {
-            if (this.mp) {
-              this.host.leaveMp?.();
-              return;
-            }
-            if (this.game.waveIndex >= 1 && !this.game.over && this.host.save.settings.shareStats) {
-              this.game.giveUp();
-              void sendRound(summarize(this.game, this.host.save.playerId, this.realTime, this.speedUse));
-            }
-            this.host.toCareer();
-          },
+          quit: () => this.quit(),
         },
         { online: this.mp !== null, host: this.isHost },
       ),
+    );
+  }
+
+  /** Back to the career (or out of the online game). The round counts as given up. */
+  private quit(): void {
+    if (this.mp) {
+      this.host.leaveMp?.();
+      return;
+    }
+    if (this.game.waveIndex >= 1 && !this.game.over && this.host.save.settings.shareStats) {
+      this.game.giveUp();
+      void sendRound(summarize(this.game, this.host.save.playerId, this.realTime, this.speedUse));
+    }
+    this.host.toCareer();
+  }
+
+  /** The house button in the top bar: ask first, a misclick should not end the round. */
+  private confirmLeave(): void {
+    if (this.ended) return;
+    if (!this.mp) this.paused = true;
+    this.setOverlay(
+      confirmOverlay(this.mp ? T.mpLeaveConfirm : T.goHomeConfirm, this.mp ? T.mpLeave : T.goHome, T.confirmNo, () => this.quit(), () => this.closeOverlay()),
     );
   }
 

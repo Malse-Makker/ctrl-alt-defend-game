@@ -17,7 +17,7 @@ import {
   type TargetMode,
 } from '../sim/data/towers';
 import { earlyCallPoints } from '../sim/economy';
-import type { Game, Tower } from '../sim/game';
+import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
 import { fmt, h, icon, img, setText, toggle } from './dom';
 import { UI_TEXT as T } from './text';
@@ -34,6 +34,7 @@ export interface HudActions {
   deselect(): void;
   gift(to: number, amount: number): void;
   settings(): void;
+  leave(): void;
 }
 
 export interface MpPlayer {
@@ -53,6 +54,16 @@ export interface HudState {
 }
 
 export const SPEEDS = [1, 2, 4, 8];
+
+/** The heaviest shield in the game: a hit has to be at least this hard to get through it. */
+const SHIELD_MIN_HIT = Math.max(...Object.values(COLLEAGUES).map((c) => c.shieldMinHit ?? 0));
+
+/** One line for the tower panel: can this tower hurt a shielded colleague? */
+function shieldLine(s: LiveTowerStats): { text: string; ok: boolean } {
+  if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true };
+  if (s.rampMax > 0 && s.damage * s.rampMax >= SHIELD_MIN_HIT) return { text: 'breaks through once built up', ok: true };
+  return { text: `bounces off (under ${SHIELD_MIN_HIT} per hit)`, ok: false };
+}
 
 interface ShopEntry {
   defId: string;
@@ -158,7 +169,8 @@ export class Hud {
     }
     this.pauseBtn = h('button', { class: 'btn small', title: `${T.pause} (P)`, on: { click: () => this.act.togglePause() } }, icon('pause'));
     const settingsBtn = h('button', { class: 'btn small', title: T.settings, attrs: { 'aria-label': T.settings }, on: { click: () => this.act.settings() } }, icon('sliders'));
-    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn);
+    const leaveBtn = h('button', { class: 'btn small', title: T.goHome, attrs: { 'aria-label': T.goHome }, on: { click: () => this.act.leave() } }, icon('house'));
+    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn, leaveBtn);
     this.root.append(this.topbar);
   }
 
@@ -364,13 +376,16 @@ export class Hud {
         'div',
         { class: 'kv' },
         h('span', { class: 'k', text: 'HP' }),
-        h('span', { class: 'v', text: String(def.hp + (def.shield ?? 0)) }),
+        h('span', { class: 'v', text: String(def.hp) }),
+        def.shield ? h('span', { class: 'k shield-k', text: 'Shield' }) : null,
+        def.shield ? h('span', { class: 'v shield-v', text: String(def.shield) }) : null,
         h('span', { class: 'k', text: 'Speed' }),
         h('span', { class: 'v', text: def.speed.toFixed(1) }),
         h('span', { class: 'k', text: 'Focus if he reaches you' }),
         h('span', { class: 'v', text: String(def.focus) }),
       ),
     );
+    if (def.shieldMinHit) this.infoCard.append(h('div', { class: 'shield-note wrap', text: `Hits under ${def.shieldMinHit} bounce off the shield. Check "Shields" on your towers.` }));
     this.infoCard.hidden = false;
     this.infoTimer = seconds;
   }
@@ -430,11 +445,17 @@ export class Hud {
         h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
         h('span', { class: 'k', text: T.range }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
-        h('span', { class: 'k', text: 'Slows to' }),
-        h('span', { class: 'v', text: `${Math.round(s.slow * 100)}% for ${fmt(s.slowTime, 1)}s` }),
+        h('span', { class: 'k', text: 'Stops everyone' }),
+        h('span', { class: 'v', text: `${fmt(s.stun, 1)}s` }),
       );
-      if (s.stun > 0) stats.append(h('span', { class: 'k', text: 'Stuns' }), h('span', { class: 'v', text: `${fmt(s.stun, 1)}s` }));
-      const extra = [s.vulnerable > 0 ? `+${s.vulnerable} damage taken` : '', s.slowAura < 1 ? 'slows all the time' : '', s.buffRate < 1 ? 'towers nearby faster' : '', s.silenceProof ? 'Chatterbox-proof' : '', s.seesHidden ? 'reveals hidden' : ''].filter(Boolean);
+      if (s.knockback > 0) stats.append(h('span', { class: 'k', text: 'Pushes back' }), h('span', { class: 'v', text: `${fmt(s.knockback, 1)} tile` }));
+      const extra = [
+        s.vulnerable > 0 ? `+${s.vulnerable} damage taken` : '',
+        s.stunnedTakes > 1 ? `stopped take x${s.stunnedTakes}` : '',
+        s.buffRate < 1 ? `towers nearby ${Math.round((1 / s.buffRate - 1) * 100)}% faster` : '',
+        s.silenceProof ? 'Chatterbox-proof' : '',
+        s.seesHidden ? 'reveals hidden' : '',
+      ].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
     } else if (def.role === 'zone') {
       stats.append(
@@ -442,10 +463,11 @@ export class Hud {
         h('span', { class: 'v', text: `${fmt(s.dot, 1)}${s.unshared ? ' each' : ' shared'}` }),
         h('span', { class: 'k', text: 'Zone size' }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
-        h('span', { class: 'k', text: 'Slows to' }),
-        h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%` }),
       );
-      const extra = [s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.stunPulse ? `stops everyone every ${s.stunPulse.every}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
+      // Zone damage comes in tiny ticks: a shield stops all of it.
+      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: 'v faint', text: 'bounces off' }));
+      if (s.slow < 1) stats.append(h('span', { class: 'k', text: 'Slows to' }), h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%${s.slowTime > 0.5 ? `, ${fmt(s.slowTime, 0)}s after` : ''}` }));
+      const extra = ['reveals hidden', s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.stunPulse ? `stops everyone every ${s.stunPulse.every}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
@@ -461,7 +483,9 @@ export class Hud {
         h('span', { class: 'k', text: T.range }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
       );
-      const extra = ['hits hidden', s.ignoresMinHit ? 'through shields' : '', s.slowOnHit ? 'slows' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
+      const sl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text }));
+      const extra = ['hits hidden', s.slowOnHit ? 'slows' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
       stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
       const per = h('span', { class: 'v' });
@@ -480,6 +504,8 @@ export class Hud {
         h('span', { class: 'k', text: T.range }),
         h('span', { class: 'v', text: s.global ? 'the whole floor' : fmt(s.range, 2) }),
       );
+      const sl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text }));
       if (s.stunOnHit > 0) extra.push(`pins for ${s.stunOnHit}s`);
       if (s.slowOnHit) extra.push('slows');
       if (s.killCoffee > 0) extra.push(`+${s.killCoffee} Coffee per colleague`);

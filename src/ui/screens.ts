@@ -212,7 +212,13 @@ export function textScreen(title: string, body: HTMLElement, back: () => void): 
     h(
       'div',
       { class: 'screen-card wide panel' },
-      h('h2', { attrs: { style: 'margin:0' }, text: title }),
+      // Back at the top as well, so a long page (What's new) does not need scrolling to leave.
+      h(
+        'div',
+        { class: 'screen-head' },
+        h('h2', { attrs: { style: 'margin:0' }, text: title }),
+        h('button', { class: 'btn small', on: { click: back } }, icon('arrow-left'), h('span', { text: ` ${T.back}` })),
+      ),
       body,
       h('div', {}, h('button', { class: 'btn', on: { click: back } }, icon('arrow-left'), h('span', { text: T.back }))),
     ),

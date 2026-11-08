@@ -571,6 +571,12 @@ async function run(): Promise<void> {
       await page.goto(URL_, { waitUntil: 'networkidle0' });
       await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
       total += await check(page, 'menu', size);
+      await clickText(page, "What's new");
+      await page.waitForSelector('.screen-head');
+      total += await check(page, 'whats-new', size);
+      // The Back button at the top, not the one at the bottom of the long page.
+      await page.click('.screen-head button');
+      await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'));
       await clickText(page, 'Clock in');
       total += await check(page, 'career', size);
       await clickText(page, 'Open-Plan Office');
@@ -609,6 +615,12 @@ async function run(): Promise<void> {
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
       total += await check(page, 'pause', size);
+      await clickText(page, 'Resume');
+      await page.click('button[aria-label="Go home"]');
+      await page.waitForSelector('.overlay');
+      total += await check(page, 'go-home', size);
+      await clickText(page, 'Keep working');
+      await page.keyboard.press('Escape');
       await clickText(page, 'Settings');
       await page.waitForSelector('.overlay .settings-card');
       total += await check(page, 'settings-ingame', size);

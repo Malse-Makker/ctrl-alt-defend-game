@@ -3,6 +3,16 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.8.0] - 2026-11-08
+
+### Changed
+- Headphones and The Shredder each do one thing now. Headphones stop everyone in range for a moment with every pulse, and no longer slow anyone. NOISE CANCELLING stops them for longer, VOLUME reaches further and pulses more often (Drop the Bass pushes colleagues back towards the door), FOCUS MUSIC makes stopped colleagues take more damage and speeds up your towers nearby.
+- The Shredder no longer slows: it grinds down everyone inside (a little more damage than before) and reveals hidden colleagues. Only the PAPER JAM path slows, and Paper Trail keeps the slow going after the zone.
+- Shields are a bright blue bar above the HP bar, visible from the start. The colleague card says how hard a hit must be to get through, and every tower panel says whether that tower breaks through shields or bounces off.
+- A Go home button in the top bar. It asks first.
+- What's new and How it works have a Back button at the top too.
+- Two floors still to come have English names now: The Car Park and Hot Desks.
+
 ## [0.7.0] - 2026-11-08
 
 ### New

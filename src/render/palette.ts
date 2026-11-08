@@ -16,7 +16,7 @@ export const PAL = {
   hpFill: '#7ad17f',
   hpLow: '#e5a04b',
   hpCrit: '#e5534b',
-  shield: '#b9c3d0',
+  shield: '#4aa3ff',
   envelope: '#f6f3ea',
   envelopeFlap: '#3e7cc9',
 } as const;

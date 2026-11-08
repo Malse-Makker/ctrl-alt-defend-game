@@ -77,6 +77,8 @@ export interface Effect {
   bossMult?: number;
   /** Colleagues in range walk at this speed factor (the lowest one around counts). */
   slowAura?: number;
+  /** Pulse towers: each pulse pushes colleagues back this many tiles (bosses a fifth; highest counts). */
+  knockback?: number;
   /** Every few seconds: everyone in range loses a share of their current HP. */
   ability?: { every: number; hpShare: number; bossShare: number };
   // Economy
@@ -170,9 +172,11 @@ export interface TowerBase {
   coffeeInterval?: number;
   /** Reaches the whole floor (Office Artillery). */
   global?: boolean;
-  /** Pulse: slow factor and how long it lasts. */
+  /** Pulse: slow factor and how long it lasts (a zone: how long the slow lingers after leaving). */
   slow?: number;
   slowTime?: number;
+  /** Pulse: everyone in range stops this long (bosses resist). */
+  stun?: number;
   /** Zone: damage per second, shared over everyone inside. */
   dot?: number;
 }
@@ -306,27 +310,27 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'headphones',
     name: 'Headphones',
     flavour: "Can't quite hear you.",
-    verb: 'Every few seconds everyone in range slows right down. No damage. Proper Noise Cancelling stuns, and shuts up the Chatterbox.',
+    verb: 'Every few seconds everyone in range just stops for a moment. No damage, no slowing: a pause. Noise Cancelling stops them for longer, and cannot be talked quiet by the Chatterbox.',
     role: 'pulse',
     unlockLevel: 2,
     accent: '#6fcf7f',
     models: ['headphones_1', 'headphones_2', 'headphones_3'],
-    base: { cost: 20, range: 3.0, interval: 3.0, slow: 0.65, slowTime: 1.6 },
+    base: { cost: 20, range: 3.0, interval: 3.5, stun: 0.6 },
     paths: [
       {
         name: 'NOISE CANCELLING',
         quote: 'Blissful silence.',
         color: '#6fcf7f',
         tiers: [
-          { name: 'Over-Ear', desc: 'Slows harder and for longer.', cost: 22, effect: { slow: 0.45, slowTimeAdd: 0.6, intervalMult: 0.9 } },
+          { name: 'Over-Ear', desc: 'Everyone stops for 0.9 seconds.', cost: 22, effect: { stun: 0.9 } },
           {
             name: 'Noise Cancelling',
-            desc: 'A real stun of 1.5 seconds. The Chatterbox cannot talk these quiet, and it is the only thing that shuts him up.',
+            desc: 'Everyone stops for 1.2 seconds, and the Chatterbox cannot talk these quiet.',
             cost: 35,
-            effect: { stun: 1.5, silenceProof: true },
+            effect: { stun: 1.2, silenceProof: true },
           },
-          { name: 'Studio Monitors', desc: 'Stuns for 2.2 seconds, more often.', cost: 80, effect: { stun: 2.2, intervalMult: 0.8 } },
-          { name: 'Soundproof Booth', desc: 'Stuns for 3 seconds, and stunned colleagues take double damage.', cost: 200, effect: { stun: 3, stunnedTakes: 2 } },
+          { name: 'Studio Monitors', desc: 'Stops everyone for 1.8 seconds, a bit more often.', cost: 80, effect: { stun: 1.8, intervalMult: 0.85 } },
+          { name: 'Soundproof Booth', desc: 'Stops everyone for 2.5 seconds, and stopped colleagues take double damage.', cost: 200, effect: { stun: 2.5, stunnedTakes: 2 } },
         ],
       },
       {
@@ -335,9 +339,9 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#7fb6e3',
         tiers: [
           { name: 'Volume Up', desc: '+20% range.', cost: 15, effect: { rangeMult: 1.2 } },
-          { name: 'Bass Boost', desc: 'Pulses 25% more often.', cost: 25, effect: { intervalMult: 0.75 } },
-          { name: 'Party Mode', desc: 'Everyone in range walks 25% slower all the time, between pulses too.', cost: 70, effect: { slowAura: 0.75 } },
-          { name: 'Open-Plan Speakers', desc: 'Half again the range, and a pulse every 1.5 seconds.', cost: 180, effect: { rangeMult: 1.5, intervalMult: 0.6 } },
+          { name: 'Bass Boost', desc: 'Pulses 33% more often.', cost: 25, effect: { intervalMult: 0.75 } },
+          { name: 'Drop the Bass', desc: 'Every pulse also pushes colleagues back half a tile (bosses barely move).', cost: 70, effect: { knockback: 0.5 } },
+          { name: 'Open-Plan Speakers', desc: 'Half again the range, a pulse every 1.6 seconds, and a full tile of push-back.', cost: 180, effect: { rangeMult: 1.5, intervalMult: 0.6, knockback: 1.0 } },
         ],
       },
       {
@@ -345,10 +349,10 @@ export const TOWERS: Record<string, TowerDef> = {
         quote: 'Lo-fi beats to defend your desk to.',
         color: '#b48ce0',
         tiers: [
-          { name: 'Lo-fi Beats', desc: 'Colleagues it slows take +1 damage from every hit.', cost: 15, effect: { vulnerableAdd: 1 } },
+          { name: 'Lo-fi Beats', desc: 'Colleagues it stops take +1 damage from every hit for a few seconds.', cost: 15, effect: { vulnerableAdd: 1 } },
           { name: 'Brown Noise', desc: 'Reveals hidden colleagues in range.', cost: 25, effect: { seesHidden: true } },
-          { name: 'Deep Focus', desc: '+2 more damage from every hit on colleagues it slows.', cost: 60, effect: { vulnerableAdd: 2 } },
-          { name: 'Flow State', desc: 'Towers in range fire 25% faster.', cost: 170, effect: { buffRate: 0.8 } },
+          { name: 'Deep Focus', desc: 'Towers in range fire 25% faster.', cost: 60, effect: { buffRate: 0.8 } },
+          { name: 'Flow State', desc: 'Towers in range fire 50% faster, and stopped colleagues take +2 more damage per hit.', cost: 170, effect: { buffRate: 0.67, vulnerableAdd: 2 } },
         ],
       },
     ],
@@ -404,7 +408,7 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'shredder',
     name: 'The Shredder',
     flavour: 'Round filing.',
-    verb: 'A zone that slows everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside. It may not touch the Old Guard archive.',
+    verb: 'A zone that grinds down everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside, so it shines against a few big ones. It does not slow anyone until you jam it. It may not touch the Old Guard archive.',
     role: 'zone',
     damageClass: 'in_person',
     unlockLevel: 2,
@@ -415,7 +419,7 @@ export const TOWERS: Record<string, TowerDef> = {
       ['shredder_p1_3', 'shredder_p1_4'],
       ['shredder_p2_3', 'shredder_p2_4'],
     ],
-    base: { cost: 30, range: 2.375, dot: 2, slow: 0.6 },
+    base: { cost: 30, range: 2.375, dot: 3, slowTime: 0.25 },
     paths: [
       {
         name: 'CROSS-CUT',
@@ -433,9 +437,9 @@ export const TOWERS: Record<string, TowerDef> = {
         quote: 'PC LOAD LETTER.',
         color: '#e5a04b',
         tiers: [
-          { name: 'Jam', desc: 'Slows harder.', cost: 20, effect: { slow: 0.45 } },
-          { name: 'Bigger Bin', desc: '+25% zone size.', cost: 30, effect: { rangeMult: 1.25 } },
-          { name: 'Paper Jam', desc: 'Every 6 seconds, everyone in the zone stops for a second.', cost: 80, effect: { stunPulse: { every: 6, duration: 1 } } },
+          { name: 'Jam', desc: 'Everyone in the zone slows to 60%.', cost: 20, effect: { slow: 0.6 } },
+          { name: 'Bigger Bin', desc: '+25% zone size, and slows to 50%.', cost: 30, effect: { rangeMult: 1.25, slow: 0.5 } },
+          { name: 'Paper Trail', desc: 'Whoever walks out of the zone stays slowed for another 3 seconds.', cost: 80, effect: { slowTimeAdd: 2.75 } },
           { name: 'Out of Order', desc: 'Slows to a crawl, and the zone grows again.', cost: 180, effect: { slow: 0.25, rangeMult: 1.3 } },
         ],
       },

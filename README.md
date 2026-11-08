@@ -1,166 +1,176 @@
 # CTRL-ALT-DEFEND
 
+**English** | [Nederlands](README.nl.md)
+
 *"I'll put this with the rest of the focus."*
 
-Een tower defense in de browser over het verdedigen van je werkdag tegen je collega's. Je houdt
-ze tegen met wat er op je bureau staat: een koffiezetapparaat, een auto-reply, en later een
-koptelefoon, een nietmachine en een versnipperaar. Torens zijn voorwerpen, vijanden zijn mensen.
+A browser tower defense about defending your working day against your colleagues. You hold them
+off with whatever is on your desk: a coffee machine, an auto-reply, and later headphones, a
+stapler and a shredder. Towers are objects, enemies are people.
 
-Speel: **https://game.makkers.net** (geen download, geen installatie).
+Play: **https://game.makkers.net** (no download, no install).
 
-Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën komen daarvandaan.
+This is a remake of an earlier Godot version of the same game; all the ideas come from there.
 
-> **Over dit project:** CTRL-ALT-DEFEND is gemaakt met hulp van AI (Claude), als persoonlijk
-> speel- en leerproject om meer te leren over AI, over gamedesign en over 3D in de browser. Ook
-> het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
-> Niet-commercieel, onderdeel van de makkers-collectie.
+> **About this project:** CTRL-ALT-DEFEND is made with the help of AI (Claude), as a personal
+> play and learning project about AI, game design and 3D in the browser. Automated testing and
+> deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
+> the makkers collection.
 
-## Wat er nu in zit (v0.7.0)
+## What is in it now (v0.8.0)
 
-- **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
-- **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
-  als je level 1 haalt.
-- **Level 3, Meeting Room**: 21 golven, The Presenter (beamt Chasers naast je bureau) en de
-  projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
-- **Level 4, Canteen**: 22 golven over een spiraal rond de tafels, natte vloer waar je niet mag
-  bouwen, de lunchpauze (een stoet Interns en iedereen loopt even sneller) en The Cleaner.
-- **Torens**: Coffee Machine, Auto-Reply, Headphones (vertraagt en stunt een hele straal),
-  Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die vertraagt,
-  onthult en schade verdeelt), Quick Reply (bouwt schade op tegen hetzelfde doelwit), Thumbtacks
-  (punaise-hoopjes op het pad, zien ook onzichtbare collega's) en Self-Service (raakt iedereen in een
-  kleine cirkel).
-- **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
-  (archiefdoos als schild, de Shredder mag er niet aan), Board Member (immuun voor in persoon) en
-  Impersonator (onzichtbaar tot een Shredder-zone hem laat zien).
-- **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
-  tier 4, een tweede naar tier 2, het derde blijft dicht (4-2-0). Tier 3 verandert wat de toren
-  doet, tier 4 is het paradepaardje.
-- **The Expense Claim** (Coffee Machine, pad 2): Coffee gaat in een pot met rente; jij kiest wanneer
-  je claimt. Te vroeg is zonde, te laat ook: een volle pot groeit niet meer.
-- **Bosses**: The Head of Comms (zijn Interns vangen je schoten op), The Repair Guy (blokkeert alle
-  inkomsten), The Presenter (laadscherm dat bij elke fase terugkomt, Chasers naast je bureau) en
-  The Cleaner (jaagt iedereen op, veegt punaises weg, dweilt Shredders).
-- **Targeting** per toren (First, Last, Closest, Farthest, Most HP, Least HP).
-- **Snelheden** 1x, 2x, 4x, 8x, pauze, en golven vroeg oproepen voor punten.
-- **Zichtbare feedback** op elke treffer: vliegende mails, schadegetallen, BLOCKED/IMMUNE.
-- **Nieuwe collega's stellen zich voor** met wat je ertegen bouwt.
-- **Eindscherm** met WHAT HURT YOU (gesorteerd op Focus-verlies), je torens met schade per
-  Coffee, en **feedback** (hoe leuk was het, 0-10, plus opmerking) met één knop.
-- **Give up** brengt je naar het eindscherm met je cijfers, niet terug naar het menu.
-- **Voortgang** (sterren, Recognition) wordt in je eigen browser bewaard.
-- **Samen spelen** (tot 8 spelers): host een spel en deel de code of de link
-  (`game.makkers.net/?join=CODE`). De host kiest het level, het aantal spelers, gedeeld geld of
-  ieder eigen geld (inkomen gedeeld, Coffee aan elkaar geven), en waar je bouwt: overal, boven en
-  onder, links en rechts, vier kwarten of een eigen stuk. De server draait het spel; je browser
-  laat alleen zien wat er gebeurt.
+- **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
+- **Level 2, Coffee Corner**: 22 waves and The Repair Guy (no Coffee while he is around). Opens
+  once you finish level 1.
+- **Level 3, Meeting Room**: 21 waves, The Presenter (beams Chasers next to your desk) and the
+  projector mini-game: right cable in the right port, right display setting, or no building.
+- **Level 4, Canteen**: 22 waves on a spiral round the tables, wet floor where you cannot build,
+  the lunch break (a crowd of Interns, and everyone walks faster for a while) and The Cleaner.
+- **Towers**: Coffee Machine, Auto-Reply, Headphones (everyone in range stops for a moment),
+  Office Artillery (reaches the whole floor, breaks shields), The Shredder (a zone that shares its
+  damage and reveals hidden colleagues; it only slows if you jam it), Quick Reply (builds up
+  damage on the same target), Thumbtacks (piles of tacks on the walkway, they hit hidden
+  colleagues too) and Self-Service (hits everyone in a small circle).
+- **Colleagues**: Intern, New Hire, Requester, Chaser, Chatterbox (silences towers), Old Guard
+  (archive box as a shield, the Shredder may not touch it), Board Member (immune to anything in
+  person) and Impersonator (invisible until a Shredder zone shows him up).
+- **Upgrades like Bloons TD 6**: every tower has three paths of four tiers. One path may go to
+  tier 4, a second to tier 2, the third stays shut (4-2-0). Tier 3 changes what the tower does,
+  tier 4 is the showpiece.
+- **A look per path**: from tier 3 a tower looks like the path you chose (the Shredder first, the
+  rest follows).
+- **The Expense Claim** (Coffee Machine, path 2): Coffee goes into a pot with interest; you decide
+  when to claim. Too early is a waste, too late too: a full pot stops growing.
+- **Bosses**: The Head of Comms (his Interns soak up your shots), The Repair Guy (blocks all
+  income), The Presenter (a loading screen that comes back every phase, Chasers next to your
+  desk) and The Cleaner (hurries everyone along, sweeps up tacks, mops Shredders).
+- **Targeting** per tower (First, Last, Closest, Farthest, Most HP, Least HP).
+- **Top bar**: which floor you are on, Settings (sound and the rest) and Go home, without leaving
+  the game.
+- **Speeds** 1x, 2x, 4x, 8x, pause, and calling waves early for points.
+- **Visible feedback** on every hit: flying mail, damage numbers, BLOCKED/IMMUNE.
+- **New colleagues introduce themselves** with what to build against them.
+- **End screen** with WHAT HURT YOU (sorted by Focus lost), your towers with damage per Coffee,
+  and **feedback** (how much fun was it, 0-10, plus a comment) in one click.
+- **Give up** takes you to the end screen with your numbers, not back to the menu.
+- **Progress** (stars, Recognition) is kept in your own browser.
+- **Play together** (up to 8 players): host a game and share the code or the link
+  (`game.makkers.net/?join=CODE`). The host picks the level, the number of players, shared money
+  or everyone their own (income split, give Coffee to each other), and where people build:
+  anywhere, top and bottom, left and right, four quarters or a patch each. The server runs the
+  game; your browser only shows what happens.
 
-## Bediening
+## Controls
 
-| Toets / muis | Wat |
+| Key / mouse | What |
 |---|---|
-| Linkermuis | toren plaatsen of selecteren |
-| Shift + klik | meerdere van dezelfde toren achter elkaar plaatsen |
-| Rechtermuis | annuleren; slepen = rondkijken |
-| Scrollwiel | zoomen |
-| Spatie | dag starten / volgende golf |
-| 1-9 | toren uit de winkel kiezen |
-| , . / | volgende tier van pad 1, 2 of 3 kopen (zoals in Bloons) |
-| C | pot van een Expense Claim claimen |
-| F | snelheid wisselen |
-| P / Esc | pauze |
-| R | camera terugzetten |
+| Left mouse | place or select a tower |
+| Shift + click | place several of the same tower in a row |
+| Right mouse | cancel; drag = look around |
+| Scroll wheel | zoom |
+| Space | start the day / next wave |
+| 1-9 | pick a tower from the shop |
+| , . / | buy the next tier of path 1, 2 or 3 (like in Bloons) |
+| C | claim an Expense Claim pot |
+| F | change speed |
+| P / Esc | pause |
+| R | reset the camera |
 
-## Hoe het in elkaar zit
+## How it is built
 
-| Map | Wat |
+| Folder | What |
 |---|---|
-| `src/sim/` | de spelregels: pure TypeScript, geen browser nodig. Vaste tijdstap, seeded random, dus elke ronde is reproduceerbaar |
-| `src/sim/data/` | torens, collega's, levels en golven. Hier zitten alle getallen |
-| `src/render/` | Three.js: isometrische camera, kantoor, collega's, effecten |
-| `src/ui/` | HUD en schermen (gewone DOM met CSS grid/flex). Alle spelerstekst staat in `src/ui/text.ts` |
-| `server/mp/` | multiplayer-server (Node + WebSockets): kamers met join-code, draait dezelfde `src/sim` als de browser |
-| `server/relay/` | kleine Flask-service die feedback en rondecijfers opslaat (SQLite) en doorstuurt naar Discord/Mattermost |
-| `art/blender/` | Python-scripts die alle 3D-modellen, icoontjes en previews bouwen in Blender |
-| `public/` | de gebouwde modellen (`.glb`), icoontjes en geluidseffecten |
-| `tools/` | balansrapport, bots, UI-controle in een echte browser, releasescript |
+| `src/sim/` | the game rules: pure TypeScript, no browser needed. Fixed time step, seeded random, so every round can be replayed |
+| `src/sim/data/` | towers, colleagues, levels and waves. All the numbers live here |
+| `src/render/` | Three.js: isometric camera, the office, colleagues, effects |
+| `src/ui/` | HUD and screens (plain DOM with CSS grid/flex). All player text is in `src/ui/text.ts` |
+| `server/mp/` | multiplayer server (Node + WebSockets): rooms with a join code, runs the same `src/sim` as the browser |
+| `server/relay/` | a small Flask service that stores feedback and round numbers (SQLite) and forwards them to Discord/Mattermost |
+| `art/blender/` | Python scripts that build every 3D model, icon and preview in Blender |
+| `public/` | the built models (`.glb`), icons and sound effects |
+| `tools/` | balance report, bots, UI check in a real browser, release script |
 
-Meer achtergrond, beslissingen en valkuilen: [HANDOFF.md](HANDOFF.md). Het bouwplan per fase:
-[docs/BOUWPLAN.md](docs/BOUWPLAN.md).
+More background, decisions and pitfalls (in Dutch): [HANDOFF.md](HANDOFF.md). The build plan per
+phase: [docs/BOUWPLAN.md](docs/BOUWPLAN.md).
 
-## Meebouwen
+## Contributing
 
-Pull requests zijn welkom, ook als ze met AI geschreven zijn. Lees eerst
-[CONTRIBUTING.md](CONTRIBUTING.md) (opzet, checks, hoe je een PR instuurt) en
-[AGENTS.md](AGENTS.md) (de huisregels; AI-tools lezen die vanzelf). Elke PR draait automatisch de
-tests en de UI-check.
+Pull requests are welcome, also when they are written with AI. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first (setup, checks, how to open a PR) and
+[AGENTS.md](AGENTS.md) (the house rules; AI tools read it on their own). Every PR runs the tests
+and the UI check automatically.
 
-## Lokaal draaien
+## Running it locally
 
-Nodig: Node.js 24.
+You need Node.js 24.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173. De feedback-relay draait lokaal niet mee; feedback versturen geeft
-dan netjes "Could not send it". Multiplayer lokaal testen: start in een tweede terminal
+Open http://127.0.0.1:5173. The feedback relay does not run locally; sending feedback then says
+"Could not send it". To try multiplayer locally, start this in a second terminal
 
 ```bash
 npm run mp
 ```
 
-en open twee tabbladen.
+and open two tabs.
 
-### Testen
+### Tests
 
 ```bash
-npm run check          # typecheck + alle tests (regels, economie, content, balans-bots)
-npm run balance        # balansrapport: HP per golf en wat vijf bots met level 1 doen
-npx tsx tools/uicheck.ts   # speelt de schermen door in headless Chrome, maakt screenshots in shots/
-                           # en meldt tekst die overlapt, uitsteekt of van het scherm valt
-npx tsx tools/uicheck.ts --mp-only   # host en gast in twee browsers: lobby, start, bouwen
+npm run check          # typecheck + all tests (rules, economy, content, balance bots)
+npm run balance        # balance report: HP per wave and what five bots do with every level
+npx tsx tools/uicheck.ts   # plays through the screens in headless Chrome, screenshots in shots/,
+                           # reports text that overlaps, sticks out or falls off the screen
+npx tsx tools/uicheck.ts --mp-only   # host and guest in two browsers: lobby, start, building
 ```
 
-De relay heeft eigen tests:
+The relay has its own tests:
 
 ```bash
 cd server/relay && pip install -r requirements-dev.txt && python -m pytest -q
 ```
 
-### Modellen en icoontjes opnieuw bouwen
+### Rebuilding models and icons
 
-Nodig: Blender 5.x.
+You need Blender 5.x.
 
 ```bash
-blender -b --python art/blender/build_models.py      # alle modellen naar public/models
-blender -b --python art/blender/icons.py             # icoontjes naar public/icons
+blender -b --python art/blender/build_models.py      # every model into public/models
+blender -b --python art/blender/icons.py             # icons into public/icons
 blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
 ```
 
-Met `-- --only intern,coffee_1` bouw je er een paar.
+Add `-- --only intern,coffee_1` to build just a few.
 
-## Uitrollen
+## Deploying
 
-De game draait in Docker op de OVH-server (`/home/ubuntu/ctrl-alt-defend-game`), achter Nginx
-Proxy Manager op game.makkers.net. Drie containers: `web` (nginx met de gebouwde game), `mp` (de
-multiplayer-server, via `/mp`) en `relay` (feedback). In NPM moet bij game.makkers.net
-"Websockets Support" aan staan. Tests draaien mee in de Docker-build: een image met falende tests komt er niet.
+The game runs in Docker on the OVH server (`/home/ubuntu/ctrl-alt-defend-game`), behind Nginx
+Proxy Manager on game.makkers.net. Three containers: `web` (nginx with the built game), `mp` (the
+multiplayer server, on `/mp`) and `relay` (feedback). In NPM, "Websockets Support" must be on for
+game.makkers.net. The tests run inside the Docker build: an image with failing tests does not get
+made.
 
-Elke push naar `main` draait de tests in GitHub Actions en rolt daarna uit, zodra de secret
-`SSH_PRIVATE_KEY` in de repo staat (dezelfde deploy-sleutel als de andere makkers-projecten).
+Every push to `main` runs the tests in GitHub Actions and then deploys, once the
+`SSH_PRIVATE_KEY` secret is set on the repo (the same deploy key as the other makkers projects).
 
-Eerste keer op de server:
+First time on the server:
 
 ```bash
 git clone https://github.com/Malse-Makker/ctrl-alt-defend-game.git /home/ubuntu/ctrl-alt-defend-game
-cd /home/ubuntu/ctrl-alt-defend-game && cp .env.example .env   # poort en webhook(s) invullen
-sudo mkdir -p /opt/ctrl-alt-defend-game && sudo chown 10001 /opt/ctrl-alt-defend-game   # de relay draait als uid 10001
+cd /home/ubuntu/ctrl-alt-defend-game && cp .env.example .env   # fill in the port and webhook(s)
+sudo mkdir -p /opt/ctrl-alt-defend-game && sudo chown 10001 /opt/ctrl-alt-defend-game   # the relay runs as uid 10001
 GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build
 ```
 
-Feedback naar Mattermost: maak in Mattermost een incoming webhook voor het kanaal, zet de URL als
-`MATTERMOST_WEBHOOK_URL=` in `.env` op de server en laad hem met `docker compose up -d relay`.
+Feedback to Mattermost: create an incoming webhook for the channel in Mattermost, put the URL in
+`.env` on the server as `MATTERMOST_WEBHOOK_URL=` and load it with `docker compose up -d relay`.
 
-Een release: `VERSION` ophogen, bovenaan `CHANGELOG.md` een sectie schrijven, committen, en dan
-`tools/release.sh` (of `tools/release.sh --ssh` zolang de Actions-sleutel er niet is).
+New pull requests are posted in Mattermost too, through the `MATTERMOST_WEBHOOK_URL` secret on the
+GitHub repo (`.github/workflows/pr-notify.yml`).
+
+A release: bump `VERSION`, write a section at the top of `CHANGELOG.md`, commit, then run
+`tools/release.sh` (or `tools/release.sh --ssh` while the Actions key is not there).
