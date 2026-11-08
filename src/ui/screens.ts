@@ -21,6 +21,7 @@ function footer(): HTMLElement {
     h('span', { class: 'mono', text: BUILD_LABEL }),
     h('a', { text: T.footerProjects, attrs: { href: 'https://projecten.makkers.net', target: '_blank', rel: 'noopener' } }),
     h('a', { text: T.footerSource, attrs: { href: REPO_URL, target: '_blank', rel: 'noopener' } }),
+    h('a', { text: T.footerLicense, title: 'Free for non-commercial use, with credit', attrs: { href: `${REPO_URL}/blob/main/LICENSE`, target: '_blank', rel: 'noopener' } }),
   );
 }
 

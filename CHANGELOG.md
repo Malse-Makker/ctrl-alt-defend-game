@@ -3,6 +3,14 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.11.0] - 2026-11-08
+
+### New
+- Claim all: once you own an Offshore Account (Coffee Machine, EXPENSE CLAIM tier 4), a Claim all button sits next to your Coffee in the top bar. One click empties every pot of yours. C does the same when nothing is selected.
+
+### Changed
+- The game has a license now: CC BY-NC 4.0. Free to use, share and change for anything non-commercial, with credit to Malse-Makker. The link is at the bottom of the menu.
+
 ## [0.10.0] - 2026-11-08
 
 ### Changed

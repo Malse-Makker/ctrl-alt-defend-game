@@ -78,6 +78,9 @@ it('Thumbtacks hit The Impersonator without seeing him', () => {
 4. Say which AI tool you used, if any, and confirm you read and understood every line of the
    diff. You are responsible for what you submit, not the tool.
 
+By opening a pull request you agree that your contribution is published under the same license
+as the rest of the game, [CC BY-NC 4.0](LICENSE), with the game credited to Malse-Makker.
+
 The maintainer reviews, may ask for changes, and handles the version number, the changelog and
 the release. Merged changes go live on game.makkers.net with the next release.
 

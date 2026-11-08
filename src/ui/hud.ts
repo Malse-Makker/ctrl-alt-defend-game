@@ -79,6 +79,8 @@ export class Hud {
 
   private focusStat!: HTMLElement;
   private coffeeStat!: HTMLElement;
+  private claimAllBtn!: HTMLButtonElement;
+  private claimAllLabel!: HTMLElement;
   private focusV!: HTMLElement;
   private coffeeV!: HTMLElement;
   private waveV!: HTMLElement;
@@ -130,6 +132,12 @@ export class Hud {
     this.root.append(this.vignette);
   }
 
+  /** The Claim all button: claim through your Offshore Account. */
+  private claimAll(): void {
+    const t = this.game.claimAllTower(this.me);
+    if (t) this.act.claim(t.id);
+  }
+
   // ------------------------------------------------------------------ build
 
   private buildTop(): void {
@@ -159,6 +167,10 @@ export class Hud {
     this.waveTimer = h('span', { class: 'timer' });
     w.el.append(this.waveTimer);
     this.scoreV = s.v;
+    // Shows up once you own an Offshore Account: one click empties every pot of yours.
+    this.claimAllLabel = h('span');
+    this.claimAllBtn = h('button', { class: 'btn small claim-all', title: T.claimAllHelp, on: { click: () => this.claimAll() } }, icon('sack-dollar'), this.claimAllLabel);
+    this.claimAllBtn.hidden = true;
 
     this.startLabel = h('span', { text: T.start });
     this.startBtn = h('button', { class: 'btn primary', title: T.nextWaveHelp, on: { click: () => this.act.startOrNext() } }, icon('play'), this.startLabel);
@@ -171,7 +183,7 @@ export class Hud {
     this.pauseBtn = h('button', { class: 'btn small', title: `${T.pause} (P)`, on: { click: () => this.act.togglePause() } }, icon('pause'));
     const settingsBtn = h('button', { class: 'btn small', title: T.settings, attrs: { 'aria-label': T.settings }, on: { click: () => this.act.settings() } }, icon('sliders'));
     const leaveBtn = h('button', { class: 'btn small', title: T.goHome, attrs: { 'aria-label': T.goHome }, on: { click: () => this.act.leave() } }, icon('house'));
-    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn, leaveBtn);
+    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, this.claimAllBtn, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn, leaveBtn);
     this.root.append(this.topbar);
   }
 
@@ -257,6 +269,13 @@ export class Hud {
     const blocked = g.incomeBlocked;
     toggle(this.coffeeStat, 'blocked', blocked);
     this.coffeeStat.title = blocked ? T.incomeBlocked : T.coffee;
+    const offshore = g.claimAllTower(this.me);
+    this.claimAllBtn.hidden = !offshore;
+    if (offshore) {
+      const total = g.potsOf(this.me);
+      setText(this.claimAllLabel, ` ${T.claimAll} ${total}`);
+      this.claimAllBtn.disabled = total <= 0;
+    }
     setText(this.waveV, `${g.waveIndex}/${g.totalWaves}`);
     setText(this.waveTimer, g.phase === 'running' && g.waveIndex < g.totalWaves ? `next in ${Math.max(0, Math.ceil(g.nextWaveTimer))}s` : '');
     setText(this.scoreV, String(g.score));
@@ -534,7 +553,7 @@ export class Hud {
       const bank = s.bank;
       const potText = h('span', { class: 'mono' });
       const fill = h('div', { class: 'pot-fill' });
-      const claim = h('button', { class: 'btn primary small', title: 'Claim the pot (C)', on: { click: () => this.act.claim(t.id) } });
+      const claim = h('button', { class: 'btn primary small', title: bank.claimAll ? T.claimAllHelp : 'Claim the pot (C)', on: { click: () => this.act.claim(t.id) } });
       const box = h(
         'div',
         { class: 'pot' },
@@ -547,8 +566,9 @@ export class Hud {
         setText(potText, `${Math.floor(t.pot)} / ${bank.cap}`);
         fill.style.width = `${Math.min(100, (t.pot / bank.cap) * 100).toFixed(1)}%`;
         toggle(fill, 'full', t.pot >= bank.cap - 0.01);
-        setText(claim, `Claim ${Math.floor(t.pot)}`);
-        claim.disabled = Math.floor(t.pot) <= 0;
+        const amount = bank.claimAll ? g.potsOf(t.owner) : Math.floor(t.pot);
+        setText(claim, `${bank.claimAll ? T.claimAll : 'Claim'} ${amount}`);
+        claim.disabled = amount <= 0;
       });
       parts.push(box);
     }

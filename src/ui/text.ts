@@ -15,6 +15,9 @@ export const UI_TEXT = {
   noWebgl: 'Your browser could not start 3D graphics (WebGL). Try another browser or turn on hardware acceleration.',
   footerProjects: 'More makkers projects',
   footerSource: 'Source',
+  footerLicense: 'CC BY-NC 4.0',
+  claimAll: 'Claim all',
+  claimAllHelp: 'Empty every pot of yours at once (C)',
 
   levelSelect: 'Your career',
   blocks: { junior: 'Junior', medior: 'Medior', senior: 'Senior' } as Record<string, string>,

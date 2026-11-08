@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.10.0)
+## What is in it now (v0.11.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: a small square office kitchen, 22 waves and The Repair Guy (no
@@ -92,6 +92,11 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 
 More background, decisions and pitfalls (in Dutch): [HANDOFF.md](HANDOFF.md). The build plan per
 phase: [docs/BOUWPLAN.md](docs/BOUWPLAN.md).
+
+## License
+
+[CC BY-NC 4.0](LICENSE): use it, share it and change it for anything non-commercial, as long as
+you credit "CTRL-ALT-DEFEND by Malse-Makker" with a link to this repo. No commercial use.
 
 ## Contributing
 

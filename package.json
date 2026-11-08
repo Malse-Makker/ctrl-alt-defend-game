@@ -1,6 +1,7 @@
 {
   "name": "ctrl-alt-defend-game",
   "private": true,
+  "license": "CC-BY-NC-4.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",

@@ -785,6 +785,16 @@ export class Game {
     return { ok: true, cost: -total };
   }
 
+  /** The Offshore Account of this player, if they have one: it claims every pot of theirs at once. */
+  claimAllTower(player: number): Tower | undefined {
+    return this.towers.find((t) => t.owner === player && t.def.role === 'economy' && this.liveStats(t).bank?.claimAll === true);
+  }
+
+  /** Coffee waiting in all of a player's pots. */
+  potsOf(player: number): number {
+    return this.towers.reduce((sum, t) => sum + (t.owner === player ? Math.floor(t.pot) : 0), 0);
+  }
+
   private paidList(player: number, amount: number): number[] {
     const list: number[] = [];
     list[player] = amount;

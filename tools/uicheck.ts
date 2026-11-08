@@ -612,6 +612,20 @@ async function run(): Promise<void> {
         s.selected = s.game.towers[3].id;
       });
       total += await check(page, 'bank-panel', size);
+      // Offshore Account: the Claim all button shows up in the top bar.
+      await page.evaluate(() => {
+        const s = (window as unknown as { cad: Cad }).cad.session;
+        const m = s.game.towers[3];
+        s.game.coffee = 2000;
+        for (let i = 0; i < 3; i++) s.game.upgrade(m.id, 1);
+        (m as unknown as { pot: number }).pot = 42;
+      });
+      const shown = await page
+        .waitForFunction(() => /Claim all 42/.test(document.querySelector<HTMLButtonElement>('.topbar .claim-all:not([hidden])')?.textContent ?? ''), { timeout: 5000, polling: 100 })
+        .then(() => true)
+        .catch(() => false);
+      if (!shown) errors.push(`claim all button missing at ${size}`);
+      total += await check(page, 'claim-all', size);
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
       total += await check(page, 'pause', size);

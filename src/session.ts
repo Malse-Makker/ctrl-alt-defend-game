@@ -765,7 +765,9 @@ export class Session {
       if (this.selected !== null) this.run({ c: 'upgrade', id: this.selected, path: [',', '.', '/'].indexOf(k) });
       e.preventDefault();
     } else if (k === 'c' || k === 'C') {
-      if (this.selected !== null) this.run({ c: 'claim', id: this.selected });
+      // A selected machine claims its pot; otherwise an Offshore Account claims them all.
+      const id = this.selected ?? this.game.claimAllTower(this.me)?.id ?? null;
+      if (id !== null) this.run({ c: 'claim', id });
     } else if (k === 'r' || k === 'R' || k === 'Home') {
       this.host.view.resetView();
     } else if (/^[1-9]$/.test(k)) {

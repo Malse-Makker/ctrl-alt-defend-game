@@ -434,6 +434,10 @@ describe('players and wallets', () => {
     expect(a.pot).toBe(0);
     expect(b.pot).toBe(0);
     expect(other.pot).toBe(50);
+    expect(g.claimAllTower(0)?.id).toBe(a.id);
+    expect(g.claimAllTower(1)).toBeUndefined();
+    other.pot = 50;
+    expect(g.potsOf(1)).toBe(50);
     // A lower tier still claims just its own pot.
     b.pot = 10;
     a.pot = 10;

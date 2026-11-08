@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.10.0)
+## Wat er nu in zit (v0.11.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy
@@ -92,6 +92,12 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 
 Meer achtergrond, beslissingen en valkuilen: [HANDOFF.md](HANDOFF.md). Het bouwplan per fase:
 [docs/BOUWPLAN.md](docs/BOUWPLAN.md).
+
+## Licentie
+
+[CC BY-NC 4.0](LICENSE): gebruiken, delen en aanpassen mag, voor alles wat niet commercieel is,
+zolang je "CTRL-ALT-DEFEND by Malse-Makker" noemt met een link naar deze repo. Geen commercieel
+gebruik.
 
 ## Meebouwen
 

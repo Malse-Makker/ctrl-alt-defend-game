@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.10.0 (2026-11-08)
+## Stand: v0.11.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -117,6 +117,8 @@ portemonnees, eigenaar per toren, `gift()` en `buildAreas` al.
 | Bureaustoel (2026-11-08) | nieuwe toren op level 5 naast Keyboard Smash; de speler kiest na het plaatsen de richting (vier pijlen). Rijdt in een rechte lijn, raakt collega's en verliest zelf HP per treffer; bij 0 HP of na x tegels terug naar het begin. Upgrades: o.a. bereik en HP |
 | Bijdragen (2026-11-08) | PR's van anderen (ook met AI) welkom volgens AGENTS.md en CONTRIBUTING.md; nieuwe PR's geven een melding in Mattermost (repo-secret `MATTERMOST_WEBHOOK_URL`) |
 | Levels (2026-11-08) | een level moet eruitzien als zijn naam: eigen vloer (`look`) en inrichting; Coffee Corner is een klein vierkant keukentje |
+| Licentie (2026-11-08) | CC BY-NC 4.0: iedereen mag het gebruiken, niet commercieel, met credits aan Malse-Makker |
+| Eigen werk (2026-11-08) | direct op `main`, geen PR's; PR's zijn voor anderen |
 | Oude repo (2026-11-08) | Malse-Makker/CTRL-ALT-DEFEND wordt gearchiveerd en privé; de ontwerpbijbel blijft lokaal |
 
 ## Werkwijze
