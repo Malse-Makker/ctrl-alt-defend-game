@@ -88,6 +88,10 @@ class App {
         retry: (id) => (attract ? this.startSession(id, true) : this.play(id)),
         toLobby: () => this.lobby(),
         leaveMp: () => this.leaveMp(),
+        applySettings: () => {
+          store(this.save);
+          this.applySettings();
+        },
       },
       levelId,
       { attract, mp: room && this.mp ? { client: this.mp, room } : undefined },

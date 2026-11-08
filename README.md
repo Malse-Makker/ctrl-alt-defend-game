@@ -8,16 +8,14 @@ koptelefoon, een nietmachine en een versnipperaar. Torens zijn voorwerpen, vijan
 
 Speel: **https://game.makkers.net** (geen download, geen installatie).
 
-Dit is de remake van de Godot-versie
-([Malse-Makker/CTRL-ALT-DEFEND](https://github.com/Malse-Makker/CTRL-ALT-DEFEND)). Alle ideeën
-komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
+Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën komen daarvandaan.
 
 > **Over dit project:** CTRL-ALT-DEFEND is gemaakt met hulp van AI (Claude), als persoonlijk
 > speel- en leerproject om meer te leren over AI, over gamedesign en over 3D in de browser. Ook
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.6.0)
+## Wat er nu in zit (v0.6.1)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
@@ -159,12 +157,3 @@ Feedback naar Mattermost: maak in Mattermost een incoming webhook voor het kanaa
 
 Een release: `VERSION` ophogen, bovenaan `CHANGELOG.md` een sectie schrijven, committen, en dan
 `tools/release.sh` (of `tools/release.sh --ssh` zolang de Actions-sleutel er niet is).
-
-### Speeldata lezen
-
-```bash
-ssh ubuntu@makkers.net 'cd /home/ubuntu/ctrl-alt-defend-game && docker compose exec relay python report.py'
-```
-
-Er wordt geen IP-adres opgeslagen. De speler-id is een willekeurige code uit de browser van de
-speler. Rondecijfers delen kan uit in Settings.

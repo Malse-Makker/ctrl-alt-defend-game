@@ -121,11 +121,21 @@ export function careerScreen(save: SaveData, play: (id: number) => void, back: (
 
 export interface SettingsActions {
   change(): void;
-  reset(): void;
+  /** Leave out to hide the reset button (in the middle of a game). */
+  reset?(): void;
   back(): void;
 }
 
 export function settingsScreen(save: SaveData, act: SettingsActions): HTMLElement {
+  return h('div', { class: 'screen' }, settingsCard(save, act, 'screen-card panel'));
+}
+
+/** The same settings as a card over the running game. Offline the game waits while it is open. */
+export function settingsOverlay(save: SaveData, act: SettingsActions): HTMLElement {
+  return h('div', { class: 'overlay' }, settingsCard(save, act, 'card panel settings-card'));
+}
+
+function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLElement {
   const st = save.settings;
   const slider = (label: string, value: number, set: (v: number) => void) => {
     const input = h('input', { type: 'range', attrs: { min: '0', max: '1', step: '0.05', 'aria-label': label } });
@@ -147,28 +157,28 @@ export function settingsScreen(save: SaveData, act: SettingsActions): HTMLElemen
     return help ? h('div', {}, row, h('div', { class: 'faint', attrs: { style: 'font-size:12px' }, text: help })) : row;
   };
   const status = h('div', { class: 'status ok' });
-  const reset = h('button', { class: 'btn danger small' }, icon('trash'), h('span', { text: ` ${T.settingsReset}` }));
-  reset.addEventListener('click', () => {
-    if (window.confirm(T.settingsResetConfirm)) {
-      act.reset();
-      status.textContent = T.settingsResetDone;
-    }
-  });
+  let reset: HTMLElement | null = null;
+  if (act.reset) {
+    const doReset = act.reset;
+    reset = h('button', { class: 'btn danger small' }, icon('trash'), h('span', { text: ` ${T.settingsReset}` }));
+    reset.addEventListener('click', () => {
+      if (window.confirm(T.settingsResetConfirm)) {
+        doReset();
+        status.textContent = T.settingsResetDone;
+      }
+    });
+  }
   return h(
     'div',
-    { class: 'screen' },
-    h(
-      'div',
-      { class: 'screen-card panel' },
-      h('h2', { attrs: { style: 'margin:0' }, text: T.settings }),
-      slider(T.settingsVolume, st.volume, (v) => (st.volume = v)),
-      slider(T.settingsSfx, st.sfx, (v) => (st.sfx = v)),
-      check(T.settingsDamageNumbers, st.damageNumbers, (v) => (st.damageNumbers = v)),
-      check(T.settingsShareStats, st.shareStats, (v) => (st.shareStats = v), T.settingsShareStatsHelp),
-      h('div', { class: 'row-buttons' }, reset),
-      status,
-      h('div', {}, h('button', { class: 'btn', on: { click: act.back } }, icon('arrow-left'), h('span', { text: T.back }))),
-    ),
+    { class: cls },
+    h('h2', { attrs: { style: 'margin:0' }, text: T.settings }),
+    slider(T.settingsVolume, st.volume, (v) => (st.volume = v)),
+    slider(T.settingsSfx, st.sfx, (v) => (st.sfx = v)),
+    check(T.settingsDamageNumbers, st.damageNumbers, (v) => (st.damageNumbers = v)),
+    check(T.settingsShareStats, st.shareStats, (v) => (st.shareStats = v), T.settingsShareStatsHelp),
+    reset ? h('div', { class: 'row-buttons' }, reset) : null,
+    status,
+    h('div', {}, h('button', { class: 'btn', on: { click: act.back } }, icon('arrow-left'), h('span', { text: T.back }))),
   );
 }
 
@@ -215,6 +225,7 @@ export function howToBody(): HTMLElement {
 
 export interface PauseActions {
   resume(): void;
+  settings(): void;
   howTo(): void;
   giveUp(): void;
   quit(): void;
@@ -233,6 +244,7 @@ export function pauseOverlay(act: PauseActions, mode: { online: boolean; host: b
         'div',
         { class: 'menu-buttons' },
         h('button', { class: 'btn primary', on: { click: act.resume } }, icon('play'), h('span', { text: mode.online ? T.back : T.resume })),
+        h('button', { class: 'btn', on: { click: act.settings } }, icon('sliders'), h('span', { text: T.settings })),
         h('button', { class: 'btn', on: { click: act.howTo } }, icon('circle-question'), h('span', { text: T.howTo })),
         mode.host ? h('button', { class: 'btn danger', on: { click: act.giveUp } }, icon('flag'), h('span', { text: mode.online ? T.mpGiveUp : T.giveUp })) : null,
         h('button', { class: 'btn', on: { click: act.quit } }, icon('arrow-left'), h('span', { text: mode.online ? T.mpLeave : T.quitToCareer })),

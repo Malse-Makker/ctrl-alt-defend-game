@@ -1,7 +1,8 @@
 # Overdracht
 
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
-(`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
+(`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
+oude Godot-repo wordt gearchiveerd en privé).
 
 ## Stand: v0.6.0 (2026-11-08)
 

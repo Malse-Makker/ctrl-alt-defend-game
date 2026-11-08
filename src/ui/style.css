@@ -428,6 +428,11 @@ button:disabled {
   color: var(--bad);
 }
 
+.stat.level .k {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .stat.blocked {
   background: rgba(229, 83, 75, 0.25);
 }
@@ -1679,4 +1684,8 @@ select {
 .xp-option:focus-visible {
   border-color: #2a64d6;
   background: linear-gradient(#fff, #d6e4fb);
+}
+
+.settings-card {
+  width: min(440px, 100%);
 }

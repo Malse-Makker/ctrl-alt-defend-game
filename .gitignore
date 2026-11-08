@@ -7,3 +7,5 @@ __pycache__/
 .pytest_cache/
 .claude/
 dist-server/
+# De ontwerpbijbel blijft lokaal, ook als hij hierheen gekopieerd wordt.
+07_REMAKE_PROMPT.md

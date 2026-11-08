@@ -1,6 +1,7 @@
 # Bouwplan
 
-Bron van waarheid voor de inhoud: de ontwerpbijbel in `07_REMAKE_PROMPT.md` (oude repo, deel 2).
+Bron van waarheid voor de inhoud: de ontwerpbijbel in `07_REMAKE_PROMPT.md`, deel 2. Die staat alleen lokaal
+bij de maker (niet in git).
 Elke fase eindigt live op game.makkers.net, met tests, balansmeting en een UI-controle.
 
 ## Fase 1: één speelbaar level (v0.1.x), KLAAR

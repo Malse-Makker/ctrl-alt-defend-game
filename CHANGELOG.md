@@ -3,6 +3,14 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.6.1] - 2026-11-08
+
+### Changed
+- The top bar shows which floor you are on (hover it for the intro).
+- A settings button in the top bar, and Settings in the pause menu: volume, sound effects and the rest without leaving the game. Offline the game waits while it is open.
+- Every tower with a range shows it while you place it or select it: Headphones, The Shredder and Thumbtacks too, not only the shooting towers.
+- Office Artillery can now be told who to aim at, like every other tower that shoots.
+
 ## [0.6.0] - 2026-11-08
 
 ### New

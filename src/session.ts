@@ -23,7 +23,7 @@ import { Game, TICK, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
-import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, textScreen } from './ui/screens';
+import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
 import { projectorGame, type ProjectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
 
@@ -39,6 +39,8 @@ export interface SessionHost {
   /** Multiplayer: back to the lobby (the host chose "back to lobby"), or out entirely. */
   toLobby?(): void;
   leaveMp?(): void;
+  /** Save and apply changed settings (volume) right away. */
+  applySettings(): void;
 }
 
 export interface SessionOptions {
@@ -135,6 +137,7 @@ export class Session {
         target: (id, m) => this.target(id, m),
         deselect: () => this.select(null),
         gift: (to, amount) => this.run({ c: 'gift', to, amount }),
+        settings: () => this.openSettings(false),
       },
       this.me,
     );
@@ -559,6 +562,7 @@ export class Session {
       pauseOverlay(
         {
           resume: () => this.closeOverlay(),
+          settings: () => this.openSettings(true),
           howTo: () => this.setOverlay(textScreen(T.howTo, howToBody(), () => this.togglePauseMenu())),
           giveUp: () =>
             this.setOverlay(
@@ -588,6 +592,18 @@ export class Session {
         },
         { online: this.mp !== null, host: this.isHost },
       ),
+    );
+  }
+
+  /** Settings over the running game. Offline the game waits; online it keeps going. */
+  private openSettings(fromMenu: boolean): void {
+    if (this.ended) return;
+    if (!this.mp) this.paused = true;
+    this.setOverlay(
+      settingsOverlay(this.host.save, {
+        change: () => this.host.applySettings(),
+        back: () => (fromMenu ? this.togglePauseMenu() : this.closeOverlay()),
+      }),
     );
   }
 
@@ -755,7 +771,7 @@ export class Session {
       const def = TOWERS[this.placing];
       const check = g.canPlace(this.placing, this.hover.tx, this.hover.ty, this.me);
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
-      const range = def.role === 'damage' ? def.base.range : 0;
+      const range = def.role === 'economy' || def.base.global ? 0 : def.base.range;
       this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range);
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
       return;
@@ -765,7 +781,7 @@ export class Session {
     const hov = this.hover ? g.towerAt(this.hover.tx, this.hover.ty) : undefined;
     const t = sel ?? hov;
     const tipRange = t && t.def.role === 'economy' && g.liveStats(t).tip > 0;
-    if (t && (t.def.role === 'damage' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
+    if (t && (t.def.role !== 'economy' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
     else this.actors.showRange(null, 0, 0);
   }
 

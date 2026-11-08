@@ -33,6 +33,7 @@ export interface HudActions {
   target(id: number, mode: TargetMode): void;
   deselect(): void;
   gift(to: number, amount: number): void;
+  settings(): void;
 }
 
 export interface MpPlayer {
@@ -126,6 +127,14 @@ export class Hud {
       const el = h('div', { class: `stat ${cls}`, title: label }, icon(ic), v, k);
       return { el, v, k };
     };
+    // Which floor you are on: the number and the name, the intro as a tooltip.
+    const lvl = h(
+      'div',
+      { class: 'stat level', title: this.game.level.intro },
+      icon('building'),
+      h('span', { class: 'v', text: `L${this.game.level.id}` }),
+      h('span', { class: 'k', text: this.game.level.name }),
+    );
     const f = stat('focus', 'brain', T.focus);
     const c = stat('coffee', 'mug-hot', T.coffee);
     const w = stat('wave', 'people-group', T.wave);
@@ -148,7 +157,8 @@ export class Hud {
       speeds.append(b);
     }
     this.pauseBtn = h('button', { class: 'btn small', title: `${T.pause} (P)`, on: { click: () => this.act.togglePause() } }, icon('pause'));
-    this.topbar = h('div', { class: 'topbar panel' }, f.el, c.el, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn);
+    const settingsBtn = h('button', { class: 'btn small', title: T.settings, attrs: { 'aria-label': T.settings }, on: { click: () => this.act.settings() } }, icon('sliders'));
+    this.topbar = h('div', { class: 'topbar panel' }, lvl, f.el, c.el, w.el, s.el, h('div', { class: 'spacer' }), this.startBtn, speeds, this.pauseBtn, settingsBtn);
     this.root.append(this.topbar);
   }
 
@@ -551,7 +561,7 @@ export class Hud {
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
 
     // Targeting
-    if ((def.role === 'damage' && !s.global) || def.role === 'trap') {
+    if (def.role === 'damage' || def.role === 'trap') {
       const trap = def.role === 'trap';
       const tg = h('div', { class: 'targets', attrs: { role: 'group', 'aria-label': trap ? T.trapTargeting : T.targeting } });
       for (const mode of trap ? TRAP_TARGET_MODES : TARGET_MODES) {

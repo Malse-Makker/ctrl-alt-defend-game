@@ -609,6 +609,11 @@ async function run(): Promise<void> {
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
       total += await check(page, 'pause', size);
+      await clickText(page, 'Settings');
+      await page.waitForSelector('.overlay .settings-card');
+      total += await check(page, 'settings-ingame', size);
+      await clickText(page, 'Back');
+      await page.waitForFunction(() => !document.querySelector('.overlay .settings-card'));
       await clickText(page, 'Give up');
       total += await check(page, 'confirm', size);
       await clickText(page, 'Yes, go home');
