@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.9.0)
+## Wat er nu in zit (v0.9.1)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
@@ -142,6 +142,7 @@ Nodig: Blender 5.x.
 blender -b --python art/blender/build_models.py      # alle modellen naar public/models
 blender -b --python art/blender/icons.py             # icoontjes naar public/icons
 blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
+blender -b --python art/blender/projector_ui.py      # plaatjes en poortposities van de projector-minigame
 ```
 
 Met `-- --only intern,coffee_1` bouw je er een paar.

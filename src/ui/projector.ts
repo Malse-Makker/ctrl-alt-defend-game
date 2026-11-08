@@ -1,9 +1,12 @@
 // The projector mini-game (Meeting Room, and later Boardroom III). The game keeps running behind
-// it; until you fix it you cannot build. Step 1: plug both cables into the right port (drag, or
-// click a plug and then a port). Step 2: pick the right display mode. Closes by itself after a
-// while, so nobody gets stuck.
+// it; until you fix it you cannot build. Step 1: plug both cables into the right port of a real
+// (rendered) projector, by dragging or by clicking a plug and then a port. Step 2: pick the right
+// display mode. Closes by itself after a while, so nobody gets stuck.
+//
+// The pictures come from art/blender/projector_ui.py, which also writes where the ports are.
 
-import { h, icon } from './dom';
+import { h } from './dom';
+import { PROJECTOR_PORTS, PROJECTOR_SIZE } from './projectorLayout';
 import { UI_TEXT as T } from './text';
 
 export interface ProjectorGame {
@@ -12,12 +15,27 @@ export interface ProjectorGame {
   close(): void;
 }
 
-const PLUGS = [
+type PlugId = 'vga' | 'pwr';
+type PortId = PlugId | 'hdmi';
+
+const PLUGS: readonly { id: PlugId; label: string; color: string }[] = [
+  // Power first: the cables cross on the way to their ports, like real ones do.
+  { id: 'pwr', label: 'Power', color: '#2a2d33' },
   { id: 'vga', label: 'VGA', color: '#3e7cc9' },
-  { id: 'pwr', label: 'Power', color: '#9aa0a8' },
-] as const;
+];
+
+const PORTS: readonly { id: PortId; label: string }[] = [
+  { id: 'vga', label: 'VGA' },
+  { id: 'hdmi', label: 'HDMI' },
+  { id: 'pwr', label: 'Power' },
+];
+
+const picture = (vga: boolean, pwr: boolean) => `ui/projector_${vga && pwr ? 'both' : vga ? 'vga' : pwr ? 'pwr' : 'none'}.png`;
 
 export function projectorGame(onSolved: () => void, say: (msg: string) => void): ProjectorGame {
+  // Load every state up front, so plugging in does not flicker.
+  for (const v of [false, true]) for (const p of [false, true]) new Image().src = picture(v, p);
+
   const timer = h('div', { class: 'qte-timer' });
   const body = h('div', { class: 'qte-body' });
   const card = h(
@@ -29,26 +47,46 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
   const el = h('div', { class: 'qte-layer' }, card);
 
   // ---------------------------------------------------------------- step 1: cables
-  const plugged = new Set<string>();
-  let picked: string | null = null;
+  const plugged = new Set<PlugId>();
+  let picked: PlugId | null = null;
   const stage = h('div', { class: 'qte-stage' });
+  const shot = h('img', {
+    class: 'qte-picture',
+    attrs: { src: picture(false, false), alt: 'A projector with a VGA, an HDMI and a power port on its side', draggable: 'false' },
+  });
+  const scene = h('div', { class: 'qte-scene', attrs: { style: `aspect-ratio: ${PROJECTOR_SIZE.w} / ${PROJECTOR_SIZE.h}` } }, shot);
+  const ports = new Map<PortId, HTMLButtonElement>();
+  for (const p of PORTS) {
+    const at = PROJECTOR_PORTS[p.id];
+    // A little bigger than the port itself, so it is easy to hit.
+    const w = at.w * 1.5;
+    const ht = at.h * 1.5;
+    const port = h(
+      'button',
+      {
+        class: `qte-port port-${p.id}`,
+        title: `${p.label} port`,
+        attrs: {
+          'aria-label': `${p.label} port`,
+          style: `left:${(at.x - w / 2) * 100}%; top:${(at.y - ht / 2) * 100}%; width:${w * 100}%; height:${ht * 100}%`,
+        },
+        on: { click: () => tryPlug(picked, p.id) },
+      },
+    );
+    ports.set(p.id, port);
+    scene.append(port);
+  }
   const wires = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   wires.setAttribute('class', 'qte-wires');
-  const projector = h('div', { class: 'qte-projector' }, h('div', { class: 'qte-lens' }));
-  const ports = new Map<string, HTMLButtonElement>();
-  const portRow = h('div', { class: 'qte-ports' });
-  // The ports are in the "wrong" order on purpose: power left, VGA right.
-  for (const id of ['pwr', 'vga']) {
-    const p = PLUGS.find((x) => x.id === id)!;
-    const port = h('button', { class: `qte-port port-${id}`, title: `${p.label} port`, on: { click: () => tryPlug(picked, id) } }, h('span', { text: p.label }));
-    ports.set(id, port);
-    portRow.append(port);
-  }
-  projector.append(portRow);
   const plugRow = h('div', { class: 'qte-plugs' });
-  const plugs = new Map<string, HTMLButtonElement>();
+  const plugs = new Map<PlugId, HTMLButtonElement>();
   for (const p of PLUGS) {
-    const b = h('button', { class: `qte-plug plug-${p.id}`, attrs: { style: `--plug:${p.color}` }, title: `${p.label} cable` }, icon('plug'), h('span', { text: ` ${p.label}` }));
+    const b = h(
+      'button',
+      { class: `qte-plug plug-${p.id}`, attrs: { style: `--plug:${p.color}` }, title: `${p.label} cable` },
+      h('img', { attrs: { src: `ui/plug_${p.id}.png`, alt: '', draggable: 'false' } }),
+      h('span', { text: p.label }),
+    );
     b.addEventListener('click', () => {
       if (plugged.has(p.id)) return;
       picked = picked === p.id ? null : p.id;
@@ -58,35 +96,31 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
     plugs.set(p.id, b);
     plugRow.append(b);
   }
-  stage.append(wires, projector, plugRow, h('div', { class: 'qte-help', text: T.projHelp }));
+  stage.append(scene, plugRow, wires, h('div', { class: 'qte-help', text: T.projHelp }));
   body.append(stage);
 
-  /** A point on the top or bottom edge of an element, in stage coordinates. */
-  function edge(elm: HTMLElement, side: 'top' | 'bottom'): { x: number; y: number } {
+  function topOf(elm: HTMLElement): { x: number; y: number } {
     const r = elm.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
-    return { x: r.left + r.width / 2 - s.left, y: (side === 'top' ? r.top : r.bottom) - s.top };
+    return { x: r.left + r.width / 2 - s.left, y: r.top - s.top };
   }
 
-  function drawWires(drag?: { id: string; x: number; y: number }): void {
+  /** While dragging: a cable from the plug to the pointer. Plugged cables are in the picture. */
+  function drawDrag(drag?: { id: PlugId; x: number; y: number }): void {
     wires.replaceChildren();
-    for (const p of PLUGS) {
-      const from = edge(plugs.get(p.id)!, 'top');
-      let to: { x: number; y: number } | null = null;
-      if (plugged.has(p.id)) to = edge(ports.get(p.id)!, 'bottom');
-      else if (drag && drag.id === p.id) to = { x: drag.x, y: drag.y };
-      if (!to) continue;
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      line.setAttribute('d', `M ${from.x} ${from.y} C ${from.x} ${from.y - 30}, ${to.x} ${to.y + 30}, ${to.x} ${to.y}`);
-      line.setAttribute('stroke', p.color);
-      line.setAttribute('stroke-width', '6');
-      line.setAttribute('fill', 'none');
-      line.setAttribute('stroke-linecap', 'round');
-      wires.append(line);
-    }
+    if (!drag) return;
+    const p = PLUGS.find((x) => x.id === drag.id)!;
+    const from = topOf(plugs.get(drag.id)!);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    line.setAttribute('d', `M ${from.x} ${from.y} C ${from.x} ${from.y - 40}, ${drag.x} ${drag.y + 40}, ${drag.x} ${drag.y}`);
+    line.setAttribute('stroke', p.color);
+    line.setAttribute('stroke-width', '7');
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke-linecap', 'round');
+    wires.append(line);
   }
 
-  function tryPlug(plug: string | null, port: string): void {
+  function tryPlug(plug: PlugId | null, port: PortId): void {
     if (!plug) {
       say(T.projNoCable);
       return;
@@ -100,11 +134,12 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
     plugs.get(plug)!.classList.add('done');
     ports.get(port)!.classList.add('done');
     plugs.forEach((x) => x.classList.remove('picked'));
-    drawWires();
-    if (plugged.size === PLUGS.length) window.setTimeout(showSettings, 350);
+    shot.src = picture(plugged.has('vga'), plugged.has('pwr'));
+    drawDrag();
+    if (plugged.size === PLUGS.length) window.setTimeout(showSettings, 450);
   }
 
-  function startDrag(e: PointerEvent, id: string): void {
+  function startDrag(e: PointerEvent, id: PlugId): void {
     if (plugged.has(id) || e.button !== 0) return;
     const target = e.currentTarget as HTMLElement;
     target.setPointerCapture(e.pointerId);
@@ -112,7 +147,7 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
     const s = stage.getBoundingClientRect();
     const move = (ev: PointerEvent) => {
       moved = true;
-      drawWires({ id, x: ev.clientX - s.left, y: ev.clientY - s.top });
+      drawDrag({ id, x: ev.clientX - s.left, y: ev.clientY - s.top });
     };
     const up = (ev: PointerEvent) => {
       target.removeEventListener('pointermove', move);
@@ -120,10 +155,10 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
       if (!moved) return;
       const hit = [...ports.entries()].find(([, port]) => {
         const r = port.getBoundingClientRect();
-        return ev.clientX >= r.left - 12 && ev.clientX <= r.right + 12 && ev.clientY >= r.top - 12 && ev.clientY <= r.bottom + 12;
+        return ev.clientX >= r.left - 8 && ev.clientX <= r.right + 8 && ev.clientY >= r.top - 8 && ev.clientY <= r.bottom + 8;
       });
       if (hit) tryPlug(id, hit[0]);
-      drawWires();
+      drawDrag();
     };
     target.addEventListener('pointermove', move);
     target.addEventListener('pointerup', up);
@@ -162,7 +197,6 @@ export function projectorGame(onSolved: () => void, say: (msg: string) => void):
     body.replaceChildren(win);
   }
 
-  requestAnimationFrame(() => drawWires());
   return {
     el,
     setTimeLeft: (sec) => {

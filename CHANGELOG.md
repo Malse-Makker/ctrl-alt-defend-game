@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.9.1] - 2026-11-08
+
+### Changed
+- The projector mini-game shows a real projector now, with its VGA, HDMI and power ports on the side. Plug a cable in and it hangs out of the projector for real. The HDMI port is there to tempt you.
+
 ## [0.9.0] - 2026-11-08
 
 ### New

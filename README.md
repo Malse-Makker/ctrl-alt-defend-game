@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.9.0)
+## What is in it now (v0.9.1)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: 22 waves and The Repair Guy (no Coffee while he is around). Opens
@@ -142,6 +142,7 @@ You need Blender 5.x.
 blender -b --python art/blender/build_models.py      # every model into public/models
 blender -b --python art/blender/icons.py             # icons into public/icons
 blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
+blender -b --python art/blender/projector_ui.py      # the projector mini-game pictures + port positions
 ```
 
 Add `-- --only intern,coffee_1` to build just a few.

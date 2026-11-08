@@ -37,6 +37,11 @@ describe('assets', () => {
     }
   });
 
+  it('the projector mini-game has every picture it switches between', () => {
+    for (const n of ['none', 'vga', 'pwr', 'both']) expect(existsSync(`public/ui/projector_${n}.png`), n).toBe(true);
+    for (const n of ['vga', 'pwr']) expect(existsSync(`public/ui/plug_${n}.png`), n).toBe(true);
+  });
+
   it('every sound has a file', () => {
     for (const s of SOUNDS) expect(existsSync(`public/sfx/${s}.wav`), `${s}.wav`).toBe(true);
   });
