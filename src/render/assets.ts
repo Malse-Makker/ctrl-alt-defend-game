@@ -54,6 +54,12 @@ export const MODEL_NAMES = [
   'food_counter',
   'canteen_table',
   'wet_floor',
+  'shredder_p0_3',
+  'shredder_p0_4',
+  'shredder_p1_3',
+  'shredder_p1_4',
+  'shredder_p2_3',
+  'shredder_p2_4',
 ] as const;
 
 export class Assets {

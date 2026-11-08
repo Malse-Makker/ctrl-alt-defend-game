@@ -410,6 +410,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 2,
     accent: '#3fa7a0',
     models: ['shredder_1', 'shredder_2', 'shredder_3'],
+    pathModels: [
+      ['shredder_p0_3', 'shredder_p0_4'],
+      ['shredder_p1_3', 'shredder_p1_4'],
+      ['shredder_p2_3', 'shredder_p2_4'],
+    ],
     base: { cost: 30, range: 2.375, dot: 2, slow: 0.6 },
     paths: [
       {

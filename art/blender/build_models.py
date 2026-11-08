@@ -1062,6 +1062,136 @@ def b_wet_floor():
     return root
 
 
+# ---------------------------------------------------------------- shredder: one look per path
+
+def _shredder_base(head_col, body_col="plastic_black", w=0.44, d=0.32, h=0.42):
+    body = box("Bin", (w - 0.02, d - 0.02, h), loc=(0, 0, 0), material=mat(body_col), bevel=0.02)
+    head = box("Head", (w, d, 0.12), loc=(0, 0, h), material=mat(head_col, rough=0.5), bevel=0.02)
+    slot = box("Slot", (w * 0.68, 0.02, 0.01), loc=(0, 0, h + 0.125), material=mat("plastic_black"))
+    return [body, head, slot], h + 0.12
+
+
+def b_shredder_p0_3():
+    """CROSS-CUT tier 3, Sticky Paper: red cutting head, teeth on show, sticky strips."""
+    root = empty("shredder_p0_3")
+    parts, top = _shredder_base("red")
+    for i in range(7):
+        parts.append(box(f"Tooth{i}", (0.035, 0.05, 0.05), loc=(-0.15 + i * 0.05, -0.06, top), material=mat("metal_light", metal=0.8, rough=0.25), taper=0.3))
+    for i in range(4):
+        x = -0.13 + i * 0.09
+        parts.append(box(f"Strip{i}", (0.03, 0.006, 0.2 + 0.03 * (i % 2)), loc=(x, -0.162, 0.12), material=mat("yellow" if i % 2 else "paper")))
+    glue = cyl("Glue", 0.035, 0.12, loc=(0.18, -0.24, 0), material=mat("plastic_white"), verts=10)
+    cap = cyl("GlueCap", 0.02, 0.04, loc=(0.18, -0.24, 0.12), material=mat("orange"), verts=8)
+    stripe = box("Warn", (0.46, 0.01, 0.04), loc=(0, -0.162, 0.34), material=mat("yellow"))
+    ob = join("shredder_p0_3_mesh", parts + [glue, cap, stripe])
+    parent(ob, root)
+    return root
+
+
+def b_shredder_p0_4():
+    """CROSS-CUT tier 4, Industrial Shredder: a big red machine with two cutter drums."""
+    root = empty("shredder_p0_4")
+    body = box("Body", (0.74, 0.58, 0.62), loc=(0, 0, 0), material=mat("red", rough=0.45), bevel=0.03)
+    base = box("Base", (0.8, 0.64, 0.06), loc=(0, 0, 0), material=mat("charcoal"), bevel=0.01)
+    # An open hopper, so the cutter drums inside are on show.
+    hm = mat("metal", metal=0.6, rough=0.35)
+    hopper = [box("HopperF", (0.7, 0.04, 0.16), loc=(0, -0.27, 0.62), material=hm),
+              box("HopperB", (0.7, 0.04, 0.24), loc=(0, 0.27, 0.62), material=hm),
+              box("HopperL", (0.04, 0.5, 0.2), loc=(-0.33, 0, 0.62), material=hm),
+              box("HopperR", (0.04, 0.5, 0.2), loc=(0.33, 0, 0.62), material=hm)]
+    parts = [body, base] + hopper
+    for j, y in enumerate((-0.06, 0.06)):
+        parts.append(cyl(f"Drum{j}", 0.055, 0.56, loc=(-0.28, y, 0.72), material=mat("metal_light", metal=0.85, rough=0.2), verts=12, rot=(0, math.pi / 2, 0)))
+        for i in range(8):
+            parts.append(box(f"Blade{j}_{i}", (0.02, 0.13, 0.13), loc=(-0.24 + i * 0.07, y, 0.66), material=mat("metal_light", metal=0.9, rough=0.2), rot_z=0.4 * (1 if j else -1)))
+    for i in range(6):
+        parts.append(box(f"Chevron{i}", (0.1, 0.01, 0.05), loc=(-0.3 + i * 0.12, -0.292, 0.5), material=mat("yellow" if i % 2 else "plastic_black")))
+    panel = box("Panel", (0.2, 0.02, 0.14), loc=(0.22, -0.3, 0.22), material=mat("plastic_black"))
+    btn = box("Btn", (0.06, 0.03, 0.06), loc=(0.22, -0.31, 0.28), material=mat("red", emit=1.5))
+    chute = box("Chute", (0.3, 0.2, 0.04), loc=(-0.2, -0.36, 0.06), material=mat("metal", metal=0.5), bevel=0.005)
+    confetti = [box(f"Bit{i}", (0.03, 0.015, 0.005), loc=(-0.32 + (i * 37 % 30) / 100, -0.42 - (i * 13 % 10) / 100, 0.005), material=mat("paper"), rot_z=i * 0.9) for i in range(10)]
+    ob = join("shredder_p0_4_mesh", parts + [panel, btn, chute] + confetti)
+    parent(ob, root)
+    return root
+
+
+def _crumple(name, x, y, z, r=0.05):
+    return ball(name, r, loc=(x, y, z), material=mat("paper", rough=1.0), subdiv=1, scale=(1.1, 0.9, 0.85))
+
+
+def b_shredder_p1_3():
+    """PAPER JAM tier 3: paper sticking out of the slot every which way, a red fault light."""
+    root = empty("shredder_p1_3")
+    parts, top = _shredder_base("teal")
+    for i, (x, rz, rx) in enumerate(((-0.12, 0.3, 0.5), (-0.04, -0.2, -0.4), (0.05, 0.5, 0.3), (0.13, -0.4, -0.6))):
+        sheet = box(f"Jam{i}", (0.14, 0.006, 0.16), loc=(x, 0, top), material=mat("paper"), rot_z=rz)
+        kit.tilt([sheet], rx=rx, pivot=(x, 0, top))
+        parts.append(sheet)
+    light = ball("Fault", 0.03, loc=(0.17, -0.12, top + 0.01), material=mat("red", emit=3.0), subdiv=1)
+    parts += [light, _crumple("Ball0", -0.26, -0.2, 0.04), _crumple("Ball1", 0.27, -0.12, 0.04), _crumple("Ball2", 0.22, 0.22, 0.04, 0.04)]
+    ob = join("shredder_p1_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_shredder_p1_4():
+    """PAPER JAM tier 4, Out of Order: overflowing, a sign taped on, paper everywhere."""
+    root = empty("shredder_p1_4")
+    parts, top = _shredder_base("teal", w=0.56, d=0.4, h=0.5)
+    pile = ball("Overflow", 0.24, loc=(0, 0, top + 0.02), material=mat("paper", rough=1.0), subdiv=2, scale=(1.15, 0.85, 0.55))
+    sign = box("Sign", (0.32, 0.012, 0.2), loc=(0, -0.206, 0.18), material=mat("yellow", rough=0.4))
+    bar = box("SignText", (0.24, 0.014, 0.035), loc=(0, -0.21, 0.29), material=mat("plastic_black"))
+    bar2 = box("SignText2", (0.18, 0.014, 0.03), loc=(0, -0.21, 0.23), material=mat("plastic_black"))
+    tape = [box(f"Tape{i}", (0.08, 0.014, 0.025), loc=(x, -0.212, 0.36), material=mat("plastic_white", rough=0.3), rot_z=0.0) for i, x in enumerate((-0.13, 0.13))]
+    parts += [pile, sign, bar, bar2] + tape
+    for i in range(7):
+        a = i * 0.9
+        parts.append(box(f"Floor{i}", (0.14, 0.1, 0.006), loc=(math.cos(a) * 0.42, math.sin(a) * 0.36, 0.0), material=mat("paper"), rot_z=a))
+    parts += [_crumple("Ball0", -0.36, -0.16, 0.04), _crumple("Ball1", 0.38, 0.06, 0.04), _crumple("Ball2", 0.1, top + 0.18, 0.0, 0.05)]
+    ob = join("shredder_p1_4_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def _padlock(x, y, z, s=1.0):
+    shackle = cyl("Shackle", 0.03 * s, 0.05 * s, loc=(x, y, z + 0.06 * s), material=mat("metal_light", metal=0.8, rough=0.25), verts=8, radius_top=0.03 * s)
+    body = box("Lock", (0.08 * s, 0.03 * s, 0.07 * s), loc=(x, y, z), material=mat("yellow", metal=0.6, rough=0.3), bevel=0.006)
+    return [shackle, body]
+
+
+def b_shredder_p2_3():
+    """CONFIDENTIAL tier 3, Compactor: a locked console bin with a red CONFIDENTIAL stamp."""
+    root = empty("shredder_p2_3")
+    body = box("Console", (0.5, 0.4, 0.62), loc=(0, 0, 0), material=mat("navy", rough=0.5), bevel=0.03)
+    top = box("Top", (0.52, 0.42, 0.04), loc=(0, 0, 0.62), material=mat("wood_dark"), bevel=0.01)
+    slot = box("Slot", (0.3, 0.06, 0.01), loc=(0, -0.02, 0.66), material=mat("plastic_black"))
+    stamp = box("Stamp", (0.34, 0.01, 0.07), loc=(0, -0.205, 0.42), material=mat("red", emit=0.4))
+    door = box("Door", (0.4, 0.008, 0.3), loc=(0, -0.204, 0.06), material=mat("charcoal"))
+    lock = _padlock(0.12, -0.225, 0.2)
+    ob = join("shredder_p2_3_mesh", [body, top, slot, stamp, door] + lock)
+    parent(ob, root)
+    return root
+
+
+def b_shredder_p2_4():
+    """CONFIDENTIAL tier 4, Document Destruction: a secure cabinet with a beacon and sealed sacks."""
+    root = empty("shredder_p2_4")
+    body = box("Cabinet", (0.66, 0.5, 0.78), loc=(0, 0, 0), material=mat("charcoal", rough=0.45), bevel=0.03)
+    band = box("Band", (0.67, 0.51, 0.08), loc=(0, 0, 0.5), material=mat("red", rough=0.4))
+    stamp = box("Secret", (0.36, 0.012, 0.09), loc=(0, -0.255, 0.3), material=mat("red", emit=0.6))
+    slot = box("Slot", (0.36, 0.06, 0.01), loc=(-0.08, 0, 0.78), material=mat("plastic_black"))
+    beacon_base = cyl("BeaconBase", 0.07, 0.04, loc=(0.2, 0.1, 0.78), material=mat("plastic_black"), verts=12)
+    beacon = cyl("Beacon", 0.055, 0.1, loc=(0.2, 0.1, 0.82), material=mat("orange", emit=2.5), verts=12, radius_top=0.045)
+    lock = _padlock(0.22, -0.27, 0.12, 1.3)
+    keypad = box("Keypad", (0.12, 0.02, 0.16), loc=(-0.2, -0.26, 0.56), material=mat("plastic_black"))
+    keys = [box(f"Key{i}", (0.025, 0.01, 0.025), loc=(-0.23 + (i % 3) * 0.03, -0.272, 0.6 + (i // 3) * 0.035), material=mat("screen", emit=1.0)) for i in range(9)]
+    sacks = [ball(f"Sack{i}", 0.13, loc=(x, 0.36, 0.11), material=mat("plastic_white", rough=0.7), subdiv=2, scale=(1.0, 0.8, 0.95)) for i, x in enumerate((-0.18, 0.12))]
+    ties = [box(f"Tie{i}", (0.05, 0.05, 0.03), loc=(x, 0.36, 0.22), material=mat("red")) for i, x in enumerate((-0.18, 0.12))]
+    ob = join("shredder_p2_4_mesh", [body, band, stamp, slot, beacon_base, beacon, keypad] + lock + keys + sacks + ties)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -1112,6 +1242,12 @@ BUILDERS = {
     "food_counter": b_food_counter,
     "canteen_table": b_canteen_table,
     "wet_floor": b_wet_floor,
+    "shredder_p0_3": b_shredder_p0_3,
+    "shredder_p0_4": b_shredder_p0_4,
+    "shredder_p1_3": b_shredder_p1_3,
+    "shredder_p1_4": b_shredder_p1_4,
+    "shredder_p2_3": b_shredder_p2_3,
+    "shredder_p2_4": b_shredder_p2_4,
 }
 
 

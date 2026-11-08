@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.7.0] - 2026-11-08
+
+### New
+- Towers start to look like the path you chose, like in Bloons: from tier 3 every path has its own model. The Shredder is first: a red cross-cut machine with its blades on show, a jammed one that ends up Out of Order, or a locked confidential bin with a warning light. The other towers follow.
+
 ## [0.6.1] - 2026-11-08
 
 ### Changed
