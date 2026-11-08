@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.8.0)
+## What is in it now (v0.9.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: 22 waves and The Repair Guy (no Coffee while he is around). Opens

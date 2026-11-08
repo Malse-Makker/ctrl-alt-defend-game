@@ -136,6 +136,10 @@ export function lobbyScreen(room: RoomInfo, you: number, act: LobbyActions, mess
       ['shared', T.mpShared],
       ['split', T.mpSplit],
     ], (v) => act.settings({ shared: v === 'shared' })),
+    select(T.mpTowers, st.ownTowers === false ? 'all' : 'own', [
+      ['own', T.mpOwnTowers],
+      ['all', T.mpAllTowers],
+    ], (v) => act.settings({ ownTowers: v === 'own' })),
     select<ZoneMode>(T.mpZones, st.zoneMode, ZONE_MODES.map((m) => [m, ZONE_LABELS[m]] as [ZoneMode, string]), (v) => act.settings({ zoneMode: v })),
   );
 

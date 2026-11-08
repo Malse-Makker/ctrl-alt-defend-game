@@ -9,6 +9,7 @@ export interface RoomSettings {
   level: number;
   maxPlayers: number;
   shared: boolean;
+  ownTowers: boolean;
   zoneMode: ZoneMode;
   assign: number[];
 }

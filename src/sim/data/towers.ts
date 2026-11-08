@@ -85,7 +85,7 @@ export interface Effect {
   coffeeAdd?: number;
   coffeeMult?: number;
   /** Brewing goes into a pot with interest instead of straight to you. Click Claim to cash it. */
-  bank?: { interest: number; cap: number; perWave: number };
+  bank?: { interest: number; cap: number; perWave: number; claimAll?: boolean };
   /** Colleagues dealt with in range pay this much extra (0.5 = +50%). */
   tip?: number;
   /** Every colleague dealt with anywhere pays this much extra. */
@@ -238,7 +238,12 @@ export const TOWERS: Record<string, TowerDef> = {
           },
           { name: 'Expense Report', desc: 'Pot: +5 and 15% interest per wave, up to 140.', cost: 30, effect: { bank: { interest: 0.15, cap: 140, perWave: 5 } } },
           { name: 'Corporate Card', desc: 'Pot: +8 and 20% interest per wave, up to 300.', cost: 45, effect: { bank: { interest: 0.2, cap: 300, perWave: 8 } } },
-          { name: 'Offshore Account', desc: 'Pot: +12 and 25% interest per wave, up to 700.', cost: 120, effect: { bank: { interest: 0.25, cap: 700, perWave: 12 } } },
+          {
+            name: 'Offshore Account',
+            desc: 'Pot: +12 and 25% interest per wave, up to 700. Claiming it empties every pot of yours at once.',
+            cost: 120,
+            effect: { bank: { interest: 0.25, cap: 700, perWave: 12, claimAll: true } },
+          },
         ],
       },
       {

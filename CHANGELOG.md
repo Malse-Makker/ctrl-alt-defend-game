@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.9.0] - 2026-11-08
+
+### New
+- Play together: a lobby setting for towers. By default everyone runs their own: only whoever built a tower can upgrade, sell or aim it. The host can switch to "anyone can use any tower". Selling a tower pays everyone back their own share of what they put in.
+- Offshore Account (Coffee Machine, EXPENSE CLAIM tier 4): claiming it empties every pot of yours at once.
+
+### Fixed
+- The new Shields line in the tower panel squeezed the other labels. It is short now, with the explanation on hover.
+
 ## [0.8.0] - 2026-11-08
 
 ### Changed

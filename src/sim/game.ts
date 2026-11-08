@@ -120,6 +120,8 @@ export interface Tower {
   /** Seconds left before a mopped Shredder zone works again (The Cleaner). */
   mopped: number;
   invested: number;
+  /** Coffee each player put into this tower, so selling pays everyone back their own share. */
+  paidBy: number[];
   placedAtWave: number;
   stats: TowerStats;
 }
@@ -257,6 +259,8 @@ export interface GameOptions {
   /** Multiplayer: number of players and whether they share one wallet. */
   players?: number;
   sharedWallet?: boolean;
+  /** Multiplayer: only the one who built a tower may upgrade, sell or aim it (the default). */
+  ownTowers?: boolean;
 }
 
 /** A tower as the server sends it to the players. */
@@ -432,6 +436,7 @@ export class Game {
   readonly startFocus: number;
   readonly players: number;
   readonly sharedWallet: boolean;
+  readonly ownTowers: boolean;
 
   phase: Phase = 'plan';
   endReason: EndReason | null = null;
@@ -462,6 +467,7 @@ export class Game {
     this.costMult = opts.costMult ?? 1;
     this.players = Math.max(1, Math.min(8, Math.floor(opts.players ?? 1)));
     this.sharedWallet = this.players === 1 || (opts.sharedWallet ?? true);
+    this.ownTowers = this.players > 1 && (opts.ownTowers ?? true);
     this.paths = level.paths.map((p) => new Path(p));
     this.waves = level.waves.map(parseWave);
     this.startFocus = level.startFocus + (opts.extraFocus ?? 0);
@@ -619,9 +625,9 @@ export class Game {
     return sellValue(t.invested) + Math.floor(t.pot);
   }
 
-  /** May this player touch this tower? Shared wallet: everyone. Split: only the owner. */
+  /** May this player touch this tower? Own towers (the default): only who built it. Otherwise everyone. */
   canControl(t: Tower, player: number): boolean {
-    return this.sharedWallet || t.owner === player;
+    return !this.ownTowers || t.owner === player;
   }
 
   liveStats(t: Tower): LiveTowerStats {
@@ -692,6 +698,7 @@ export class Game {
       ramp: 1,
       mopped: 0,
       invested: check.cost,
+      paidBy: this.paidList(player, check.cost),
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
     };
@@ -720,6 +727,7 @@ export class Game {
     if (!check.ok || check.cost === undefined) return check;
     this.spend(player, check.cost);
     t.invested += check.cost;
+    t.paidBy[player] = (t.paidBy[player] ?? 0) + check.cost;
     t.tiers[path]++;
     this.stats.upgrades++;
     const key = `${t.defId}_${path}`;
@@ -734,7 +742,17 @@ export class Game {
     if (this.over) return { ok: false, reason: 'The day is over.' };
     if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
     const value = this.sellValueFor(t);
-    this.payTo(t.owner, value);
+    // Everyone gets back their own share of what went in; a pot belongs to the owner.
+    const back = sellValue(t.invested);
+    const pot = value - back;
+    let paidOut = 0;
+    t.paidBy.forEach((paid, p) => {
+      if (!paid || p === t.owner) return;
+      const share = Math.floor((back * paid) / Math.max(1, t.invested));
+      this.payTo(p, share);
+      paidOut += share;
+    });
+    this.payTo(t.owner, back - paidOut + pot);
     this.stats.coffeeFromSales += value;
     this.stats.sold++;
     this.towers = this.towers.filter((x) => x !== t);
@@ -742,19 +760,35 @@ export class Game {
     return { ok: true, cost: -value };
   }
 
-  /** Expense Claim: empty the pot into your Coffee. */
+  /**
+   * Expense Claim: empty the pot into your Coffee. An Offshore Account empties every pot of the
+   * same owner at once.
+   */
   claim(towerId: number, player = 0): Check {
     const t = this.tower(towerId);
     if (!t) return { ok: false, reason: 'No such tower.' };
     if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
-    const amount = Math.floor(t.pot);
-    if (amount <= 0) return { ok: false, reason: 'The pot is empty.' };
-    t.pot -= amount;
-    this.payTo(t.owner, amount);
-    this.stats.coffeeFromBank += amount;
-    t.stats.coffee += amount;
-    this.events.push({ t: 'claim', towerId: t.id, amount, x: t.x, y: t.y });
-    return { ok: true, cost: -amount };
+    const all = this.liveStats(t).bank?.claimAll === true;
+    const pots = all ? this.towers.filter((x) => x.owner === t.owner && x.pot >= 1) : [t];
+    let total = 0;
+    for (const x of pots) {
+      const amount = Math.floor(x.pot);
+      if (amount <= 0) continue;
+      x.pot -= amount;
+      this.payTo(x.owner, amount);
+      this.stats.coffeeFromBank += amount;
+      x.stats.coffee += amount;
+      total += amount;
+      this.events.push({ t: 'claim', towerId: x.id, amount, x: x.x, y: x.y });
+    }
+    if (total <= 0) return { ok: false, reason: 'The pot is empty.' };
+    return { ok: true, cost: -total };
+  }
+
+  private paidList(player: number, amount: number): number[] {
+    const list: number[] = [];
+    list[player] = amount;
+    return list;
   }
 
   /** Split wallets: give Coffee to a teammate. */
@@ -900,6 +934,7 @@ export class Game {
         ramp: 1,
         mopped: 0,
         invested: 0,
+        paidBy: [],
         placedAtWave: s.waveIndex,
         stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
       };

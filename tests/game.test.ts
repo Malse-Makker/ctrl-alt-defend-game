@@ -379,18 +379,74 @@ describe('players and wallets', () => {
     expect(g.gift(0, 0, 1).ok).toBe(false);
   });
 
-  it('only the owner touches a tower in a split game; everyone in a shared game', () => {
+  it('by default only the builder touches a tower, whatever the wallet', () => {
     const split = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false });
     const t = split.place('autoreply', 2, 1, 1).tower!;
     expect(t.owner).toBe(1);
     expect(split.wallets[1]).toBe(26);
     expect(split.wallets[0]).toBe(40);
     expect(split.upgrade(t.id, 0, 0).reason).toMatch(/not your tower/);
+    expect(split.sell(t.id, 0).reason).toMatch(/not your tower/);
     expect(split.upgrade(t.id, 0, 1).ok).toBe(true);
     const shared = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: true });
     const t2 = shared.place('autoreply', 2, 1, 1).tower!;
-    expect(shared.upgrade(t2.id, 0, 0).ok).toBe(true);
+    expect(shared.upgrade(t2.id, 0, 0).reason).toMatch(/not your tower/);
+    expect(shared.upgrade(t2.id, 0, 1).ok).toBe(true);
     expect(shared.wallets.length).toBe(1);
+  });
+
+  it('with "anyone can use any tower" everyone may upgrade and sell, and a sale pays everyone back their share', () => {
+    const g = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false, ownTowers: false });
+    g.wallets = [500, 500];
+    const t = g.place('autoreply', 2, 1, 0).tower!;
+    expect(g.upgrade(t.id, 0, 1).ok).toBe(true);
+    expect(g.upgrade(t.id, 1, 1).ok).toBe(true);
+    const paid0 = 500 - g.wallets[0];
+    const paid1 = 500 - g.wallets[1];
+    expect(paid0).toBeGreaterThan(0);
+    expect(paid1).toBeGreaterThan(0);
+    const before = [...g.wallets];
+    const value = g.sellValueFor(t);
+    expect(g.sell(t.id, 1).ok).toBe(true);
+    const got0 = g.wallets[0] - before[0];
+    const got1 = g.wallets[1] - before[1];
+    expect(got0 + got1).toBeCloseTo(value, 5);
+    // Each gets back their own share of the sale, give or take one Coffee of rounding.
+    expect(Math.abs(got1 - (value * paid1) / (paid0 + paid1))).toBeLessThanOrEqual(1);
+    expect(Math.abs(got0 - (value * paid0) / (paid0 + paid1))).toBeLessThanOrEqual(1);
+  });
+
+  it('an Offshore Account claims every pot of its owner at once, and leaves the others alone', () => {
+    const g = new Game(corridor(['intern:1@1']), { players: 2, sharedWallet: false });
+    g.wallets = [2000, 2000];
+    const a = g.place('coffee', 2, 1, 0).tower!;
+    const b = g.place('coffee', 4, 1, 0).tower!;
+    const other = g.place('coffee', 6, 1, 1).tower!;
+    for (let i = 0; i < 4; i++) g.upgrade(a.id, 1, 0);
+    g.upgrade(b.id, 1, 0);
+    g.upgrade(other.id, 1, 1);
+    a.pot = 30;
+    b.pot = 20;
+    other.pot = 50;
+    const before = g.wallets[0];
+    expect(g.claim(a.id, 0).ok).toBe(true);
+    expect(g.wallets[0] - before).toBe(50);
+    expect(a.pot).toBe(0);
+    expect(b.pot).toBe(0);
+    expect(other.pot).toBe(50);
+    // A lower tier still claims just its own pot.
+    b.pot = 10;
+    a.pot = 10;
+    g.claim(b.id, 0);
+    expect(b.pot).toBe(0);
+    expect(a.pot).toBe(10);
+  });
+
+  it('a single player always controls everything', () => {
+    const g = new Game(corridor(['intern:1@1']), { ownTowers: true });
+    const t = g.place('autoreply', 2, 1).tower!;
+    expect(g.canControl(t, 0)).toBe(true);
+    expect(g.ownTowers).toBe(false);
   });
 
   it('build areas keep players to their own part of the office', () => {

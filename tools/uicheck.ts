@@ -165,21 +165,20 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   await clickText(host, 'Host a game');
   await host.waitForFunction(() => document.querySelector('.big-code'), { timeout: 10000, polling: 250 });
   const code = await host.$eval('.big-code', (el) => el.textContent ?? '');
-  // Split wallets, left and right halves.
-  await host.evaluate(() => {
-    const sels = [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')];
-    const set = (sel: HTMLSelectElement, v: string) => {
-      sel.value = v;
+  // Split wallets, own towers (the defaults), left and right halves. Each setting is found by the
+  // option it offers, so adding a setting to the lobby does not shift these.
+  const pick = (v: string) =>
+    host.evaluate((value) => {
+      const sel = [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')].find((x) => [...x.options].some((o) => o.value === value));
+      if (!sel) throw new Error(`No lobby setting offers ${value}`);
+      sel.value = value;
       sel.dispatchEvent(new Event('change'));
-    };
-    set(sels[2], 'split');
-  });
+    }, v);
+  const defaults = await host.evaluate(() => [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')].map((x) => x.value));
+  if (!defaults.includes('split') || !defaults.includes('own')) errors.push(`mp: lobby defaults are ${defaults.join(', ')}`);
+  await pick('split');
   await new Promise((r) => setTimeout(r, 300));
-  await host.evaluate(() => {
-    const sels = [...document.querySelectorAll<HTMLSelectElement>('.lobby-settings select')];
-    sels[3].value = 'leftright';
-    sels[3].dispatchEvent(new Event('change'));
-  });
+  await pick('leftright');
   const guest = await open();
   await guest.goto(`${URL_}?join=${code}`, { waitUntil: 'networkidle0' });
   await guest.waitForFunction(() => document.querySelector('#mp-name'), { timeout: 30000, polling: 250 });

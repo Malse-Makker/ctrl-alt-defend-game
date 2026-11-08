@@ -96,7 +96,7 @@ export class Session {
     const level = LEVELS[levelId];
     if (this.room) {
       const n = Math.max(1, this.room.gamePlayers);
-      this.game = new Game(level, { players: n, sharedWallet: this.room.settings.shared || n === 1 });
+      this.game = new Game(level, { players: n, sharedWallet: this.room.settings.shared || n === 1, ownTowers: this.room.settings.ownTowers !== false });
       const mode = this.room.settings.zoneMode;
       this.game.setZones(zoneMap(level.size.w, level.size.h, mode, n), mode === 'anywhere' ? [] : this.room.settings.assign);
     } else {

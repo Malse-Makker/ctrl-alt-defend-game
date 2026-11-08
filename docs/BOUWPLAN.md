@@ -40,6 +40,13 @@ pizza, oververhitting), de resterende torens (Reply All, Delegation, Pomodoro, M
 Ctrl+Alt+Del als knop met cooldown), de collega's met immuniteiten (Board Member, Cold Caller,
 Old Guard met schild, Phone Caller), en daarna Boss Rush en Endless.
 
+## Balansronde als alle levels en torens er zijn (besluit maker, 2026-11-08)
+
+- **Te veel torens geven Coffee.** Nu: Coffee Machine (de economietoren), Office Artillery
+  (Expense the Staples, Supply Drop), The Shredder (Recycling, Compactor) en Self-Service (Closed as
+  Resolved). Plan: Coffee hoort bij de Coffee Machine en hooguit één andere toren; de rest krijgt
+  een ander tier-effect. Pas aanpakken als alle content er is, dan in één keer meten met de bots.
+
 ## Open punten uit de bijbel om bij de juiste fase op te pakken
 
 - The Expense Claim (tweede economie-toren): bij fase 2, na de meta-shop.

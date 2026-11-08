@@ -16,6 +16,8 @@ export interface RoomSettings {
   level: number;
   maxPlayers: number;
   shared: boolean;
+  /** Only the builder may upgrade, sell or aim a tower (default), or everyone may touch every tower. */
+  ownTowers: boolean;
   zoneMode: ZoneMode;
   /** Zone per player index. */
   assign: number[];
@@ -75,6 +77,7 @@ export class Room {
       maxPlayers: 4,
       // Everyone their own wallet with split income is the default (decided 2026-11-08).
       shared: false,
+      ownTowers: true,
       zoneMode: 'anywhere',
       assign: [],
       ...settings,
@@ -178,6 +181,10 @@ export class Room {
       if (typeof p.shared !== 'boolean') return 'Bad money setting.';
       this.settings.shared = p.shared;
     }
+    if ('ownTowers' in p) {
+      if (typeof p.ownTowers !== 'boolean') return 'Bad tower setting.';
+      this.settings.ownTowers = p.ownTowers;
+    }
     if ('zoneMode' in p) {
       if (!ZONE_MODES.includes(p.zoneMode as ZoneMode)) return 'Unknown build area layout.';
       this.settings.zoneMode = p.zoneMode as ZoneMode;
@@ -201,7 +208,7 @@ export class Room {
     if (!level) return 'That level does not exist yet.';
     const n = this.players.length;
     this.gamePlayers = n;
-    const g = new Game(level, { seed, players: n, sharedWallet: this.settings.shared || n === 1 });
+    const g = new Game(level, { seed, players: n, sharedWallet: this.settings.shared || n === 1, ownTowers: this.settings.ownTowers });
     g.setZones(zoneMap(level.size.w, level.size.h, this.settings.zoneMode, n), this.settings.zoneMode === 'anywhere' ? [] : this.settings.assign);
     this.game = g;
     this.phase = 'game';

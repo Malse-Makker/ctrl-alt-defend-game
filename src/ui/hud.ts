@@ -59,10 +59,11 @@ export const SPEEDS = [1, 2, 4, 8];
 const SHIELD_MIN_HIT = Math.max(...Object.values(COLLEAGUES).map((c) => c.shieldMinHit ?? 0));
 
 /** One line for the tower panel: can this tower hurt a shielded colleague? */
-function shieldLine(s: LiveTowerStats): { text: string; ok: boolean } {
-  if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true };
-  if (s.rampMax > 0 && s.damage * s.rampMax >= SHIELD_MIN_HIT) return { text: 'breaks through once built up', ok: true };
-  return { text: `bounces off (under ${SHIELD_MIN_HIT} per hit)`, ok: false };
+function shieldLine(s: LiveTowerStats): { text: string; ok: boolean; help: string } {
+  const help = `A shield stops every hit under ${SHIELD_MIN_HIT} damage.`;
+  if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true, help };
+  if (s.rampMax > 0 && s.damage * s.rampMax >= SHIELD_MIN_HIT) return { text: 'once built up', ok: true, help };
+  return { text: 'bounces off', ok: false, help };
 }
 
 interface ShopEntry {
@@ -431,7 +432,7 @@ export class Hud {
         {},
         h('div', { class: 'tp-name wrap', text: title }),
         h('div', { class: 'tp-sub' }, h('span', { text: def.name }), h('span', { class: 'mono tiers', text: t.tiers.join('-') })),
-        g.players > 1 ? h('div', { class: 'tp-owner', text: t.owner === this.me ? T.mpYourTower : `${T.mpOwnedBy} ${this.ownerName(t.owner)}${g.sharedWallet ? '' : ` (${T.mpReadOnly})`}` }) : null,
+        g.players > 1 ? h('div', { class: 'tp-owner', text: t.owner === this.me ? T.mpYourTower : `${T.mpOwnedBy} ${this.ownerName(t.owner)}${g.canControl(t, this.me) ? '' : ` (${T.mpReadOnly})`}` }) : null,
       ),
       h('button', { class: 'icon-btn', title: 'Close (Esc)', on: { click: () => this.act.deselect() } }, icon('xmark')),
     );
@@ -484,7 +485,7 @@ export class Hud {
         h('span', { class: 'v', text: fmt(s.range, 2) }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text }));
+      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       const extra = ['hits hidden', s.slowOnHit ? 'slows' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
       stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
@@ -505,7 +506,7 @@ export class Hud {
         h('span', { class: 'v', text: s.global ? 'the whole floor' : fmt(s.range, 2) }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text }));
+      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       if (s.stunOnHit > 0) extra.push(`pins for ${s.stunOnHit}s`);
       if (s.slowOnHit) extra.push('slows');
       if (s.killCoffee > 0) extra.push(`+${s.killCoffee} Coffee per colleague`);

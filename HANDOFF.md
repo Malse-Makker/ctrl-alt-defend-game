@@ -4,13 +4,15 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.8.0 (2026-11-08)
+## Stand: v0.9.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
 multiplayer. v0.4.0: level 2. v0.5.0: level 3. v0.6.0: level 4. v0.6.1: settings in het spel,
 levelnaam, ranges. v0.7.0: eerste eigen looks per pad (Shredder). v0.8.0: Headphones = stilzetten, Shredder =
-schade (besluit maker), Go home, blauwe schilden. Zie CHANGELOG.md.
+schade (besluit maker), Go home, blauwe schilden. v0.9.0: torenrechten in multiplayer (standaard
+ieder zijn eigen; `ownTowers`), verkoop betaalt ieder zijn eigen deel terug (`paidBy`), Offshore
+Account claimt al je potten. Zie CHANGELOG.md.
 
 Looks per pad: `pathModels` in `towers.ts` (tier 3 en 4 per pad, modellen `<toren>_p<pad>_<tier>`).
 Klaar: Shredder. Nog te doen: Coffee Machine, Auto-Reply, Headphones, Office Artillery, Quick
