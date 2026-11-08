@@ -3,15 +3,35 @@
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
 
-## Stand: v0.5.0 (2026-11-08)
+## Stand: v0.6.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
-multiplayer. v0.4.0: level 2. v0.5.0: level 3. Zie CHANGELOG.md.
+multiplayer. v0.4.0: level 2. v0.5.0: level 3. v0.6.0: level 4. Zie CHANGELOG.md.
 
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
-(level 2 en 3 klaar; volgende: level 4 Canteen met Thumbtacks, Self-Service, The Impersonator,
-The Cleaner, de lunchpauze-zwerm en natte-vloer-vakken).**
+(level 2, 3 en 4 klaar; volgende: level 5 Boardroom met Keyboard Smash en Your Line Manager,
+daarna de meta-shop met Recognition en de promotie na L5).**
+
+### Level 4 (v0.6.0): ontwerpkeuzes die ik maakte
+- Nieuwe torenrol `trap` (Thumbtacks): legt hoopjes (`game.piles`) op het looppad binnen bereik.
+  Elk hoopje heeft `pierce` punaises; elke punaise raakt een collega, elke collega hooguit een keer
+  per hoopje. Hoopjes negeren zicht (raken de Impersonator), niet de Board Member (in_person).
+  Max 24 hoopjes per toren, de oudste verdwijnt. Targeting kiest welk derde van het looppad in
+  bereik (bij je bureau, bij de deur, dichtbij, ver weg) of overal; daarbinnen willekeurig (seeded,
+  dus deterministisch en gelijk in multiplayer, want de server rekent).
+- Self-Service is gewoon een `damage`-toren met `targets: 99` en een kleine straal. Herlaadtijd
+  0,8 s: bij 1,0 s vuurde hij maar een keer per voorbijganger.
+- De economie-test vergelijkt kopieen nu tegen dezelfde menigte (Self-Service-kopieen raken ook
+  vijf), en heeft een eigen regel voor punaises (schade per seconde als elke punaise raak is).
+- The Cleaner: `haste` (collega's binnen 1,8 lopen x1,4) en `sweep` (hoopjes binnen 1,4 weg,
+  Shredder-zones waar hij in loopt 6 s uit, met een natte-vloerbordje). Zijn eigen Chasers lopen
+  voor hem uit en stappen soms nog op een hoopje; hij zelf nooit.
+- Lunchpauze is een hazard zonder mini-game (`type: 'lunch'`): elke 70 s een stoet Interns en
+  iedereen x1,3 sneller, 8 s lang. Niet tijdens de boss-golf, zodat de dag kan eindigen.
+- Natte vloer is decor (`wet_floor`, blokkeert bouwen) op zes goede plekken in de spiraal.
+- Geen Godot-golftabel om te vertalen (de oude Canteen gebruikte geschrapte collega's): gebouwd op
+  de curve van L3, Impersonator vanaf golf 4, vloeiend 6-14% per golf.
 
 ### Level 3 (v0.5.0): ontwerpkeuzes die ik maakte
 - Quick Reply: nieuw `ramp`-mechaniek. Elke treffer op hetzelfde doelwit +6% tot x2 (paden tillen
@@ -110,6 +130,10 @@ spelen foutloos (verste 38%), eerst koffie wint met 81 Focus en de meeste Coffee
 Level 3 (totaal 4934 HP-eq): idle verliest op golf 8, alleen Auto-Replies verliest op golf 20,
 goed spelen foutloos (verste 76%, de Presenter zelf), eerst koffie wint met 83 Focus. Allemaal
 zonder ooit de projector te repareren.
+
+Level 4 (totaal ~5800 HP-eq): idle verliest op golf 7, alleen Auto-Replies verliest op golf 15
+(de Impersonators lopen er langs), goed spelen en eerst koffie allebei foutloos. Verste collega 91%:
+dat is het laatste stuk van de spiraal, waar de beste plekken hun werk doen.
 
 Prijsregels in `tests/economy.test.ts`: tier 1 van een schadepad is beter dan een derde kopie, tier 3
 en 4 zijn tegen een groep beter dan hetzelfde geld in kopieen, elke brouw-upgrade verdient zich binnen

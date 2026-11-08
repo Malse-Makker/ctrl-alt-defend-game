@@ -17,25 +17,31 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.5.0)
+## Wat er nu in zit (v0.6.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
   als je level 1 haalt.
 - **Level 3, Meeting Room**: 21 golven, The Presenter (beamt Chasers naast je bureau) en de
   projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
+- **Level 4, Canteen**: 22 golven over een spiraal rond de tafels, natte vloer waar je niet mag
+  bouwen, de lunchpauze (een stoet Interns en iedereen loopt even sneller) en The Cleaner.
 - **Torens**: Coffee Machine, Auto-Reply, Headphones (vertraagt en stunt een hele straal),
   Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die vertraagt,
-  onthult en schade verdeelt) en Quick Reply (bouwt schade op tegen hetzelfde doelwit).
+  onthult en schade verdeelt), Quick Reply (bouwt schade op tegen hetzelfde doelwit), Thumbtacks
+  (punaise-hoopjes op het pad, zien ook onzichtbare collega's) en Self-Service (raakt iedereen in een
+  kleine cirkel).
 - **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
-  (archiefdoos als schild, de Shredder mag er niet aan) en Board Member (immuun voor in persoon).
+  (archiefdoos als schild, de Shredder mag er niet aan), Board Member (immuun voor in persoon) en
+  Impersonator (onzichtbaar tot een Shredder-zone hem laat zien).
 - **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
   tier 4, een tweede naar tier 2, het derde blijft dicht (4-2-0). Tier 3 verandert wat de toren
   doet, tier 4 is het paradepaardje.
 - **The Expense Claim** (Coffee Machine, pad 2): Coffee gaat in een pot met rente; jij kiest wanneer
   je claimt. Te vroeg is zonde, te laat ook: een volle pot groeit niet meer.
 - **Bosses**: The Head of Comms (zijn Interns vangen je schoten op), The Repair Guy (blokkeert alle
-  inkomsten) en The Presenter (laadscherm dat bij elke fase terugkomt, Chasers naast je bureau).
+  inkomsten), The Presenter (laadscherm dat bij elke fase terugkomt, Chasers naast je bureau) en
+  The Cleaner (jaagt iedereen op, veegt punaises weg, dweilt Shredders).
 - **Targeting** per toren (First, Last, Closest, Farthest, Most HP, Least HP).
 - **Snelheden** 1x, 2x, 4x, 8x, pauze, en golven vroeg oproepen voor punten.
 - **Zichtbare feedback** op elke treffer: vliegende mails, schadegetallen, BLOCKED/IMMUNE.

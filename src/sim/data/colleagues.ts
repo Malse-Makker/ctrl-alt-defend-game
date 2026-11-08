@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -22,6 +22,10 @@ export interface BossDef {
   addsAt?: number;
   /** His shield fills up again at every phase change (The Presenter's loading screen). */
   shieldRecharge?: boolean;
+  /** Colleagues this close to him walk this much faster (The Cleaner: "Move, I'm mopping"). */
+  haste?: { radius: number; mult: number };
+  /** Sweeps away tack piles this close, and mops Shredder zones he walks into (off for mopTime). */
+  sweep?: { radius: number; mopTime: number };
   intro: string;
 }
 
@@ -271,6 +275,52 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#e67e3a',
     model: 'repairguy',
     armSwing: 0.4,
+  },
+  impersonator: {
+    id: 'impersonator',
+    name: 'The Impersonator',
+    role: 'Hidden',
+    quote: 'It is me, the CEO. I need gift cards.',
+    ability: 'Nobody sees him coming. Your towers cannot aim at him until a Shredder zone shows him up, or a tower that can see hidden colleagues spots him.',
+    counter: 'A Shredder zone on his route, then anything can hit him. Thumbtacks do not need to see him at all.',
+    hp: 10,
+    speed: 2.5,
+    focus: 3,
+    rewardRate: REWARD_SPECIAL,
+    invisible: true,
+    scale: 1,
+    accent: '#c9a227',
+    model: 'impersonator',
+    armSwing: 0.6,
+  },
+  cleaner: {
+    id: 'cleaner',
+    name: 'The Cleaner',
+    role: 'Boss',
+    quote: "Mind the floor, it's wet.",
+    ability:
+      'Pushes his cart through the canteen. Everyone near him walks faster to get out of his way, he sweeps up every tack pile he passes, and he mops any Shredder zone he walks into: it stops for a few seconds.',
+    counter: 'Hit him from a distance: Office Artillery, Quick Reply, Auto-Reply. Put tacks and Shredders where his crowd walks, not where he does.',
+    hp: 760,
+    speed: 0.95,
+    focus: 25,
+    rewardFlat: 30,
+    boss: {
+      kind: 'cleaner',
+      addType: 'chaser',
+      addEvery: 8,
+      addCount: 3,
+      phaseBurst: 6,
+      phase3Speed: 1.4,
+      haste: { radius: 1.8, mult: 1.4 },
+      sweep: { radius: 1.4, mopTime: 6 },
+      intro: 'He sweeps up your tacks, mops your Shredders and hurries everyone along. Hit him from a distance.',
+    },
+    stunResist: 0.4,
+    scale: 1.05,
+    accent: '#4a8fd6',
+    model: 'cleaner',
+    armSwing: 0.2,
   },
 };
 

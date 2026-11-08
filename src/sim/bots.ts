@@ -213,6 +213,42 @@ SCRIPTS[3] = [
   { up: 'autoreply', path: 1, all: true },
 ];
 
+SCRIPTS[4] = [
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { place: 'selfservice', spot: 'cover' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'artillery', spot: 'far' },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'shredder', spot: 'zone' },
+  { up: 'selfservice', path: 0 },
+  { up: 'thumbtacks', path: 1 },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'artillery', path: 0 },
+  { up: 'shredder', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'selfservice', path: 0 },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { place: 'quickreply', spot: 'desk' },
+  { up: 'quickreply', path: 0 },
+  { up: 'quickreply', path: 2 },
+  { up: 'quickreply', path: 0 },
+  { up: 'selfservice', path: 1 },
+  { up: 'thumbtacks', path: 1, all: true },
+  { up: 'artillery', path: 1 },
+  { up: 'autoreply', path: 1, all: true },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'quickreply', path: 0 },
+  { up: 'selfservice', path: 0 },
+  { up: 'artillery', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'): Spot | undefined {
   if (kind === 'desk') {
     // The best spot that still covers the last stretch before your desk.

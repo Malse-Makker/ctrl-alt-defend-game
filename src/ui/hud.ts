@@ -2,7 +2,20 @@
 // Built once, then updated in place every frame (only changed text is written).
 
 import { COLLEAGUES, type ColleagueDef } from '../sim/data/colleagues';
-import { MAX_TIER, TARGET_HELP, TARGET_LABELS, TARGET_MODES, TOWERS, UPCOMING_TOWERS, modelFor, pathBlock, type TargetMode } from '../sim/data/towers';
+import {
+  MAX_TIER,
+  TARGET_HELP,
+  TARGET_LABELS,
+  TARGET_MODES,
+  TOWERS,
+  TRAP_TARGET_HELP,
+  TRAP_TARGET_LABELS,
+  TRAP_TARGET_MODES,
+  UPCOMING_TOWERS,
+  modelFor,
+  pathBlock,
+  type TargetMode,
+} from '../sim/data/towers';
 import { earlyCallPoints } from '../sim/economy';
 import type { Game, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
@@ -362,7 +375,7 @@ export class Hud {
       }
       return;
     }
-    const key = `${t.id}:${t.tiers.join('')}:${t.target}`;
+    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.silenced ? 1 : 0}:${t.mopped > 0 ? 1 : 0}`;
     if (key !== this.towerKey) {
       this.towerKey = key;
       this.buildTowerPanel(t);
@@ -427,8 +440,28 @@ export class Hud {
       const dealt = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
       dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
+    } else if (def.role === 'trap') {
+      stats.append(
+        h('span', { class: 'k', text: T.damage }),
+        h('span', { class: 'v', text: `${fmt(s.damage, 1)} per tack` }),
+        h('span', { class: 'k', text: 'Pile' }),
+        h('span', { class: 'v', text: `${s.pierce} tacks, lasts ${Math.round(s.pileLife)}s` }),
+        h('span', { class: 'k', text: 'Drops' }),
+        h('span', { class: 'v', text: `${s.piles > 1 ? `${s.piles} piles` : 'a pile'} every ${fmt(s.interval, 1)}s` }),
+        h('span', { class: 'k', text: T.range }),
+        h('span', { class: 'v', text: fmt(s.range, 2) }),
+      );
+      const extra = ['hits hidden', s.ignoresMinHit ? 'through shields' : '', s.slowOnHit ? 'slows' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
+      stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      const dealt = h('span', { class: 'v' });
+      const per = h('span', { class: 'v' });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt, h('span', { class: 'k', text: T.perCoffee }), per);
+      dyn.push(() => {
+        setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`);
+        setText(per, fmt(t.stats.damage / Math.max(1, t.invested), 1));
+      });
     } else if (def.role === 'damage') {
-      const extra = [s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
+      const extra = [s.targets >= 50 ? 'everyone in range' : s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
       stats.append(
         h('span', { class: 'k', text: T.damage }),
         h('span', { class: 'v', text: fmt(s.damage, 1) }),
@@ -438,6 +471,7 @@ export class Hud {
         h('span', { class: 'v', text: s.global ? 'the whole floor' : fmt(s.range, 2) }),
       );
       if (s.stunOnHit > 0) extra.push(`pins for ${s.stunOnHit}s`);
+      if (s.slowOnHit) extra.push('slows');
       if (s.killCoffee > 0) extra.push(`+${s.killCoffee} Coffee per colleague`);
       if (s.waveIncome > 0) extra.push(`+${s.waveIncome} Coffee per wave`);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
@@ -514,14 +548,18 @@ export class Hud {
     });
 
     if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: T.silencedNote }));
+    else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
 
     // Targeting
-    if (def.role === 'damage' && !s.global) {
-      const tg = h('div', { class: 'targets', attrs: { role: 'group', 'aria-label': T.targeting } });
-      for (const mode of TARGET_MODES) {
-        tg.append(h('button', { class: `btn${t.target === mode ? ' active' : ''}`, text: TARGET_LABELS[mode], title: TARGET_HELP[mode], on: { click: () => this.act.target(t.id, mode) } }));
+    if ((def.role === 'damage' && !s.global) || def.role === 'trap') {
+      const trap = def.role === 'trap';
+      const tg = h('div', { class: 'targets', attrs: { role: 'group', 'aria-label': trap ? T.trapTargeting : T.targeting } });
+      for (const mode of trap ? TRAP_TARGET_MODES : TARGET_MODES) {
+        const label = (trap ? TRAP_TARGET_LABELS[mode] : undefined) ?? TARGET_LABELS[mode];
+        const help = (trap ? TRAP_TARGET_HELP[mode] : undefined) ?? TARGET_HELP[mode];
+        tg.append(h('button', { class: `btn${t.target === mode ? ' active' : ''}`, text: label, title: help, on: { click: () => this.act.target(t.id, mode) } }));
       }
-      parts.push(h('div', { class: 'label', text: T.targeting }), tg);
+      parts.push(h('div', { class: 'label', text: trap ? T.trapTargeting : T.targeting }), tg);
     }
 
     // Sell

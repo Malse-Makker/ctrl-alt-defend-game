@@ -17,10 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_models as bm  # noqa: E402
 import kit  # noqa: E402
 
-PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter"]
+PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter", "impersonator", "cleaner"]
 ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3", "autoreply_1", "autoreply_2", "autoreply_3",
                   "headphones_1", "headphones_2", "headphones_3", "artillery_1", "artillery_2", "artillery_3",
-                  "shredder_1", "shredder_2", "shredder_3", "quickreply_1", "quickreply_2", "quickreply_3"]
+                  "shredder_1", "shredder_2", "shredder_3", "quickreply_1", "quickreply_2", "quickreply_3",
+                  "thumbtacks_1", "thumbtacks_2", "thumbtacks_3", "selfservice_1", "selfservice_2", "selfservice_3"]
 
 
 def render_icon(key, out_dir, size):

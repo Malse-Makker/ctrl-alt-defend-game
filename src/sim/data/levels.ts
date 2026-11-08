@@ -19,7 +19,7 @@ export interface Decor {
 }
 
 /** A storing: a mini-game that pops up during the level. The game keeps running behind it. */
-export interface HazardDef {
+export interface ProjectorHazard {
   type: 'projector';
   /** Seconds of play before the first one, and between the end of one and the next. */
   first: number;
@@ -31,6 +31,21 @@ export interface HazardDef {
   /** What it stops while it is open for you. */
   blocks: 'building';
 }
+
+/** Lunch break: a crowd heads for the canteen at once, and everyone on the floor walks faster. */
+export interface LunchHazard {
+  type: 'lunch';
+  first: number;
+  every: number;
+  /** How long the rush lasts. */
+  window: number;
+  /** Who comes along, in wave notation ("intern:12@0.15"). */
+  swarm: string;
+  /** Speed factor for everyone on the floor while it lasts. */
+  haste: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard;
 
 export interface LevelDef {
   id: number;
@@ -226,7 +241,74 @@ const L3: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3 };
+const L4: LevelDef = {
+  id: 4,
+  name: 'Canteen',
+  block: 'junior',
+  intro: 'Everyone eats at twelve. The queue for the soup winds all the way round the canteen.',
+  gimmick: 'A long spiral round the tables, with wet floor where you cannot build. Thumbtacks and Self-Service arrive, and so does lunch.',
+  size: { w: 21, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 10.5 },
+      { x: 18.5, y: 10.5 },
+      { x: 18.5, y: 1.5 },
+      { x: 2.5, y: 1.5 },
+      { x: 2.5, y: 7.5 },
+      { x: 14.5, y: 7.5 },
+      { x: 14.5, y: 4.5 },
+      { x: 7.0, y: 4.5 },
+    ],
+  ],
+  desk: { x: 6, y: 4 },
+  decor: [
+    { model: 'food_counter', rect: { x: 7, y: 0, w: 4, h: 1 } },
+    { model: 'vending', rect: { x: 12, y: 0, w: 1, h: 1 } },
+    { model: 'canteen_table', rect: { x: 19, y: 3, w: 2, h: 2 } },
+    { model: 'canteen_table', rect: { x: 19, y: 7, w: 2, h: 2 } },
+    { model: 'canteen_table', rect: { x: 0, y: 2, w: 2, h: 2 } },
+    { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 0, y: 6, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 8, y: 5, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 11, y: 6, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 6, y: 8, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 12, y: 9, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 16, y: 5, w: 1, h: 1 } },
+    { model: 'wet_floor', rect: { x: 10, y: 2, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice'],
+  startFocus: 100,
+  hazard: { type: 'lunch', first: 70, every: 70, window: 8, swarm: 'intern:12@0.15', haste: 1.3 },
+  // No Godot table to translate (the old Canteen used colleagues that are gone); built on the
+  // Meeting Room curve with The Impersonator from wave 4. Tuned with tools/balance.ts.
+  waves: [
+    'intern:12@0.65 + newhire:3@1.10',
+    'intern:12@0.60 + newhire:3@1.00 + chaser:4@0.25',
+    'chaser:14@0.20 + intern:10@0.55 + newhire:2@1.00',
+    'impersonator:3@1.40 + intern:10@0.60 + newhire:4@1.00',
+    'oldguard:1@2.00 + intern:10@0.60 + chaser:4@0.20',
+    'chaser:20@0.16 + impersonator:4@1.00 + intern:10@0.55',
+    'intern:12@0.50 + newhire:4@0.95 + requester:2@1.50 + chaser:4@0.20',
+    'oldguard:1@2.00 + chaser:20@0.14 + impersonator:3@0.90',
+    'chaser:30@0.12 + newhire:7@0.90',
+    'impersonator:6@0.80 + intern:12@0.50 + oldguard:1@2.00',
+    'chaser:34@0.11 + requester:4@1.40 + impersonator:2@0.80',
+    'oldguard:2@1.80 + intern:16@0.48 + chaser:4@0.20',
+    'chaser:32@0.11 + newhire:8@0.85 + impersonator:5@0.70',
+    'intern:18@0.45 + oldguard:2@1.70 + requester:2@1.30',
+    'chaser:42@0.10 + newhire:10@0.80 + impersonator:5@0.70',
+    'oldguard:2@1.60 + requester:4@1.20 + intern:20@0.42',
+    'impersonator:10@0.55 + chaser:36@0.10 + newhire:12@0.75',
+    'oldguard:3@1.50 + chaser:22@0.10 + requester:4@1.20',
+    'intern:24@0.40 + newhire:14@0.72 + impersonator:8@0.60 + chaser:24@0.11',
+    'chaser:46@0.09 + oldguard:3@1.40 + requester:4@1.10',
+    'oldguard:3@1.30 + impersonator:10@0.50 + newhire:12@0.70 + chaser:10@0.10',
+    'cleaner:1@2.00 + chaser:14@0.14',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

@@ -34,6 +34,10 @@ export const SPLASH_RADIUS = 0.8;
 export const BOUNCE_RANGE = 2.0;
 /** Tip bonuses never go past this, however many tip jars and franchises you stack. */
 export const MAX_TIP = 3.0;
+/** How close a colleague has to walk past a tack pile to step on it. */
+export const PILE_RADIUS = 0.42;
+/** A Thumbtacks tower keeps at most this many piles on the floor; the oldest goes first. */
+export const MAX_PILES = 24;
 
 export type Phase = 'plan' | 'running' | 'won' | 'lost';
 export type EndReason = 'won' | 'burnout' | 'gaveup';
@@ -58,6 +62,8 @@ export interface Enemy {
   stunTime: number;
   /** Speed factor from slowing auras this tick (Legal Hold). 1 = none. */
   aura: number;
+  /** Speed factor from a boss hurrying people along (The Cleaner). 1 = none. */
+  haste: number;
   revealed: boolean;
   /** Extra damage from every hit while this lasts (Focus Music). */
   vulnerable: number;
@@ -109,9 +115,23 @@ export interface Tower {
   /** Quick Reply: who it is building up on, and how far (1 = none yet). */
   rampTarget: number;
   ramp: number;
+  /** Seconds left before a mopped Shredder zone works again (The Cleaner). */
+  mopped: number;
   invested: number;
   placedAtWave: number;
   stats: TowerStats;
+}
+
+/** A pile of tacks on the walkway. Every tack hits one colleague; each colleague once per pile. */
+export interface Pile {
+  id: number;
+  tower: number;
+  x: number;
+  y: number;
+  pierce: number;
+  maxPierce: number;
+  life: number;
+  hit: Set<number>;
 }
 
 export interface LiveTowerStats {
@@ -151,6 +171,11 @@ export interface LiveTowerStats {
   rampMax: number;
   rampKeep: number;
   slowOnHit: Effect['slowOnHit'] | null;
+  /** Thumbtacks: tacks per pile, seconds a pile lasts, piles per drop, and hits that ignore shields. */
+  pierce: number;
+  pileLife: number;
+  piles: number;
+  ignoresMinHit: boolean;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -169,8 +194,8 @@ export type GameEvent =
       damage: number;
       result: ShotResult;
       killed: boolean;
-      /** 'reply' flies from the tower, 'hop' jumps from colleague to colleague. */
-      kind: 'reply' | 'hop';
+      /** 'reply' flies from the tower, 'hop' jumps from colleague to colleague, 'tack' is stepped on. */
+      kind: 'reply' | 'hop' | 'tack';
     }
   | { t: 'kill'; enemyId: number; type: string; x: number; y: number; reward: number; delay: number }
   | { t: 'leak'; enemyId: number; type: string; focus: number }
@@ -187,6 +212,9 @@ export type GameEvent =
   | { t: 'gift'; from: number; to: number; amount: number }
   | { t: 'hazard'; kind: string; on: boolean; until: number }
   | { t: 'hazardSolved'; player: number; bonus: number }
+  | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
+  | { t: 'swept'; enemyId: number; count: number }
+  | { t: 'mopped'; towerId: number; enemyId: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -243,6 +271,8 @@ export interface TowerSnap {
   coffee: number;
   /** 1 while a Chatterbox silences it. */
   sil: number;
+  /** 1 while The Cleaner has mopped it. */
+  mop: number;
 }
 
 /**
@@ -261,6 +291,8 @@ export interface Snapshot {
   nextWaveTimer: number;
   towers: TowerSnap[];
   enemies: number[][];
+  /** Tack piles: [id, x, y, tacks left, tacks at the start]. */
+  piles: number[][];
   stats: RoundStats;
   hz: { on: boolean; until: number; solved: number[] };
 }
@@ -293,7 +325,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     range: b.range,
     interval: b.interval ?? 0,
     damage: b.damage ?? 0,
-    targets: 1,
+    targets: b.targets ?? 1,
     splash: 0,
     bounce: 0,
     seesHidden: false,
@@ -325,7 +357,12 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rampMax: b.ramp?.max ?? 0,
     rampKeep: 0,
     slowOnHit: null,
+    pierce: b.pierce ?? 0,
+    pileLife: b.pileLife ?? 0,
+    piles: 1,
+    ignoresMinHit: false,
   };
+  let pileLifeMult = 1;
   let dotAdd = 0;
   let dotMult = 1;
   for (const e of boughtEffects(def, tiers)) {
@@ -347,6 +384,10 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.rampMax !== undefined) s.rampMax = Math.max(s.rampMax, e.rampMax);
     if (e.rampKeep !== undefined) s.rampKeep = Math.max(s.rampKeep, e.rampKeep);
     if (e.slowOnHit) s.slowOnHit = e.slowOnHit;
+    s.pierce += e.pierceAdd ?? 0;
+    s.piles += e.pilesAdd ?? 0;
+    pileLifeMult *= e.pileLifeMult ?? 1;
+    if (e.ignoresMinHit) s.ignoresMinHit = true;
     if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
@@ -372,6 +413,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
   if (def.role === 'economy') s.coffeeInterval *= intervalMult;
   else s.interval *= intervalMult;
   s.coffeeAmount = (s.coffeeAmount + coffeeAdd) * coffeeMult;
+  s.pileLife *= pileLifeMult;
   return s;
 }
 
@@ -397,6 +439,7 @@ export class Game {
 
   towers: Tower[] = [];
   enemies: Enemy[] = [];
+  piles: Pile[] = [];
   events: GameEvent[] = [];
   stats: RoundStats;
 
@@ -641,6 +684,7 @@ export class Game {
       pulseTimer: 0,
       rampTarget: 0,
       ramp: 1,
+      mopped: 0,
       invested: check.cost,
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -784,6 +828,7 @@ export class Game {
         kills: t.stats.kills,
         coffee: r3(t.stats.coffee),
         sil: t.silenced ? 1 : 0,
+        mop: t.mopped > 0 ? 1 : 0,
       })),
       enemies: this.enemies.map((e) => [
         e.id,
@@ -802,7 +847,9 @@ export class Game {
         r3(e.dist),
         e.stunTime > 0 ? 1 : 0,
         e.slowTime > 0 || e.aura < 1 ? 1 : 0,
+        e.revealed ? 1 : 0,
       ]),
+      piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
       stats: this.stats,
       hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved] },
     };
@@ -845,6 +892,7 @@ export class Game {
         pulseTimer: 0,
         rampTarget: 0,
         ramp: 1,
+        mopped: 0,
         invested: 0,
         placedAtWave: s.waveIndex,
         stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -858,6 +906,7 @@ export class Game {
       t.stats.kills = ts.kills;
       t.stats.coffee = ts.coffee;
       t.silenced = ts.sil === 1;
+      t.mopped = ts.mop === 1 ? 1 : 0;
       return t;
     });
     this.enemies = s.enemies.map((a) => {
@@ -884,7 +933,8 @@ export class Game {
         slowTime: a[15] === 1 ? 0.5 : 0,
         stunTime: a[14] === 1 ? 0.5 : 0,
         aura: 1,
-        revealed: false,
+        haste: 1,
+        revealed: a[16] === 1,
         vulnerable: 0,
         vulnerableTime: 0,
         stunnedTakes: 1,
@@ -897,6 +947,7 @@ export class Game {
         spawnedAt: 0,
       };
     });
+    this.piles = (s.piles ?? []).map((a) => ({ id: a[0], tower: 0, x: a[1], y: a[2], pierce: a[3], maxPierce: a[4], life: 1, hit: new Set<number>() }));
   }
 
   // ------------------------------------------------------------------ storingen (mini-games)
@@ -908,13 +959,19 @@ export class Game {
 
   /** Is the mini-game open for this player (and so blocking them)? */
   hazardBlocks(player: number): boolean {
-    return this.hazardOn && this.level.hazard?.blocks === 'building' && !this.hazardSolved.includes(player);
+    return this.hazardOn && this.level.hazard?.type === 'projector' && !this.hazardSolved.includes(player);
+  }
+
+  /** Lunch break: everyone on the floor walks faster while it lasts. */
+  get lunchHaste(): number {
+    const hz = this.level.hazard;
+    return this.hazardOn && hz?.type === 'lunch' ? hz.haste : 1;
   }
 
   /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
   solveHazard(player: number): Check {
     const hz = this.level.hazard;
-    if (!hz || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
+    if (!hz || hz.type !== 'projector' || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
     if (this.hazardSolved.includes(player)) return { ok: false, reason: 'You already did your part.' };
     this.hazardSolved.push(player);
     const bonus = hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time));
@@ -936,6 +993,22 @@ export class Game {
     if (!hz) return;
     if (this.hazardNext === Infinity && !this.hazardOn) this.hazardNext = hz.first;
     if (!this.hazardOn && this.time >= this.hazardNext) {
+      if (hz.type === 'lunch') {
+        // No lunch break during the boss: the day should be able to end.
+        if (this.waveIndex >= this.totalWaves) {
+          this.hazardNext = this.time + hz.every;
+          return;
+        }
+        const pathIndex = Math.max(0, this.waveIndex - 1) % this.paths.length;
+        let at = this.time;
+        for (const g of parseWave(hz.swarm)) {
+          for (let i = 0; i < g.count; i++) {
+            this.pending.push({ at, seq: this.seq++, type: g.type, pathIndex });
+            at += g.interval;
+          }
+        }
+        this.pending.sort((a, b) => a.at - b.at || a.seq - b.seq);
+      }
       this.hazardOn = true;
       this.hazardUntil = this.time + hz.window;
       this.hazardSolved = [];
@@ -956,6 +1029,7 @@ export class Game {
     this.updateAuras();
     this.updateTowers(dt);
     this.moveEnemies(dt);
+    this.updatePiles(dt);
     this.enemies = this.enemies.filter((e) => e.alive);
     this.stats.peakOnFloor = Math.max(this.stats.peakOnFloor, this.enemies.length);
     if (this.over) return;
@@ -1051,6 +1125,7 @@ export class Game {
       slowTime: 0,
       stunTime: 0,
       aura: 1,
+      haste: 1,
       revealed: false,
       vulnerable: 0,
       vulnerableTime: 0,
@@ -1077,7 +1152,7 @@ export class Game {
     let s = e.def.speed * (slowable ? e.aura : 1);
     if (e.slowTime > 0 && slowable) s *= e.slowMult;
     if (e.def.boss && e.phase >= 3) s *= e.def.boss.phase3Speed;
-    return s;
+    return s * e.haste * this.lunchHaste;
   }
 
   private moveEnemies(dt: number): void {
@@ -1127,10 +1202,17 @@ export class Game {
       if (s.slowAura < 1) slows.push({ x: t.x, y: t.y, r: s.range, f: s.slowAura });
       if (s.buffRate < 1) buffs.push({ x: t.x, y: t.y, r: s.range, f: s.buffRate, id: t.id });
     }
+    const hurry = this.enemies.filter((e) => e.alive && e.def.boss?.haste);
     for (const e of this.enemies) {
       let f = 1;
       for (const a of slows) if (Math.hypot(e.x - a.x, e.y - a.y) <= a.r) f = Math.min(f, a.f);
       e.aura = f;
+      let h = 1;
+      for (const b of hurry) {
+        const hz = b.def.boss!.haste!;
+        if (b !== e && Math.hypot(e.x - b.x, e.y - b.y) <= hz.radius) h = Math.max(h, hz.mult);
+      }
+      e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
     for (const t of this.towers) {
@@ -1184,12 +1266,26 @@ export class Game {
     for (const e of [...this.enemies]) {
       const b = e.def.boss;
       if (!e.alive || !b) continue;
+      if (b.sweep && this.onFloor(e)) this.sweep(e, b.sweep);
       e.addTimer -= dt;
       if (e.addTimer <= 0) {
         e.addTimer += b.addEvery;
         this.callIn(e, b.addType, b.addCount);
         this.events.push({ t: 'bossAdds', enemyId: e.id, count: b.addCount });
       }
+    }
+  }
+
+  /** The Cleaner: tack piles near him are swept up, Shredder zones he walks into are mopped. */
+  private sweep(boss: Enemy, sw: { radius: number; mopTime: number }): void {
+    const before = this.piles.length;
+    this.piles = this.piles.filter((p) => Math.hypot(p.x - boss.x, p.y - boss.y) > sw.radius);
+    if (this.piles.length < before) this.events.push({ t: 'swept', enemyId: boss.id, count: before - this.piles.length });
+    for (const t of this.towers) {
+      if (t.def.role !== 'zone') continue;
+      if (Math.hypot(t.x - boss.x, t.y - boss.y) > this.liveStats(t).range + 0.2) continue;
+      if (t.mopped <= 0) this.events.push({ t: 'mopped', towerId: t.id, enemyId: boss.id });
+      t.mopped = sw.mopTime;
     }
   }
 
@@ -1208,7 +1304,8 @@ export class Game {
     // Shredder zones reveal hidden colleagues; recomputed every tick.
     for (const e of this.enemies) e.revealed = false;
     for (const t of this.towers) {
-      if (t.def.role === 'zone' && !t.silenced) {
+      if (t.mopped > 0) t.mopped = Math.max(0, t.mopped - dt);
+      if (t.def.role === 'zone' && !t.silenced && t.mopped <= 0) {
         const r = this.liveStats(t).range;
         for (const e of this.enemies) if (Math.hypot(e.x - t.x, e.y - t.y) <= r) e.revealed = true;
       }
@@ -1237,7 +1334,11 @@ export class Game {
         continue;
       }
       if (t.def.role === 'zone') {
-        this.updateZone(t, s, dt);
+        if (t.mopped <= 0) this.updateZone(t, s, dt);
+        continue;
+      }
+      if (t.def.role === 'trap') {
+        this.updateTrap(t, s, dt);
         continue;
       }
       if (s.ability) this.updateAbility(t, s, dt);
@@ -1266,6 +1367,110 @@ export class Game {
       t.cooldown += interval;
       if (t.cooldown < 0) t.cooldown = interval;
     }
+  }
+
+  /** Thumbtacks: every so often, drop a pile (or two) somewhere on the walkway in range. */
+  private updateTrap(t: Tower, s: LiveTowerStats, dt: number): void {
+    t.cooldown -= dt;
+    if (t.cooldown > 0) return;
+    const spots = this.walkwayInRange(t, s.range);
+    if (spots.length === 0) {
+      t.cooldown = 0;
+      return;
+    }
+    for (let i = 0; i < s.piles; i++) {
+      const spot = this.trapSpot(t, spots);
+      const pile: Pile = { id: this.nextId++, tower: t.id, x: spot.x, y: spot.y, pierce: s.pierce, maxPierce: s.pierce, life: s.pileLife, hit: new Set() };
+      this.piles.push(pile);
+      this.events.push({ t: 'tacks', towerId: t.id, pileId: pile.id, x: pile.x, y: pile.y });
+    }
+    const mine = this.piles.filter((p) => p.tower === t.id);
+    if (mine.length > MAX_PILES) {
+      const drop = new Set(mine.slice(0, mine.length - MAX_PILES).map((p) => p.id));
+      this.piles = this.piles.filter((p) => !drop.has(p.id));
+    }
+    t.stats.shots++;
+    const interval = s.interval * t.rateBuff;
+    t.cooldown += interval;
+    if (t.cooldown < 0) t.cooldown = interval;
+  }
+
+  private walkwayCache = new Map<string, { x: number; y: number; left: number; d: number }[]>();
+
+  /** Points on the walkway (on the floor) within range of a tower, every quarter tile. */
+  private walkwayInRange(t: Tower, range: number): { x: number; y: number; left: number; d: number }[] {
+    const key = `${t.tx},${t.ty},${range}`;
+    let pts = this.walkwayCache.get(key);
+    if (!pts) {
+      pts = [];
+      const { w, h } = this.level.size;
+      for (const path of this.paths) {
+        for (let d = 0; d <= path.length; d += 0.25) {
+          const p = path.pointAt(d);
+          if (p.x < 0 || p.y < 0 || p.x > w || p.y > h) continue;
+          const dd = Math.hypot(p.x - t.x, p.y - t.y);
+          if (dd <= range) pts.push({ x: p.x, y: p.y, left: path.length - d, d: dd });
+        }
+      }
+      this.walkwayCache.set(key, pts);
+    }
+    return pts;
+  }
+
+  /** Where the next pile lands: the targeting mode picks a third of the walkway, then a random spot in it. */
+  private trapSpot(t: Tower, spots: { x: number; y: number; left: number; d: number }[]): { x: number; y: number } {
+    const score: Record<TargetMode, ((p: (typeof spots)[number]) => number) | null> = {
+      first: (p) => -p.left,
+      last: (p) => p.left,
+      closest: (p) => -p.d,
+      farthest: (p) => p.d,
+      strongest: null,
+      weakest: null,
+    };
+    const f = score[t.target];
+    let pool = spots;
+    if (f) {
+      pool = [...spots].sort((a, b) => f(b) - f(a));
+      pool = pool.slice(0, Math.max(1, Math.ceil(pool.length / 3)));
+    }
+    const p = pool[Math.floor(this.rng.next() * pool.length) % pool.length];
+    // A little scatter, so piles do not stack on the exact same spot.
+    return { x: p.x + this.rng.range(-0.12, 0.12), y: p.y + this.rng.range(-0.12, 0.12) };
+  }
+
+  /** Colleagues stepping on tacks. Tacks do not need to see anyone. */
+  private updatePiles(dt: number): void {
+    if (this.piles.length === 0) return;
+    for (const p of this.piles) {
+      p.life -= dt;
+      if (p.life <= 0 || p.pierce <= 0) continue;
+      const t = this.tower(p.tower);
+      if (!t) {
+        p.pierce = 0;
+        continue;
+      }
+      const s = this.liveStats(t);
+      for (const e of this.enemies) {
+        if (p.pierce <= 0) break;
+        if (!e.alive || p.hit.has(e.id) || !this.onFloor(e)) continue;
+        if (Math.hypot(e.x - p.x, e.y - p.y) > PILE_RADIUS) continue;
+        p.hit.add(e.id);
+        if (e.def.immune === t.def.damageClass) continue;
+        p.pierce--;
+        const amount = s.damage * (e.def.boss ? s.bossMult : 1);
+        const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
+        t.stats.damage += dealt;
+        const killed = !e.alive;
+        if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
+        if (!killed && result === 'hit' && s.slowOnHit) this.slowEnemy(e, s.slowOnHit.mult, s.slowOnHit.time);
+        this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx: p.x, fy: p.y, tx: e.x, ty: e.y, travel: 0, damage: dealt, result, killed, kind: 'tack' });
+        if (killed) {
+          t.stats.kills++;
+          this.onKill(e, 0, t);
+        }
+      }
+    }
+    this.piles = this.piles.filter((p) => p.life > 0 && p.pierce > 0);
   }
 
   /** Headphones: every few seconds, everyone in range slows (or is stunned), no damage. */
@@ -1460,7 +1665,7 @@ export class Game {
   }
 
   /** Apply damage. One checkpoint for shields and immunities, so no damage source can skip them. */
-  damage(e: Enemy, amount: number, cls?: string, isHit = true): { dealt: number; result: ShotResult } {
+  damage(e: Enemy, amount: number, cls?: string, isHit = true, ignoresMinHit = false): { dealt: number; result: ShotResult } {
     if (!e.alive) return { dealt: 0, result: 'hit' };
     if (e.def.immune && cls === e.def.immune) return { dealt: 0, result: 'immune' };
     // Focus Music: every hit lands a bit harder. Soundproof Booth: stunned colleagues take more.
@@ -1468,7 +1673,7 @@ export class Game {
     if (e.stunTime > 0 && e.stunnedTakes > 1) amount *= e.stunnedTakes;
     let dealt = 0;
     if (e.shield > 0) {
-      if (e.def.shieldMinHit !== undefined && amount < e.def.shieldMinHit) return { dealt: 0, result: 'blocked' };
+      if (e.def.shieldMinHit !== undefined && amount < e.def.shieldMinHit && !ignoresMinHit) return { dealt: 0, result: 'blocked' };
       const onShield = Math.min(e.shield, amount);
       e.shield -= onShield;
       dealt += onShield;

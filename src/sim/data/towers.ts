@@ -10,8 +10,11 @@
 // stretch of the floor. tests/economy.test.ts checks this.
 
 export type DamageClass = 'written' | 'in_person';
-/** damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on everyone standing in it. */
-export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone';
+/**
+ * damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on
+ * everyone standing in it. trap: drops piles on the walkway that hit whoever walks over them.
+ */
+export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap';
 export type TargetMode = 'first' | 'last' | 'closest' | 'farthest' | 'strongest' | 'weakest';
 export type Tiers = [number, number, number];
 
@@ -37,6 +40,25 @@ export const TARGET_HELP: Record<TargetMode, string> = {
   farthest: 'Whoever is furthest away, but still in range.',
   strongest: 'Whoever has the most HP left.',
   weakest: 'Whoever has the least HP left.',
+};
+
+/** Thumbtacks do not aim: the mode picks which part of the walkway in range gets the piles. */
+export const TRAP_TARGET_MODES: readonly TargetMode[] = ['first', 'last', 'closest', 'farthest', 'strongest'];
+
+export const TRAP_TARGET_LABELS: Partial<Record<TargetMode, string>> = {
+  first: 'Near desk',
+  last: 'Near door',
+  closest: 'Close by',
+  farthest: 'Far out',
+  strongest: 'Anywhere',
+};
+
+export const TRAP_TARGET_HELP: Partial<Record<TargetMode, string>> = {
+  first: 'Piles land on the stretch of its range closest to your desk.',
+  last: 'Piles land on the stretch of its range closest to the door.',
+  closest: 'Piles land right next to it.',
+  farthest: 'Piles land as far away as it reaches.',
+  strongest: 'Piles land anywhere in range.',
 };
 
 /** What an upgrade changes. Adds are applied before multipliers; later tiers stack on earlier ones. */
@@ -106,6 +128,15 @@ export interface Effect {
   killCoffee?: number;
   /** Coffee at the start of every wave, for the owner. */
   waveIncome?: number;
+  // Trap towers (Thumbtacks)
+  /** More tacks in every pile: each tack hits one colleague. */
+  pierceAdd?: number;
+  /** Piles stay on the floor this much longer (2 = twice as long). */
+  pileLifeMult?: number;
+  /** Extra piles per drop. */
+  pilesAdd?: number;
+  /** Hits get through a shield no matter how light they are (the Old Guard's archive box). */
+  ignoresMinHit?: boolean;
 }
 
 export interface UpgradeDef {
@@ -126,6 +157,11 @@ export interface PathDef {
 export interface TowerBase {
   cost: number;
   range: number;
+  /** How many colleagues one shot hits (Self-Service answers everyone around it). */
+  targets?: number;
+  /** Trap: tacks per pile, and how long a pile stays on the floor. */
+  pierce?: number;
+  pileLife?: number;
   /** Quick Reply: damage builds up per hit on the same target, to this multiplier. */
   ramp?: { add: number; max: number };
   interval?: number;
@@ -453,6 +489,100 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  thumbtacks: {
+    id: 'thumbtacks',
+    name: 'Thumbtacks',
+    flavour: 'Somebody dropped the box.',
+    verb: 'Drops piles of tacks on the walkway. Every tack hits one colleague, the pile stays until it runs out or gets old. Tacks do not care whether they can see you.',
+    role: 'trap',
+    damageClass: 'in_person',
+    unlockLevel: 4,
+    accent: '#d24b4b',
+    models: ['thumbtacks_1', 'thumbtacks_2', 'thumbtacks_3'],
+    base: { cost: 22, range: 2.0, interval: 1.7, damage: 2, pierce: 5, pileLife: 22 },
+    paths: [
+      {
+        name: 'SHARPER',
+        quote: 'Mind your step.',
+        color: '#d24b4b',
+        tiers: [
+          { name: 'Brass Tacks', desc: '+1 damage per tack.', cost: 10, effect: { damageAdd: 1 } },
+          { name: 'Push Pins', desc: '+3 tacks in every pile.', cost: 25, effect: { pierceAdd: 3 } },
+          { name: 'Drawing Pins', desc: '+3 damage per tack, and tacks get through any shield.', cost: 70, effect: { damageAdd: 3, ignoresMinHit: true } },
+          { name: 'Tack Carpet', desc: '+2 damage, +10 tacks in every pile, and piles last twice as long.', cost: 220, effect: { damageAdd: 2, pierceAdd: 10, pileLifeMult: 2 } },
+        ],
+      },
+      {
+        name: 'SUPPLY',
+        quote: 'Who ordered ten thousand?',
+        color: '#d9a05b',
+        tiers: [
+          { name: 'Desk Drawer', desc: 'Drops 33% faster.', cost: 10, effect: { intervalMult: 0.75 } },
+          { name: 'Spilled Box', desc: 'Drops 33% faster again.', cost: 24, effect: { intervalMult: 0.75 } },
+          { name: 'Bulk Order', desc: 'Every drop is two piles, and +2 tacks in every pile.', cost: 65, effect: { pilesAdd: 1, pierceAdd: 2 } },
+          { name: 'Supply Closet', desc: 'Drops twice as fast, and +2 tacks in every pile.', cost: 200, effect: { intervalMult: 0.5, pierceAdd: 2 } },
+        ],
+      },
+      {
+        name: 'HEALTH AND SAFETY',
+        quote: 'Nobody filled in the risk assessment.',
+        color: '#f2c641',
+        tiers: [
+          { name: 'Longer Reach', desc: '+25% range: it drops piles further away.', cost: 10, effect: { rangeMult: 1.25 } },
+          { name: 'Glue Dots', desc: 'Every tack also slows its colleague for a moment.', cost: 22, effect: { slowOnHit: { mult: 0.6, time: 0.8 } } },
+          { name: 'Upturned Plug', desc: 'Every tack stops its colleague for a moment, and bosses take double.', cost: 60, effect: { stunOnHit: 0.3, bossMult: 2 } },
+          { name: 'Risk Assessment', desc: '+3 damage, bosses take four times as much, and every tack stops its colleague longer.', cost: 180, effect: { damageAdd: 3, bossMult: 4, stunOnHit: 0.5 } },
+        ],
+      },
+    ],
+  },
+  selfservice: {
+    id: 'selfservice',
+    name: 'Self-Service',
+    flavour: 'Have you tried the portal?',
+    verb: 'Answers EVERYONE in a small circle around it at once, as many as there are. Weak against one colleague, great when they bunch up.',
+    role: 'damage',
+    damageClass: 'written',
+    unlockLevel: 4,
+    accent: '#3fa7a0',
+    models: ['selfservice_1', 'selfservice_2', 'selfservice_3'],
+    base: { cost: 25, range: 1.6, interval: 0.8, damage: 1.0, targets: 99 },
+    paths: [
+      {
+        name: 'KNOWLEDGE BASE',
+        quote: 'Have you checked the FAQ?',
+        color: '#3fa7a0',
+        tiers: [
+          { name: 'Send the FAQ', desc: '+1 damage.', cost: 14, effect: { damageAdd: 1 } },
+          { name: 'Send the Wiki', desc: '+1 damage and +15% range.', cost: 28, effect: { damageAdd: 1, rangeMult: 1.15 } },
+          { name: 'Send to Service Desk', desc: '+3 damage.', cost: 75, effect: { damageAdd: 3 } },
+          { name: 'Knowledge Base', desc: '+6 damage, and it finds hidden colleagues.', cost: 230, effect: { damageAdd: 6, seesHidden: true } },
+        ],
+      },
+      {
+        name: 'CHATBOT',
+        quote: "Sorry, I didn't understand that.",
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Canned Response', desc: 'Answers 33% faster.', cost: 12, effect: { intervalMult: 0.75 } },
+          { name: 'Chatbot', desc: 'Answers 33% faster again.', cost: 26, effect: { intervalMult: 0.75 } },
+          { name: 'Ticket Queue', desc: 'Answers twice as fast, and +0.5 damage.', cost: 70, effect: { intervalMult: 0.5, damageAdd: 0.5 } },
+          { name: 'AI Assistant', desc: 'Answers twice as fast again, and +2 damage.', cost: 210, effect: { intervalMult: 0.5, damageAdd: 2 } },
+        ],
+      },
+      {
+        name: 'PORTAL',
+        quote: 'Please log in to continue.',
+        color: '#8fa0b4',
+        tiers: [
+          { name: 'Pinned Post', desc: '+20% range.', cost: 10, effect: { rangeMult: 1.2 } },
+          { name: 'Read the Manual', desc: 'Everyone it answers slows down for a moment.', cost: 22, effect: { slowOnHit: { mult: 0.7, time: 0.6 } } },
+          { name: 'Search Bar', desc: 'Finds hidden colleagues, and +15% range.', cost: 55, effect: { seesHidden: true, rangeMult: 1.15 } },
+          { name: 'Closed as Resolved', desc: '+2 damage, and +1 Coffee for every colleague it deals with.', cost: 180, effect: { damageAdd: 2, killCoffee: 1 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (any path at 2-3), top (any path at 4). */
@@ -481,12 +611,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Thumbtacks', unlockLevel: 4 },
-  { name: 'Self-Service', unlockLevel: 4 },
   { name: 'Keyboard Smash', unlockLevel: 5 },
   { name: 'Reply All', unlockLevel: 6 },
   { name: 'Delegation', unlockLevel: 7 },

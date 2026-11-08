@@ -416,6 +416,103 @@ async function level3Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+/** Level 4: Thumbtacks and Self-Service panels, The Impersonator, the lunch break, The Cleaner. */
+async function level4Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 4)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l4: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'Canteen');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    piles: unknown[];
+    level: { size: { w: number; h: number } };
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    phase: string;
+    waveIndex: number;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string; mopped: number }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    // Spots inside the spiral, next to the walkway.
+    const want: [string, number, number, number][] = [
+      ['thumbtacks', 9, 6, 0],
+      ['thumbtacks', 17, 6, 1],
+      ['selfservice', 13, 5, 0],
+      ['shredder', 4, 8, 0],
+      ['autoreply', 10, 9, 0],
+      ['autoreply', 5, 3, 0],
+      ['artillery', 20, 10, 0],
+      ['quickreply', 4, 5, 0],
+    ];
+    const out: string[] = [];
+    for (const [d, x, y, p] of want) {
+      const r = g.place(d, x, y);
+      out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
+      if (r.tower) for (let i = 0; i < 2; i++) g.upgrade(r.tower.id, p);
+    }
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  total += await check(page, 'l4-built', size);
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'hidden' && g.enemies.some((e) => e.type === 'impersonator') && g.piles.length > 3) break;
+        if (what === 'lunch' && g.hazardOn) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+        if (what === 'mop' && g.towers.some((t) => t.mopped > 0)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      g.events.push(...keep.slice(-2));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)} piles=${g.piles.length}`;
+    }, stop);
+  console.log(`  ${await ff('hidden')}`);
+  await new Promise((r) => setTimeout(r, 900));
+  total += await check(page, 'l4-impersonator', size);
+  for (const def of ['thumbtacks', 'selfservice']) {
+    await page.evaluate((d) => {
+      const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+      s.selected = s.game.towers.find((t) => t.defId === d)?.id ?? null;
+    }, def);
+    total += await check(page, `l4-panel-${def}`, size);
+  }
+  await page.keyboard.press('Escape');
+  console.log(`  ${await ff('lunch')}`);
+  await new Promise((r) => setTimeout(r, 600));
+  total += await check(page, 'l4-lunch', size);
+  console.log(`  ${await ff('boss')}`);
+  console.log(`  ${await ff('mop')}`);
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    s.selected = s.game.towers.find((t) => t.defId === 'shredder')?.id ?? null;
+  });
+  await new Promise((r) => setTimeout(r, 900));
+  total += await check(page, 'l4-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -447,6 +544,10 @@ async function run(): Promise<void> {
   try {
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
+      throw new Done();
+    }
+    if (args.includes('--l4-only')) {
+      total += await level4Flow(browser, errors);
       throw new Done();
     }
     if (args.includes('--l3-only')) {
@@ -570,6 +671,7 @@ async function run(): Promise<void> {
 
     total += await level2Flow(browser, errors);
     total += await level3Flow(browser, errors);
+    total += await level4Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

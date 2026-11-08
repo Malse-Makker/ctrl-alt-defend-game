@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit  # noqa: E402
+from mathutils import Matrix  # noqa: E402
 from kit import ball, box, cyl, empty, join, label_quad, mat, parent, set_origin  # noqa: E402
 
 TAU = math.pi * 2
@@ -823,6 +824,244 @@ def b_meeting_table():
     return root
 
 
+# ---------------------------------------------------------------- level 4
+
+TACK_COLS = ("red", "blue", "yellow", "teal", "pink")
+
+
+def _tacks(x, y, z, n, spread, seed=1, s=1.0):
+    """A little scatter of thumbtacks: coloured heads with a short pin under each."""
+    out = []
+    for i in range(n):
+        a = (seed * 2.399 + i * 2.1) % TAU
+        r = spread * (0.25 + ((seed * 7 + i * 13) % 10) / 13)
+        px, py = x + math.cos(a) * r, y + math.sin(a) * r
+        out.append(cyl(f"TackHead{seed}_{i}", 0.022 * s, 0.014 * s, loc=(px, py, z + 0.008 * s), material=mat(TACK_COLS[(seed + i) % 5], rough=0.4), verts=8))
+        out.append(cyl(f"TackPin{seed}_{i}", 0.004 * s, 0.012 * s, loc=(px, py, z), material=mat("metal_light", metal=0.8, rough=0.3), verts=4))
+    return out
+
+
+def _corkboard(x, y, z, w, hgt, pins=8, seed=3):
+    frame = box("CorkFrame", (w + 0.04, 0.03, hgt + 0.04), loc=(x, y, z), material=mat("wood_dark"), bevel=0.006)
+    cork = box("Cork", (w, 0.032, hgt), loc=(x, y - 0.002, z + 0.02), material=mat("cardboard", rough=0.95))
+    out = [frame, cork]
+    for i in range(pins):
+        px = x - w / 2 + 0.05 + ((seed * 5 + i * 7) % 10) / 10 * (w - 0.1)
+        pz = z + 0.06 + ((seed * 3 + i * 11) % 10) / 10 * (hgt - 0.1)
+        if i % 3 == 0:
+            out.append(box(f"Note{i}", (0.08, 0.004, 0.08), loc=(px, y - 0.02, pz - 0.05), material=mat(["paper", "yellow", "pink"][i % 3])))
+        out.append(ball(f"Pin{i}", 0.014, loc=(px, y - 0.024, pz), material=mat(TACK_COLS[i % 5], rough=0.4), subdiv=1))
+    return out
+
+
+def b_thumbtacks_1():
+    root = empty("thumbtacks_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    board = _corkboard(0, 0.22, h, 0.5, 0.36, pins=6)
+    kit.tilt(board, rx=-0.18, pivot=(0, 0.22, h))
+    parts += board
+    tray = box("TackBox", (0.14, 0.1, 0.035), loc=(-0.15, -0.12, h), material=mat("plastic_white", rough=0.3), bevel=0.004)
+    parts.append(tray)
+    parts += _tacks(-0.15, -0.12, h + 0.035, 6, 0.035, seed=1)
+    parts += _tacks(0.12, -0.14, h, 4, 0.06, seed=2)
+    ob = join("thumbtacks_1_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_2():
+    root = empty("thumbtacks_2")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    board = _corkboard(0, 0.22, h, 0.62, 0.44, pins=12, seed=5)
+    kit.tilt(board, rx=-0.18, pivot=(0, 0.22, h))
+    parts += board
+    box_ = box("TackCarton", (0.2, 0.14, 0.08), loc=(-0.12, -0.1, h), material=mat("red", rough=0.5), bevel=0.006)
+    lid = box("TackLid", (0.2, 0.02, 0.1), loc=(-0.12, -0.02, h + 0.08), material=mat("red", rough=0.5), bevel=0.004)
+    kit.tilt([lid], rx=-0.9, pivot=(-0.12, -0.03, h + 0.08))
+    parts += [box_, lid]
+    parts += _tacks(-0.12, -0.1, h + 0.08, 8, 0.05, seed=3)
+    parts += _tacks(0.14, -0.12, h, 9, 0.11, seed=4)
+    ob = join("thumbtacks_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_3():
+    root = empty("thumbtacks_3")
+    crate = box("Crate", (0.62, 0.5, 0.46), loc=(0, 0.04, 0), material=mat("cardboard"), bevel=0.01)
+    tape = box("Tape", (0.64, 0.06, 0.02), loc=(0, 0.04, 0.46), material=mat("yellow", rough=0.4))
+    label = box("CrateLabel", (0.3, 0.01, 0.14), loc=(0, -0.215, 0.18), material=mat("paper"))
+    stripe = box("CrateStripe", (0.3, 0.012, 0.04), loc=(0, -0.217, 0.26), material=mat("red"))
+    chute = box("Chute", (0.18, 0.4, 0.04), loc=(0.0, -0.36, 0.2), material=mat("metal_light", metal=0.6, rough=0.3), bevel=0.006)
+    kit.tilt([chute], rx=0.45, pivot=(0, -0.2, 0.3))
+    parts = [crate, tape, label, stripe, chute]
+    parts += _tacks(0, 0.04, 0.48, 14, 0.18, seed=6, s=1.3)
+    parts += _tacks(0.0, -0.5, 0.0, 10, 0.16, seed=7, s=1.3)
+    board = _corkboard(0, 0.33, 0.46, 0.56, 0.4, pins=10, seed=8)
+    parts += board
+    ob = join("thumbtacks_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def _kiosk(w=0.36, hgt=0.95, screen="screen", body="plastic_white", accent="teal"):
+    base = box("KBase", (w + 0.14, w * 0.9, 0.06), loc=(0, 0.04, 0), material=mat("plastic_black"), bevel=0.01)
+    post = box("KPost", (w, w * 0.6, hgt), loc=(0, 0.06, 0.06), material=mat(body, rough=0.4), bevel=0.03)
+    band = box("KBand", (w + 0.005, w * 0.6 + 0.005, 0.06), loc=(0, 0.06, 0.06 + hgt * 0.62), material=mat(accent, rough=0.4))
+    head = box("KHead", (w + 0.06, 0.08, w * 0.85), loc=(0, -0.02, 0.06 + hgt - 0.02), material=mat("plastic_black"), bevel=0.012)
+    scr = box("KScreen", (w - 0.02, 0.006, w * 0.7), loc=(0, -0.062, 0.06 + hgt + 0.02), material=mat(screen, emit=1.3))
+    kit.tilt([head, scr], rx=0.35, pivot=(0, 0.0, 0.06 + hgt))
+    slot = box("KSlot", (0.16, 0.02, 0.02), loc=(0, -0.13, 0.06 + hgt * 0.5), material=mat("plastic_black"))
+    return [base, post, band, head, scr, slot]
+
+
+def b_selfservice_1():
+    root = empty("selfservice_1")
+    parts = _kiosk()
+    q = box("QMark", (0.05, 0.01, 0.08), loc=(0, -0.11, 1.08), material=mat("plastic_white", emit=1.2))
+    kit.tilt([q], rx=0.35, pivot=(0, 0.0, 1.01))
+    parts.append(q)
+    ob = join("selfservice_1_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_2():
+    root = empty("selfservice_2")
+    parts = _kiosk(w=0.4, hgt=1.0)
+    ticket = box("Ticket", (0.1, 0.004, 0.14), loc=(0, -0.14, 0.42), material=mat("paper"))
+    kit.tilt([ticket], rx=0.5, pivot=(0, -0.13, 0.56))
+    pole = cyl("SignPole", 0.015, 0.35, loc=(0.18, 0.15, 1.05), material=mat("metal"), verts=6)
+    sign = box("Sign", (0.3, 0.03, 0.14), loc=(0.18, 0.15, 1.4), material=mat("teal", emit=0.4), bevel=0.01)
+    txt = box("SignTxt", (0.2, 0.032, 0.03), loc=(0.18, 0.15, 1.455), material=mat("plastic_white", emit=1.0))
+    parts += [ticket, pole, sign, txt]
+    ob = join("selfservice_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_3():
+    root = empty("selfservice_3")
+    parts = []
+    for i, x in enumerate((-0.24, 0.24)):
+        k = _kiosk(w=0.36, hgt=1.0, screen="screen_glow", body="plastic_white", accent="teal")
+        for ob in k:
+            ob.data.transform(Matrix.Translation((x, 0, 0)))
+        parts += k
+    arch = box("Arch", (0.92, 0.12, 0.08), loc=(0, 0.1, 1.55), material=mat("teal", emit=0.5), bevel=0.02)
+    posts = [box(f"ArchPost{i}", (0.05, 0.05, 1.5), loc=(x, 0.1, 0.05), material=mat("metal"), bevel=0.005) for i, x in enumerate((-0.44, 0.44))]
+    bot = ball("BotHead", 0.09, loc=(0, 0.1, 1.72), material=mat("plastic_white", rough=0.3), subdiv=2, scale=(1.2, 0.9, 1.0))
+    eyes = [box(f"BotEye{i}", (0.03, 0.01, 0.03), loc=(x, 0.01, 1.73), material=mat("screen_glow", emit=2.0)) for i, x in enumerate((-0.04, 0.04))]
+    ant = cyl("BotAnt", 0.008, 0.08, loc=(0, 0.1, 1.8), material=mat("metal"), verts=5)
+    tip = ball("BotTip", 0.02, loc=(0, 0.1, 1.89), material=mat("red", emit=1.5), subdiv=1)
+    parts += [arch, bot, ant, tip] + posts + eyes
+    ob = join("selfservice_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_impersonator():
+    s = 1.0
+    root, body, hz = person("impersonator", "charcoal", "charcoal", "skin_1", "hair_dark", style="side", h=s)
+    shirt = box("ShirtV", (0.1, 0.012, 0.16), loc=(0, -0.104, 0.52), material=mat("plastic_white"), taper=0.4)
+    tie = box("Tie", (0.035, 0.014, 0.15), loc=(0, -0.108, 0.5), material=mat("red"), taper=0.6)
+    shades = box("Shades", (0.2, 0.025, 0.045), loc=(0, -0.122, hz - 0.015), material=mat("plastic_black", rough=0.2))
+    tache = box("Moustache", (0.11, 0.02, 0.025), loc=(0, -0.124, hz - 0.075), material=mat("hair_dark"), bevel=0.008)
+    badge = box("Badge", (0.06, 0.012, 0.04), loc=(0.08, -0.106, 0.6), material=mat("yellow", rough=0.3, metal=0.5))
+    acc = join("Props", [shirt, tie, shades, tache, badge])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -0.9
+    hp = _hand_world(arm, s)
+    cards = [box(f"GiftCard{i}", (0.012, 0.09, 0.06), loc=(hp.x - 0.01 + i * 0.012, hp.y - 0.02, hp.z - 0.02 + i * 0.008), material=mat(["yellow", "pink", "teal"][i], emit=0.3)) for i in range(3)]
+    _hold(root, "R", s, cards)
+    return root
+
+
+def b_cleaner():
+    s = 1.45
+    root, body, hz = person("cleaner", "blue", "blue", "skin_3", "hair_grey", style="short", h=s, arms_forward=-0.9)
+    bib = box("Bib", (0.24 * s, 0.012 * s, 0.2 * s), loc=(0, -0.104 * s, 0.42 * s), material=mat("navy"))
+    pocket = box("Pocket", (0.1 * s, 0.014 * s, 0.07 * s), loc=(0, -0.106 * s, 0.5 * s), material=mat("navy"))
+    rag = box("Rag", (0.06 * s, 0.03 * s, 0.1 * s), loc=(0.1 * s, 0.1 * s, 0.25 * s), material=mat("yellow"))
+    cap = cyl("Cap", 0.12 * s, 0.05 * s, loc=(0, 0.01 * s, hz + 0.075 * s), material=mat("navy"), verts=12)
+    visor = box("Visor", (0.18 * s, 0.1 * s, 0.015 * s), loc=(0, -0.11 * s, hz + 0.075 * s), material=mat("navy"))
+    # The cart he pushes: bucket, mop and a wet floor sign, out in front of him.
+    cy = -0.5 * s
+    frame = box("Cart", (0.42 * s, 0.34 * s, 0.05 * s), loc=(0, cy, 0.1 * s), material=mat("yellow", rough=0.5), bevel=0.01)
+    wheels = [cyl(f"CWheel{i}", 0.04 * s, 0.03 * s, loc=(x * s, cy + y * s, 0.0), material=mat("plastic_black"), verts=8) for i, (x, y) in enumerate(((0.17, 0.13), (-0.17, 0.13), (0.17, -0.13), (-0.17, -0.13)))]
+    bucket = cyl("Bucket", 0.12 * s, 0.2 * s, loc=(-0.06 * s, cy, 0.15 * s), material=mat("yellow", rough=0.5), verts=12, radius_top=0.14 * s)
+    water = cyl("Water", 0.12 * s, 0.01 * s, loc=(-0.06 * s, cy, 0.32 * s), material=mat("window", rough=0.1), verts=12)
+    mop = cyl("MopStick", 0.012 * s, 0.9 * s, loc=(-0.06 * s, cy, 0.25 * s), material=mat("metal_light", metal=0.6, rough=0.3), verts=6)
+    head = cyl("MopHead", 0.07 * s, 0.1 * s, loc=(-0.06 * s, cy, 0.24 * s), material=mat("paper", rough=1.0), verts=10)
+    handle = box("CHandle", (0.4 * s, 0.03 * s, 0.03 * s), loc=(0, cy + 0.2 * s, 0.5 * s), material=mat("metal"))
+    hposts = [box(f"CPost{i}", (0.03 * s, 0.03 * s, 0.4 * s), loc=(x * s, cy + 0.17 * s, 0.12 * s), material=mat("metal")) for i, x in enumerate((-0.19, 0.19))]
+    sign = box("CartSign", (0.16 * s, 0.02 * s, 0.22 * s), loc=(0.12 * s, cy - 0.06 * s, 0.15 * s), material=mat("yellow", rough=0.4), taper=0.7)
+    acc = join("Props", [bib, pocket, rag, cap, visor, frame, bucket, water, mop, head, handle, sign] + wheels + hposts)
+    parent(acc, root)
+    return root
+
+
+def b_food_counter():
+    root = empty("food_counter")
+    counter = box("Counter", (3.8, 0.75, 0.88), loc=(0, 0, 0), material=mat("metal_light", metal=0.5, rough=0.4), bevel=0.02)
+    top = box("CTop", (3.9, 0.8, 0.04), loc=(0, 0, 0.88), material=mat("metal", metal=0.6, rough=0.3))
+    rail = box("TrayRail", (3.9, 0.16, 0.03), loc=(0, -0.45, 0.78), material=mat("metal", metal=0.6, rough=0.3))
+    guard = box("Guard", (3.6, 0.02, 0.36), loc=(0, -0.15, 1.12), material=mat("window", rough=0.05))
+    kit.tilt([guard], rx=0.35, pivot=(0, -0.15, 1.12))
+    gposts = [box(f"GPost{i}", (0.03, 0.03, 0.3), loc=(x, -0.05, 0.92), material=mat("metal")) for i, x in enumerate((-1.75, 0, 1.75))]
+    parts = [counter, top, rail, guard] + gposts
+    for i, (x, col) in enumerate(((-1.3, "orange"), (-0.45, "yellow"), (0.4, "red"), (1.25, "plant"))):
+        parts.append(box(f"Pan{i}", (0.7, 0.45, 0.06), loc=(x, 0.05, 0.9), material=mat("metal_light", metal=0.7, rough=0.3)))
+        parts.append(box(f"Food{i}", (0.62, 0.38, 0.03), loc=(x, 0.05, 0.94), material=mat(col, rough=0.9)))
+    pot = cyl("SoupPot", 0.18, 0.28, loc=(1.6, 0.2, 0.92), material=mat("metal", metal=0.6, rough=0.3), verts=14)
+    trays = [box(f"Tray{i}", (0.45, 0.32, 0.02), loc=(-1.7, -0.42, 0.81 + 0.022 * i), material=mat(["teal", "orange", "teal", "orange"][i])) for i in range(4)]
+    menu = box("Menu", (1.2, 0.05, 0.5), loc=(0, 0.32, 1.45), material=mat("plastic_black"), bevel=0.01)
+    lines = [box(f"MenuLine{i}", (0.8 - 0.15 * (i % 2), 0.055, 0.04), loc=(0, 0.3, 1.55 + 0.1 * i), material=mat("plastic_white", emit=0.6)) for i in range(3)]
+    parts += [pot, menu] + trays + lines
+    ob = join("food_counter_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_canteen_table():
+    root = empty("canteen_table")
+    top = box("Top", (1.5, 0.8, 0.05), loc=(0, 0, 0.72), material=mat("plastic_white", rough=0.4), bevel=0.02)
+    legs = [cyl(f"TLeg{i}", 0.03, 0.72, loc=(x, y, 0), material=mat("metal"), verts=6) for i, (x, y) in enumerate(((0.65, 0.3), (-0.65, 0.3), (0.65, -0.3), (-0.65, -0.3)))]
+    parts = [top] + legs
+    for side in (-1, 1):
+        parts.append(box(f"Bench{side}", (1.5, 0.3, 0.05), loc=(0, side * 0.62, 0.42), material=mat("teal", rough=0.5), bevel=0.01))
+        parts += [cyl(f"BLeg{side}{i}", 0.025, 0.42, loc=(x, side * 0.62, 0), material=mat("metal"), verts=6) for i, x in enumerate((-0.6, 0.6))]
+    for i, (x, y, col) in enumerate(((-0.4, 0.18, "orange"), (0.35, -0.2, "teal"), (0.4, 0.2, "orange"))):
+        parts.append(box(f"Tray{i}", (0.42, 0.3, 0.02), loc=(x, y, 0.77), material=mat(col)))
+        parts.append(cyl(f"Plate{i}", 0.09, 0.015, loc=(x - 0.06, y, 0.79), material=mat("plastic_white"), verts=12))
+        parts.append(ball(f"Food{i}", 0.05, loc=(x - 0.06, y, 0.8), material=mat(["yellow", "red", "plant"][i]), subdiv=1, scale=(1, 1, 0.5)))
+        parts.append(cyl(f"Cup{i}", 0.03, 0.08, loc=(x + 0.12, y + 0.04, 0.79), material=mat("window", rough=0.1), verts=8))
+    ob = join("canteen_table_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_wet_floor():
+    root = empty("wet_floor")
+    puddle = cyl("Puddle", 0.42, 0.006, loc=(0, 0, 0.002), material=mat("window", rough=0.05), verts=20)
+    puddle.data.transform(Matrix.Diagonal((1.0, 0.75, 1.0, 1.0)))
+    kit.tilt([puddle], rz=0.3, pivot=(0, 0, 0))
+    a = box("SignA", (0.3, 0.02, 0.5), loc=(0, -0.04, 0.0), material=mat("yellow", rough=0.4), taper=0.55)
+    b = box("SignB", (0.3, 0.02, 0.5), loc=(0, 0.04, 0.0), material=mat("yellow", rough=0.4), taper=0.55)
+    kit.tilt([a], rx=-0.22, pivot=(0, 0, 0.5))
+    kit.tilt([b], rx=0.22, pivot=(0, 0, 0.5))
+    icon_ = box("SignIcon", (0.1, 0.01, 0.14), loc=(0, -0.09, 0.18), material=mat("plastic_black"), taper=0.6)
+    kit.tilt([icon_], rx=-0.22, pivot=(0, 0, 0.5))
+    stripe = box("SignStripe", (0.24, 0.01, 0.03), loc=(0, -0.075, 0.36), material=mat("plastic_black"))
+    kit.tilt([stripe], rx=-0.22, pivot=(0, 0, 0.5))
+    ob = join("wet_floor_mesh", [puddle, a, b, icon_, stripe])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -862,6 +1101,17 @@ BUILDERS = {
     "presenter": b_presenter,
     "projector_screen": b_projector_screen,
     "meeting_table": b_meeting_table,
+    "thumbtacks_1": b_thumbtacks_1,
+    "thumbtacks_2": b_thumbtacks_2,
+    "thumbtacks_3": b_thumbtacks_3,
+    "selfservice_1": b_selfservice_1,
+    "selfservice_2": b_selfservice_2,
+    "selfservice_3": b_selfservice_3,
+    "impersonator": b_impersonator,
+    "cleaner": b_cleaner,
+    "food_counter": b_food_counter,
+    "canteen_table": b_canteen_table,
+    "wet_floor": b_wet_floor,
 }
 
 

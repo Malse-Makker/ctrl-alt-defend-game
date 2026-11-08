@@ -406,13 +406,28 @@ export class Session {
         if (this.selected === ev.towerId) this.selected = null;
         break;
       case 'hazard':
-        if (ev.on) {
+        if (ev.kind === 'lunch') {
+          if (ev.on) {
+            sfx.play('wave', { pitch: 1.25 });
+            this.hud?.toast(T.lunchStarts, 'warn', 3.5);
+          } else this.hud?.toast(T.lunchEnds, '', 2);
+        } else if (ev.on) {
           sfx.play('bossphase', { pitch: 1.3, gain: 0.7 });
           this.hud?.toast(T.projStarts, 'warn', 3);
           if (this.placing) this.placing = null;
         } else if (!g.hazardSolved.includes(this.me)) {
           this.hud?.toast(T.projTimeout, '', 2.5);
         }
+        break;
+      case 'tacks':
+        sfx.play('staple', { pitch: 1.7, gain: 0.25 });
+        break;
+      case 'swept':
+        this.toastOnce('swept', T.tackSwept, 12);
+        break;
+      case 'mopped':
+        sfx.play('split', { pitch: 0.6 });
+        this.toastOnce('mopped', T.zoneMopped, 12);
         break;
       case 'hazardSolved':
         if (ev.player === this.me) {
@@ -428,6 +443,16 @@ export class Session {
       default:
         break;
     }
+  }
+
+  private lastToast = new Map<string, number>();
+
+  /** A toast that does not repeat for a while, for things that happen over and over. */
+  private toastOnce(key: string, text: string, gap: number): void {
+    const now = this.game.time;
+    if (now - (this.lastToast.get(key) ?? -Infinity) < gap) return;
+    this.lastToast.set(key, now);
+    this.hud?.toast(text, 'warn', 2.6);
   }
 
   private nameOf(i: number): string {

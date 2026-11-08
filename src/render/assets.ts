@@ -43,6 +43,17 @@ export const MODEL_NAMES = [
   'presenter',
   'projector_screen',
   'meeting_table',
+  'thumbtacks_1',
+  'thumbtacks_2',
+  'thumbtacks_3',
+  'selfservice_1',
+  'selfservice_2',
+  'selfservice_3',
+  'impersonator',
+  'cleaner',
+  'food_counter',
+  'canteen_table',
+  'wet_floor',
 ] as const;
 
 export class Assets {

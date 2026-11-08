@@ -35,6 +35,8 @@ interface EnemyView {
   boss: boolean;
   /** Little stars circling the head while stunned. */
   stars: THREE.Group | null;
+  /** The Impersonator's own see-through materials (null for everyone you can just see). */
+  ghostMats: THREE.Material[] | null;
 }
 
 interface TowerView {
@@ -48,6 +50,8 @@ interface TowerView {
   zone: THREE.Mesh | null;
   /** Shown while a Chatterbox silences the tower. */
   mute: THREE.Sprite | null;
+  /** Wet floor sign while The Cleaner has mopped it. */
+  wet: THREE.Object3D | null;
 }
 
 interface Shot {
@@ -103,6 +107,9 @@ export class Actors {
     this.ownerColors = colors;
   }
   private ghostKey = '';
+  /** Every tack on the floor, as one instanced mesh: a few coloured heads per pile. */
+  private readonly tacks: THREE.InstancedMesh;
+  private static readonly TACK_COLORS = ['#d24b4b', '#3e7cc9', '#f2c641', '#6fcf7f', '#e9e6df'].map((c) => new THREE.Color(c));
 
   /** Screen-right direction in world space, so HP bars line up on screen. */
   private readonly camRight: THREE.Vector3;
@@ -131,6 +138,11 @@ export class Actors {
     this.ghostTile.visible = false;
     this.ghostTile.renderOrder = 3;
     this.group.add(this.ghostTile);
+    const tackGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.035, 8);
+    this.tacks = new THREE.InstancedMesh(tackGeo, new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.2 }), 2400);
+    this.tacks.count = 0;
+    this.tacks.frustumCulled = false;
+    this.group.add(this.tacks);
   }
 
   // ------------------------------------------------------------- placement preview
@@ -205,8 +217,15 @@ export class Actors {
           v.zone.position.set(t.x, 0.015, t.y);
         }
         v.zone.scale.setScalar(game.liveStats(t).range);
-        (v.zone.material as THREE.MeshBasicMaterial).opacity = t.silenced ? 0.05 : 0.16 + Math.sin(this.clock * 6) * 0.03;
+        (v.zone.material as THREE.MeshBasicMaterial).opacity = t.silenced || t.mopped > 0 ? 0.05 : 0.16 + Math.sin(this.clock * 6) * 0.03;
       }
+      if (t.mopped > 0 && !v.wet) {
+        v.wet = this.assets.clone('wet_floor');
+        v.wet.scale.setScalar(0.7);
+        v.wet.position.set(0.32, 0, 0.32);
+        v.root.add(v.wet);
+      }
+      if (v.wet) v.wet.visible = t.mopped > 0;
       if (t.silenced && !v.mute) {
         v.mute = new THREE.Sprite(this.muteMat());
         v.mute.scale.set(0.42, 0.42, 1);
@@ -224,14 +243,50 @@ export class Actors {
         this.towers.delete(id);
       }
     }
+    this.syncTacks(game);
     this.updateShots(dt);
     this.updateScraps(dt);
     this.updatePulses(dt);
   }
 
+  private syncTacks(game: Game): void {
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const one = new THREE.Vector3(1, 1, 1);
+    const pos = new THREE.Vector3();
+    let n = 0;
+    const cap = this.tacks.instanceMatrix.count;
+    for (const p of game.piles) {
+      // Five heads per pile at most, fewer as the tacks get used up. Spread from the pile id.
+      const heads = Math.max(1, Math.ceil((p.pierce / Math.max(1, p.maxPierce)) * Math.min(7, 3 + p.maxPierce / 3)));
+      for (let i = 0; i < heads && n < cap; i++) {
+        const a = (p.id * 2.399 + i * 2.1) % (Math.PI * 2);
+        const r = 0.06 + ((p.id * 7 + i * 13) % 10) * 0.02;
+        pos.set(p.x + Math.cos(a) * r, 0.03, p.y + Math.sin(a) * r);
+        m.compose(pos, q, one);
+        this.tacks.setMatrixAt(n, m);
+        this.tacks.setColorAt(n, Actors.TACK_COLORS[(p.id + i) % Actors.TACK_COLORS.length]);
+        n++;
+      }
+    }
+    this.tacks.count = n;
+    this.tacks.instanceMatrix.needsUpdate = true;
+    if (this.tacks.instanceColor) this.tacks.instanceColor.needsUpdate = true;
+  }
+
   onEvent(ev: GameEvent, game: Game): void {
     switch (ev.t) {
       case 'shot': {
+        if (ev.kind === 'tack') {
+          // Stepped on: no projectile, just a hop.
+          const v = this.enemies.get(ev.enemyId);
+          if (v) {
+            v.squash = Math.max(v.squash, 1.2);
+            if (ev.killed) v.dieIn = 0;
+          }
+          if (ev.result === 'hit') this.burst(ev.tx, 0.15, ev.ty, 2, '#d24b4b');
+          break;
+        }
         const travel = ev.travel;
         const staple = game.tower(ev.towerId)?.defId === 'artillery';
         this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, staple ? 'staple' : 'reply');
@@ -248,6 +303,16 @@ export class Actors {
       case 'leak': {
         const v = this.enemies.get(ev.enemyId);
         if (v) v.leaking = 0.001;
+        break;
+      }
+      case 'tacks': {
+        const t = game.tower(ev.towerId);
+        if (t) this.fireShot(t.x, t.y, ev.x, ev.y, Math.hypot(ev.x - t.x, ev.y - t.y) / 9, 'staple');
+        break;
+      }
+      case 'swept': {
+        const v = this.enemies.get(ev.enemyId);
+        if (v) this.burst(v.root.position.x, 0.2, v.root.position.z, 6, '#c8b98a');
         break;
       }
       case 'kill': {
@@ -306,7 +371,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null };
+    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null };
     this.towers.set(t.id, v);
     return v;
   }
@@ -381,7 +446,24 @@ export class Actors {
       vy: 0,
       boss,
       stars: null,
+      ghostMats: null,
     };
+    if (e.def.invisible) {
+      // His own copy of the materials, so he can fade without fading every other model.
+      const mats: THREE.Material[] = [];
+      model.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const list = (Array.isArray(m.material) ? m.material : [m.material]).map((mat) => {
+          const c = mat.clone();
+          c.transparent = true;
+          mats.push(c);
+          return c;
+        });
+        m.material = Array.isArray(m.material) ? list : list[0];
+      });
+      v.ghostMats = mats;
+    }
     // Arms rest in whatever pose Blender gave them (holding a phone, a megaphone).
     for (const a of arms) a.userData.rest = a.rotation.x;
     root.position.set(e.x, 0, e.y);
@@ -439,9 +521,12 @@ export class Actors {
       v.stars.visible = e.stunTime > 0;
       v.stars.rotation.y += dt * 6;
     }
+    // Hidden colleagues are a faint shimmer until something shows them up.
+    const hidden = v.ghostMats !== null && !e.revealed;
+    if (v.ghostMats) for (const m of v.ghostMats) m.opacity = hidden ? 0.28 : 1;
     // HP bar: only when hurt (bosses always).
     const ratio = Math.max(0, e.hp / e.maxHp);
-    const hurt = ratio < 0.999 || v.boss || e.shield < e.maxShield;
+    const hurt = !hidden && (ratio < 0.999 || v.boss || e.shield < e.maxShield);
     v.hpBack.visible = hurt;
     v.hpFill.visible = hurt && ratio > 0;
     v.hpFill.scale.x = Math.max(0.001, v.barWidth * ratio);
@@ -674,5 +759,6 @@ export class Actors {
     this.towers.clear();
     this.shots = [];
     this.scraps = [];
+    this.tacks.count = 0;
   }
 }

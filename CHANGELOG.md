@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.6.0] - 2026-11-08
+
+### New
+- Level 4, Canteen: 22 waves along a long spiral round the tables, with wet floor where you cannot build. Opens once you finish level 3.
+- Thumbtacks: drops piles of tacks on the walkway. Every tack hits one colleague, a pile stays until it runs out or gets old, and tacks do not need to see anyone. SHARPER hits harder, then gets through shields and turns piles into carpet. SUPPLY drops faster and more. HEALTH AND SAFETY reaches further, slows, stops colleagues for a moment and hurts bosses. You choose where the piles land: near your desk, near the door, close by, far out or anywhere.
+- Self-Service: answers everyone in a small circle around it at once. KNOWLEDGE BASE hits harder, CHATBOT answers faster, PORTAL slows, finds hidden colleagues and pays Coffee.
+- The Impersonator: nobody sees him coming. Towers cannot aim at him until a Shredder zone shows him up. Thumbtacks get him anyway.
+- Lunch break: every so often a crowd of Interns heads for the canteen and everyone on the floor walks faster for a few seconds.
+- Boss: The Cleaner. Everyone near him walks faster, he sweeps up your tacks, and any Shredder he walks into stops until the floor is dry.
+- New sounds for tacks, mopping and the lunch bell.
+
 ## [0.5.0] - 2026-11-08
 
 ### New

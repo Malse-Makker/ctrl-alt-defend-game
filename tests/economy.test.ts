@@ -118,7 +118,14 @@ describe('tower balance rule', () => {
     let n = 0;
     let spent = 0;
     while (spent + placeCost(def, n) <= coffee) spent += placeCost(def, n++);
-    return n * (b.damage / b.interval) * ramped(b);
+    // Copies hit the crowd the same way the tower itself does (Self-Service answers all five).
+    const reach = b.rampMax > 0 ? b.rampMax : Math.min(5, b.targets + b.splash + b.bounce);
+    return n * (b.damage / b.interval) * reach;
+  };
+  // Thumbtacks: what the piles can deal per second if every tack lands (a dense crowd).
+  const tackCapacity = (def: (typeof TOWERS)[string], tiers: Tiers) => {
+    const s = computeStats(def, tiers);
+    return (s.damage * s.pierce * s.piles) / s.interval;
   };
 
   it('the first tier of a damage path beats buying a third copy', () => {
@@ -148,6 +155,27 @@ describe('tower balance rule', () => {
           tiers[p] = t;
           expect(crowdDps(def, tiers), `${def.id} path ${p} tier ${t}`).toBeGreaterThan(copiesDps(def, spent));
         }
+      }
+    }
+  });
+
+  it('Thumbtacks: tier 1 beats a third copy, tier 3 and 4 beat copies for the same Coffee', () => {
+    const def = TOWERS.thumbtacks;
+    const base = tackCapacity(def, [0, 0, 0]);
+    const copy = base / placeCost(def, 2);
+    for (const p of [0, 1]) {
+      const tiers: Tiers = [0, 0, 0];
+      tiers[p] = 1;
+      expect((tackCapacity(def, tiers) - base) / def.paths[p].tiers[0].cost, `path ${p} tier 1`).toBeGreaterThan(copy);
+      let spent = def.base.cost;
+      for (let t = 1; t <= 4; t++) {
+        spent += def.paths[p].tiers[t - 1].cost;
+        if (t < 3) continue;
+        tiers[p] = t;
+        let n = 0;
+        let cost = 0;
+        while (cost + placeCost(def, n) <= spent) cost += placeCost(def, n++);
+        expect(tackCapacity(def, tiers), `path ${p} tier ${t}`).toBeGreaterThan(n * base);
       }
     }
   });

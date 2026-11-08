@@ -85,3 +85,25 @@ describe('Level 3 difficulty', () => {
     expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Level 4 difficulty', () => {
+  const level = LEVELS[4];
+
+  it('Auto-Replies alone are not enough: The Impersonator walks right past them', () => {
+    const r = runBot(level, spamBot);
+    expect(r.won).toBe(false);
+  });
+
+  it('good play is flawless', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.focus).toBe(100);
+    expect(r.deepest).toBeLessThan(0.95);
+  });
+
+  it('going for Coffee first still wins', () => {
+    const r = runBot(level, greedyBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+});

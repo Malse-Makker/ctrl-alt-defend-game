@@ -39,6 +39,25 @@ for (const def of Object.values(TOWERS)) {
   const copies = [0, 1, 2, 3, 4, 5, 6, 7].map((n) => placeCost(def, n));
   console.log(`    copies cost   ${copies.join(', ')} (each ${(b.damage / b.interval).toFixed(1)} dps)`);
 }
+// Traps do not shoot: show what their piles can deal per second if every tack lands.
+for (const def of Object.values(TOWERS)) {
+  if (def.role !== 'trap') continue;
+  const cap = (t: Tiers) => {
+    const s = computeStats(def, t);
+    return (s.damage * s.pierce * s.piles) / s.interval;
+  };
+  console.log(`  ${def.name}: base ${cap([0, 0, 0]).toFixed(1)} tack damage per second for ${def.base.cost}`);
+  def.paths.forEach((p, pi) => {
+    let spent = def.base.cost;
+    const row = p.tiers.map((tier, ti) => {
+      spent += tier.cost;
+      const tiers: Tiers = [0, 0, 0];
+      tiers[pi] = ti + 1;
+      return `${ti + 1} ${cap(tiers).toFixed(1)} (${(cap(tiers) / spent).toFixed(2)}/C)`;
+    });
+    console.log(`    ${p.name.padEnd(17)} ${row.join(' | ')}`);
+  });
+}
 
 for (const level of Object.values(LEVELS)) {
   if (only !== null && level.id !== only) continue;
