@@ -3,6 +3,12 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.10.0] - 2026-11-08
+
+### Changed
+- The Coffee Corner is a real office kitchen now: a smaller, square floor with tiles, a fridge covered in notes, the sink and the microwave, the coffee counter, a standing table and the recycling bins nobody uses properly. The walkway is the anti-slip mat. Same waves, same Repair Guy.
+- Every floor has its own look: blue carpet in the Meeting Room, light vinyl in the Canteen.
+
 ## [0.9.1] - 2026-11-08
 
 ### Changed

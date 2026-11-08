@@ -60,6 +60,11 @@ export const MODEL_NAMES = [
   'shredder_p1_4',
   'shredder_p2_3',
   'shredder_p2_4',
+  'fridge',
+  'kitchen_counter',
+  'high_table',
+  'kitchen_table',
+  'recycle_bins',
 ] as const;
 
 export class Assets {

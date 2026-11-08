@@ -257,12 +257,13 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
       out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
       return r.tower;
     };
-    tryPlace('autoreply', 7, 5);
-    tryPlace('autoreply', 9, 4);
-    tryPlace('autoreply', 14, 4);
-    const sh = tryPlace('shredder', 7, 7);
-    const hp = tryPlace('headphones', 10, 3);
-    const art = tryPlace('artillery', 18, 5);
+    // The Coffee Corner kitchen (14 x 14).
+    tryPlace('autoreply', 5, 4);
+    tryPlace('autoreply', 9, 5);
+    tryPlace('autoreply', 8, 9);
+    const sh = tryPlace('shredder', 9, 7);
+    const hp = tryPlace('headphones', 11, 4);
+    const art = tryPlace('artillery', 12, 12);
     if (sh) for (let i = 0; i < 3; i++) g.upgrade(sh.id, 0);
     if (hp) for (let i = 0; i < 2; i++) g.upgrade(hp.id, 0);
     if (art) for (let i = 0; i < 3; i++) g.upgrade(art.id, 0);

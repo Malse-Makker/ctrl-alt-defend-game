@@ -47,6 +47,15 @@ export interface LunchHazard {
 
 export type HazardDef = ProjectorHazard | LunchHazard;
 
+/** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
+export interface LevelLook {
+  floorA: string;
+  floorB: string;
+  walkway: string;
+  edge: string;
+  wall?: string;
+}
+
 export interface LevelDef {
   id: number;
   name: string;
@@ -61,6 +70,8 @@ export interface LevelDef {
   startFocus: number;
   waves: readonly string[];
   hazard?: HazardDef;
+  /** Leave out for the grey office carpet. */
+  look?: LevelLook;
 }
 
 export function startCoffee(levelId: number): number {
@@ -127,31 +138,34 @@ const L2: LevelDef = {
   id: 2,
   name: 'Coffee Corner',
   block: 'junior',
-  intro: 'The queue for the good machine. Long straight stretches, and everyone is in a hurry.',
-  gimmick: 'Speed and crowd control on long straights. Headphones, Office Artillery and The Shredder arrive.',
-  size: { w: 21, h: 12 },
+  intro: 'The office kitchen. One good coffee machine, one queue, and everyone is in a hurry.',
+  gimmick: 'A small square kitchen with long straight stretches: speed and crowd control. Headphones, Office Artillery and The Shredder arrive.',
+  size: { w: 14, h: 14 },
   paths: [
     [
-      { x: -1.5, y: 6.5 },
-      { x: 8.5, y: 6.5 },
-      { x: 8.5, y: 2.5 },
-      { x: 15.5, y: 2.5 },
-      { x: 15.5, y: 10.5 },
-      { x: 20.0, y: 10.5 },
+      { x: -1.5, y: 11.5 },
+      { x: 10.5, y: 11.5 },
+      { x: 10.5, y: 6.5 },
+      { x: 3.5, y: 6.5 },
+      { x: 3.5, y: 2.5 },
+      { x: 13.0, y: 2.5 },
     ],
   ],
-  desk: { x: 20, y: 10 },
+  desk: { x: 13, y: 2 },
   decor: [
-    { model: 'coffee_bar', rect: { x: 3, y: 0, w: 3, h: 1 } },
-    { model: 'vending', rect: { x: 11, y: 0, w: 1, h: 1 } },
-    { model: 'vending', rect: { x: 12, y: 0, w: 1, h: 1 } },
-    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
-    { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
-    { model: 'cooler', rect: { x: 18, y: 0, w: 1, h: 1 } },
-    { model: 'desk_pair', rect: { x: 2, y: 9, w: 2, h: 2 } },
-    { model: 'desk_pair', rect: { x: 10, y: 8, w: 2, h: 2 } },
-    { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
+    { model: 'fridge', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'kitchen_counter', rect: { x: 1, y: 0, w: 4, h: 1 } },
+    { model: 'coffee_bar', rect: { x: 5, y: 0, w: 3, h: 1 } },
+    { model: 'vending', rect: { x: 9, y: 0, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 11, y: 0, w: 1, h: 1 } },
+    { model: 'high_table', rect: { x: 7, y: 3, w: 2, h: 2 } },
+    { model: 'kitchen_table', rect: { x: 5, y: 8, w: 2, h: 2 } },
+    { model: 'recycle_bins', rect: { x: 0, y: 4, w: 1, h: 1 }, turn: 1 },
+    { model: 'plant', rect: { x: 13, y: 13, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 0, y: 13, w: 1, h: 1 } },
   ],
+  // Kitchen tiles, with a dark anti-slip mat as the walkway.
+  look: { floorA: '#e7e2d6', floorB: '#d5cfc1', walkway: '#6f7c8a', edge: '#4f5a66', wall: '#eef0ee' },
   towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder'],
   startFocus: 100,
   // Godot v0.88 table, translated: Notification -> Intern, Question -> New Hire, Thread and
@@ -213,6 +227,8 @@ const L3: LevelDef = {
   ],
   towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'],
   startFocus: 100,
+  // Meeting room carpet: a deep blue.
+  look: { floorA: '#5f6f8c', floorB: '#58678a', walkway: '#d8c9ab', edge: '#b9a888' },
   hazard: { type: 'projector', first: 45, every: 40, window: 10, reward: 5, blocks: 'building' },
   // Godot v0.88 table (Thread -> Chaser, Question -> New Hire, User Story -> Requester), rebuilt
   // into a smooth curve with the same introductions. Tuned with tools/balance.ts.
@@ -279,6 +295,8 @@ const L4: LevelDef = {
   ],
   towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice'],
   startFocus: 100,
+  // Canteen vinyl, light and easy to mop.
+  look: { floorA: '#c9d3d6', floorB: '#bcc7cb', walkway: '#e0cfa9', edge: '#bba67c', wall: '#ece8de' },
   hazard: { type: 'lunch', first: 70, every: 70, window: 8, swarm: 'intern:12@0.15', haste: 1.3 },
   // No Godot table to translate (the old Canteen used colleagues that are gone); built on the
   // Meeting Room curve with The Impersonator from wave 4. Tuned with tools/balance.ts.

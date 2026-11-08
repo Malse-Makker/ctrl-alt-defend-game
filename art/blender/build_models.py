@@ -1192,6 +1192,106 @@ def b_shredder_p2_4():
     return root
 
 
+# ---------------------------------------------------------------- level 2: the office kitchen
+
+def b_fridge():
+    root = empty("fridge")
+    body = box("Body", (0.8, 0.7, 1.75), loc=(0, 0.02, 0), material=mat("#eceae4", rough=0.35), bevel=0.04)
+    split = box("Split", (0.81, 0.71, 0.012), loc=(0, 0.02, 1.15), material=mat("metal_light", metal=0.5, rough=0.3))
+    handles = [box(f"Handle{i}", (0.03, 0.04, h), loc=(-0.3, -0.35, z), material=mat("metal_light", metal=0.8, rough=0.25), bevel=0.008) for i, (z, h) in enumerate(((0.55, 0.45), (1.25, 0.3)))]
+    notes = [box(f"Note{i}", (0.12, 0.006, 0.12), loc=(x, -0.335, z), material=mat(c), rot_z=r) for i, (x, z, c, r) in enumerate(((0.1, 1.35, "yellow", 0.1), (0.2, 0.9, "pink", -0.1), (0.05, 0.7, "plastic_white", 0.05)))]
+    magnets = [ball(f"Magnet{i}", 0.015, loc=(x, -0.34, z + 0.1), material=mat(c), subdiv=1) for i, (x, z, c) in enumerate(((0.1, 1.35, "red"), (0.2, 0.9, "blue"), (0.05, 0.7, "teal")))]
+    ob = join("fridge_mesh", [body, split] + handles + notes + magnets)
+    parent(ob, root)
+    return root
+
+
+def b_kitchen_counter():
+    """Four tiles of counter: cupboards, a sink with a tap, a microwave and a kettle."""
+    root = empty("kitchen_counter")
+    cab = box("Cabinet", (3.8, 0.62, 0.86), loc=(0, 0.05, 0), material=mat("#7e9aa8", rough=0.6), bevel=0.02)
+    top = box("Top", (3.9, 0.7, 0.05), loc=(0, 0.04, 0.86), material=mat("#d8d2c4", rough=0.4), bevel=0.01)
+    parts = [cab, top]
+    for i in range(6):
+        x = -1.6 + i * 0.64
+        parts.append(box(f"Door{i}", (0.58, 0.01, 0.7), loc=(x, -0.265, 0.08), material=mat("#8eaab8", rough=0.6)))
+        parts.append(box(f"Knob{i}", (0.1, 0.02, 0.02), loc=(x, -0.275, 0.68), material=mat("metal_light", metal=0.8, rough=0.3)))
+    sink = box("Sink", (0.62, 0.42, 0.04), loc=(-0.6, 0.05, 0.875), material=mat("metal_light", metal=0.8, rough=0.2))
+    basin = box("Basin", (0.52, 0.32, 0.02), loc=(-0.6, 0.05, 0.9), material=mat("metal", metal=0.7, rough=0.3))
+    tap = cyl("Tap", 0.02, 0.28, loc=(-0.6, 0.27, 0.9), material=mat("metal_light", metal=0.9, rough=0.2), verts=8)
+    spout = box("Spout", (0.03, 0.18, 0.03), loc=(-0.6, 0.19, 1.15), material=mat("metal_light", metal=0.9, rough=0.2))
+    soap = cyl("Soap", 0.03, 0.12, loc=(-0.2, 0.25, 0.9), material=mat("teal", rough=0.3), verts=8)
+    mw = box("Microwave", (0.62, 0.42, 0.36), loc=(0.85, 0.1, 0.9), material=mat("#2f3238", rough=0.45), bevel=0.02)
+    mwdoor = box("MwDoor", (0.42, 0.01, 0.26), loc=(0.78, -0.115, 0.95), material=mat("window", rough=0.1, emit=0.15))
+    mwpanel = box("MwPanel", (0.12, 0.01, 0.26), loc=(1.07, -0.115, 0.95), material=mat("plastic_black"))
+    mwled = box("MwLed", (0.08, 0.012, 0.03), loc=(1.07, -0.12, 1.15), material=mat("plant", emit=2.0))
+    kettle = cyl("Kettle", 0.09, 0.2, loc=(1.6, 0.05, 0.9), material=mat("plastic_white", rough=0.3), verts=12, radius_top=0.07)
+    lid = cyl("KettleLid", 0.05, 0.03, loc=(1.6, 0.05, 1.1), material=mat("plastic_black"), verts=10)
+    mugs = [cyl(f"Mug{i}", 0.04, 0.09, loc=(0.0 + i * 0.12, -0.12, 0.9), material=mat(c), verts=10) for i, c in enumerate(("red", "yellow", "blue"))]
+    board = box("Board", (0.4, 0.26, 0.02), loc=(-1.45, 0.0, 0.9), material=mat("wood", rough=0.7))
+    ob = join("kitchen_counter_mesh", parts + [sink, basin, tap, spout, soap, mw, mwdoor, mwpanel, mwled, kettle, lid, board] + mugs)
+    parent(ob, root)
+    return root
+
+
+def b_high_table():
+    """A standing table with three stools: two by two tiles."""
+    root = empty("high_table")
+    top = cyl("Top", 0.5, 0.05, loc=(0, 0, 1.0), material=mat("wood", rough=0.5), verts=28)
+    leg = cyl("Leg", 0.05, 1.0, loc=(0, 0, 0), material=mat("metal", metal=0.6, rough=0.35), verts=10)
+    foot = cyl("Foot", 0.28, 0.03, loc=(0, 0, 0), material=mat("metal", metal=0.6, rough=0.35), verts=20)
+    parts = [top, leg, foot]
+    for i in range(3):
+        a = i * TAU / 3 + 0.4
+        x, y = math.cos(a) * 0.72, math.sin(a) * 0.72
+        parts.append(cyl(f"Seat{i}", 0.17, 0.05, loc=(x, y, 0.72), material=mat("orange", rough=0.6), verts=16))
+        parts.append(cyl(f"Pole{i}", 0.025, 0.72, loc=(x, y, 0), material=mat("metal", metal=0.6, rough=0.35), verts=8))
+        parts.append(cyl(f"Ring{i}", 0.13, 0.015, loc=(x, y, 0.3), material=mat("metal", metal=0.6, rough=0.35), verts=14))
+    cups = [cyl(f"Cup{i}", 0.04, 0.1, loc=(x, y, 1.05), material=mat("plastic_white"), verts=10) for i, (x, y) in enumerate(((0.15, 0.1), (-0.2, -0.05)))]
+    sleeves = [cyl(f"Sleeve{i}", 0.042, 0.04, loc=(x, y, 1.08), material=mat("cardboard"), verts=10) for i, (x, y) in enumerate(((0.15, 0.1), (-0.2, -0.05)))]
+    ob = join("high_table_mesh", parts + cups + sleeves)
+    parent(ob, root)
+    return root
+
+
+def b_kitchen_table():
+    """A small round table with two chairs and somebody's lunch."""
+    root = empty("kitchen_table")
+    top = cyl("Top", 0.42, 0.04, loc=(0, 0, 0.72), material=mat("plastic_white", rough=0.4), verts=24)
+    leg = cyl("Leg", 0.04, 0.72, loc=(0, 0, 0), material=mat("metal", metal=0.6, rough=0.35), verts=8)
+    foot = cyl("Foot", 0.22, 0.02, loc=(0, 0, 0), material=mat("metal", metal=0.6, rough=0.35), verts=16)
+    parts = [top, leg, foot]
+    for i, a in enumerate((0.3, 0.3 + math.pi)):
+        x, y = math.cos(a) * 0.6, math.sin(a) * 0.6
+        parts.append(box(f"Seat{i}", (0.4, 0.4, 0.05), loc=(x, y, 0.44), material=mat("teal", rough=0.6), bevel=0.02))
+        bx, by = math.cos(a) * 0.8, math.sin(a) * 0.8
+        back = box(f"Back{i}", (0.4, 0.05, 0.4), loc=(bx, by, 0.48), material=mat("teal", rough=0.6), bevel=0.02)
+        kit.tilt([back], rz=a + math.pi / 2, pivot=(bx, by, 0.48))
+        parts.append(back)
+        parts += [cyl(f"Post{i}{j}", 0.02, 0.44, loc=(x + dx, y + dy, 0), material=mat("metal"), verts=6) for j, (dx, dy) in enumerate(((0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15)))]
+    box_ = box("LunchBox", (0.22, 0.15, 0.08), loc=(0.1, 0.05, 0.76), material=mat("pink", rough=0.5), bevel=0.01)
+    apple = ball("Apple", 0.05, loc=(-0.15, -0.1, 0.81), material=mat("red", rough=0.4), subdiv=2)
+    ob = join("kitchen_table_mesh", parts + [box_, apple])
+    parent(ob, root)
+    return root
+
+
+def b_recycle_bins():
+    """Three bins for sorting, and a sign nobody reads."""
+    root = empty("recycle_bins")
+    parts = []
+    for i, (x, col) in enumerate(((-0.3, "blue"), (0.0, "yellow"), (0.3, "plant"))):
+        parts.append(box(f"Bin{i}", (0.27, 0.36, 0.55), loc=(x, 0.05, 0), material=mat(col, rough=0.5), bevel=0.02))
+        parts.append(box(f"Lid{i}", (0.29, 0.38, 0.04), loc=(x, 0.05, 0.55), material=mat(col, rough=0.5), bevel=0.01))
+        parts.append(box(f"Slot{i}", (0.16, 0.04, 0.01), loc=(x, -0.02, 0.59), material=mat("plastic_black")))
+        parts.append(box(f"Label{i}", (0.16, 0.01, 0.1), loc=(x, -0.135, 0.36), material=mat("plastic_white")))
+    sign = box("Sign", (0.6, 0.02, 0.25), loc=(0, 0.22, 0.75), material=mat("plastic_white", rough=0.5), bevel=0.01)
+    post = box("SignPost", (0.04, 0.03, 0.75), loc=(0, 0.24, 0), material=mat("metal"))
+    ob = join("recycle_bins_mesh", parts + [sign, post])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -1248,6 +1348,11 @@ BUILDERS = {
     "shredder_p1_4": b_shredder_p1_4,
     "shredder_p2_3": b_shredder_p2_3,
     "shredder_p2_4": b_shredder_p2_4,
+    "fridge": b_fridge,
+    "kitchen_counter": b_kitchen_counter,
+    "high_table": b_high_table,
+    "kitchen_table": b_kitchen_table,
+    "recycle_bins": b_recycle_bins,
 }
 
 

@@ -17,11 +17,11 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.9.1)
+## What is in it now (v0.10.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
-- **Level 2, Coffee Corner**: 22 waves and The Repair Guy (no Coffee while he is around). Opens
-  once you finish level 1.
+- **Level 2, Coffee Corner**: a small square office kitchen, 22 waves and The Repair Guy (no
+  Coffee while he is around). Opens once you finish level 1.
 - **Level 3, Meeting Room**: 21 waves, The Presenter (beams Chasers next to your desk) and the
   projector mini-game: right cable in the right port, right display setting, or no building.
 - **Level 4, Canteen**: 22 waves on a spiral round the tables, wet floor where you cannot build,

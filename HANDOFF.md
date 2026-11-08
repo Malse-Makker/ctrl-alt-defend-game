@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.9.0 (2026-11-08)
+## Stand: v0.10.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -12,7 +12,9 @@ multiplayer. v0.4.0: level 2. v0.5.0: level 3. v0.6.0: level 4. v0.6.1: settings
 levelnaam, ranges. v0.7.0: eerste eigen looks per pad (Shredder). v0.8.0: Headphones = stilzetten, Shredder =
 schade (besluit maker), Go home, blauwe schilden. v0.9.0: torenrechten in multiplayer (standaard
 ieder zijn eigen; `ownTowers`), verkoop betaalt ieder zijn eigen deel terug (`paidBy`), Offshore
-Account claimt al je potten. Zie CHANGELOG.md.
+Account claimt al je potten. v0.9.1: gerenderde projector (`art/blender/projector_ui.py`).
+v0.10.0: Coffee Corner opnieuw als vierkant keukentje (14x14, besluit maker: levels moeten
+eruitzien als hun naam); elk level kan een eigen `look` hebben (vloer, looppad, muur). Zie CHANGELOG.md.
 
 Looks per pad: `pathModels` in `towers.ts` (tier 3 en 4 per pad, modellen `<toren>_p<pad>_<tier>`).
 Klaar: Shredder. Nog te doen: Coffee Machine, Auto-Reply, Headphones, Office Artillery, Quick
@@ -114,6 +116,7 @@ portemonnees, eigenaar per toren, `gift()` en `buildAreas` al.
 | Modellen (2026-11-08) | elk pad krijgt op tier 3 en tier 4 een eigen model (zoals Bloons), toren voor toren over een paar releases |
 | Bureaustoel (2026-11-08) | nieuwe toren op level 5 naast Keyboard Smash; de speler kiest na het plaatsen de richting (vier pijlen). Rijdt in een rechte lijn, raakt collega's en verliest zelf HP per treffer; bij 0 HP of na x tegels terug naar het begin. Upgrades: o.a. bereik en HP |
 | Bijdragen (2026-11-08) | PR's van anderen (ook met AI) welkom volgens AGENTS.md en CONTRIBUTING.md; nieuwe PR's geven een melding in Mattermost (repo-secret `MATTERMOST_WEBHOOK_URL`) |
+| Levels (2026-11-08) | een level moet eruitzien als zijn naam: eigen vloer (`look`) en inrichting; Coffee Corner is een klein vierkant keukentje |
 | Oude repo (2026-11-08) | Malse-Makker/CTRL-ALT-DEFEND wordt gearchiveerd en privé; de ontwerpbijbel blijft lokaal |
 
 ## Werkwijze

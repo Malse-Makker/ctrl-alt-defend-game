@@ -28,9 +28,12 @@ export class World {
     g.add(slab);
 
     const tileGeo = new THREE.BoxGeometry(1, 0.1, 1);
-    const carpetA = new THREE.MeshStandardMaterial({ color: PAL.carpet, roughness: 0.95 });
-    const carpetB = new THREE.MeshStandardMaterial({ color: PAL.carpetDark, roughness: 0.95 });
-    const walkMat = new THREE.MeshStandardMaterial({ color: PAL.walkway, roughness: 0.8 });
+    // Every floor has its own look (kitchen tiles, meeting room carpet); the default is office grey.
+    const look = level.look;
+    const hard = look !== undefined && look.floorA !== PAL.carpet;
+    const carpetA = new THREE.MeshStandardMaterial({ color: look?.floorA ?? PAL.carpet, roughness: hard ? 0.55 : 0.95 });
+    const carpetB = new THREE.MeshStandardMaterial({ color: look?.floorB ?? PAL.carpetDark, roughness: hard ? 0.55 : 0.95 });
+    const walkMat = new THREE.MeshStandardMaterial({ color: look?.walkway ?? PAL.walkway, roughness: 0.8 });
     const cells: { x: number; y: number; kind: 0 | 1 | 2 }[] = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -53,7 +56,7 @@ export class World {
     this.addWalkwayEdges(level, game);
 
     // Back walls along x = 0 and y = 0, with a gap where each route comes in.
-    const wallMat = new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.9 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: level.look?.wall ?? PAL.wall, roughness: 0.9 });
     const trimMat = new THREE.MeshStandardMaterial({ color: PAL.wallTrim, roughness: 0.9 });
     const windowMat = new THREE.MeshStandardMaterial({ color: PAL.window, roughness: 0.2, emissive: new THREE.Color(PAL.window), emissiveIntensity: 0.25 });
     const doors = level.paths.map((p) => p[0]).filter((p) => p.x < 0).map((p) => p.y);
@@ -119,7 +122,7 @@ export class World {
   }
 
   private addWalkwayEdges(level: LevelDef, game: Game): void {
-    const mat = new THREE.MeshStandardMaterial({ color: PAL.walkwayEdge, roughness: 0.8 });
+    const mat = new THREE.MeshStandardMaterial({ color: level.look?.edge ?? PAL.walkwayEdge, roughness: 0.8 });
     const geoX = new THREE.BoxGeometry(1, 0.03, 0.06);
     const geoZ = new THREE.BoxGeometry(0.06, 0.03, 1);
     const ms: THREE.Matrix4[] = [];
