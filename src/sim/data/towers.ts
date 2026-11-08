@@ -190,6 +190,11 @@ export interface TowerDef {
   paths: readonly [PathDef, PathDef, PathDef];
   /** Model per stage: base, mid (a path at tier 2-3), top (a path at tier 4). */
   models: readonly [string, string, string];
+  /**
+   * Each path's own look at tier 3 and tier 4, like Bloons. Optional: a tower without them falls
+   * back to `models`. Only one path can pass tier 2 (the 4-2-0 rule), so the choice is clear.
+   */
+  pathModels?: readonly [readonly [string, string], readonly [string, string], readonly [string, string]];
   accent: string;
 }
 
@@ -585,9 +590,10 @@ export const TOWERS: Record<string, TowerDef> = {
   },
 };
 
-/** Model for the current upgrades: base, mid (any path at 2-3), top (any path at 4). */
+/** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
 export function modelFor(def: TowerDef, tiers: Tiers): string {
   const top = Math.max(...tiers);
+  if (top >= 3 && def.pathModels) return def.pathModels[tiers.indexOf(top)][top >= 4 ? 1 : 0];
   return def.models[top >= 4 ? 2 : top >= 2 ? 1 : 0];
 }
 
