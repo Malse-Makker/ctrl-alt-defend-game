@@ -104,28 +104,33 @@ describe('upgrade paths (Bloons rule: 4-2-0)', () => {
 });
 
 describe('tower balance rule', () => {
+  // Ramping towers (Quick Reply) are built for one big target: count them fully built up, with any
+  // extra targets unramped. Everything else is measured against a crowd of five.
+  const ramped = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : 1);
   const crowdDps = (def: (typeof TOWERS)[string], tiers: Tiers) => {
     const s = computeStats(def, tiers);
-    return (s.damage / s.interval) * Math.min(5, s.targets + s.splash + s.bounce);
+    const dps = s.damage / s.interval;
+    if (s.rampMax > 0) return dps * s.rampMax + dps * (s.targets - 1);
+    return dps * Math.min(5, s.targets + s.splash + s.bounce);
   };
   const copiesDps = (def: (typeof TOWERS)[string], coffee: number) => {
     const b = computeStats(def, [0, 0, 0]);
     let n = 0;
     let spent = 0;
     while (spent + placeCost(def, n) <= coffee) spent += placeCost(def, n++);
-    return n * (b.damage / b.interval);
+    return n * (b.damage / b.interval) * ramped(b);
   };
 
   it('the first tier of a damage path beats buying a third copy', () => {
     for (const def of Object.values(TOWERS)) {
       if (def.role !== 'damage') continue;
       const b = computeStats(def, [0, 0, 0]);
-      const copy = b.damage / b.interval / placeCost(def, 2);
+      const copy = ((b.damage / b.interval) * ramped(b)) / placeCost(def, 2);
       for (const p of [0, 1]) {
         const tiers: Tiers = [0, 0, 0];
         tiers[p] = 1;
         const s = computeStats(def, tiers);
-        const gain = (s.damage / s.interval - b.damage / b.interval) / def.paths[p].tiers[0].cost;
+        const gain = ((s.damage / s.interval) * ramped(s) - (b.damage / b.interval) * ramped(b)) / def.paths[p].tiers[0].cost;
         expect(gain, `${def.id} path ${p}`).toBeGreaterThan(copy);
       }
     }

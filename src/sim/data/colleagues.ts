@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy';
+  kind: 'headofcomms' | 'repairguy' | 'presenter';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -18,6 +18,10 @@ export interface BossDef {
   phase3Speed: number;
   /** No Coffee comes in at all while he is on the floor (The Repair Guy). */
   blocksIncome?: boolean;
+  /** Called-in colleagues appear this far along the route instead of next to him (0..1). */
+  addsAt?: number;
+  /** His shield fills up again at every phase change (The Presenter's loading screen). */
+  shieldRecharge?: boolean;
   intro: string;
 }
 
@@ -207,6 +211,36 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#2f3d5c',
     model: 'boardmember',
     armSwing: 0,
+  },
+  presenter: {
+    id: 'presenter',
+    name: 'The Presenter',
+    role: 'Boss',
+    quote: 'Can everyone see my screen?',
+    ability:
+      'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide straight at your desk: a handful of Chasers appear right next to it.',
+    counter: 'Keep something near your desk for the slides. Quick Reply builds up on him; break the loading screen again at 66% and 33%.',
+    hp: 560,
+    shield: 180,
+    speed: 1.05,
+    focus: 25,
+    rewardFlat: 30,
+    boss: {
+      kind: 'presenter',
+      addType: 'chaser',
+      addEvery: 7,
+      addCount: 4,
+      phaseBurst: 6,
+      phase3Speed: 1.5,
+      addsAt: 0.82,
+      shieldRecharge: true,
+      intro: 'His slides land right next to your desk, and his loading screen comes back every phase.',
+    },
+    stunResist: 0.4,
+    scale: 1,
+    accent: '#3e7cc9',
+    model: 'presenter',
+    armSwing: 0.3,
   },
   repairguy: {
     id: 'repairguy',

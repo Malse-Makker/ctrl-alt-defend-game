@@ -715,6 +715,114 @@ def b_vending():
     return root
 
 
+# ---------------------------------------------------------------- level 3
+
+def _phone(x, y, z, s=1.0, screen="screen"):
+    stand = box("PStand", (0.1 * s, 0.08 * s, 0.03 * s), loc=(x, y + 0.02 * s, z), material=mat("plastic_black"))
+    body = box("PBody", (0.1 * s, 0.02 * s, 0.19 * s), loc=(x, y, z + 0.03 * s), material=mat("plastic_black"), bevel=0.008)
+    scr = box("PScreen", (0.085 * s, 0.004 * s, 0.16 * s), loc=(x, y - 0.012 * s, z + 0.045 * s), material=mat(screen, emit=1.3))
+    kit.tilt([stand, body, scr], rx=0.25, pivot=(x, y, z))
+    return [stand, body, scr]
+
+
+def _bubble(x, y, z, w, color="plastic_white", emit=0.5):
+    b = box("Bubble", (w, 0.03, 0.09), loc=(x, y, z), material=mat(color, emit=emit), bevel=0.025)
+    tail = box("BTail", (0.03, 0.03, 0.04), loc=(x - w * 0.3, y, z - 0.03), material=mat(color, emit=emit), taper=0.2)
+    return [b, tail]
+
+
+def b_quickreply_1():
+    root = empty("quickreply_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _phone(0, 0.02, h)
+    parts += _bubble(0.12, 0.0, h + 0.32, 0.16)
+    ok = [box(f"OK{i}", (0.02, 0.032, 0.05), loc=(0.09 + i * 0.05, -0.002, h + 0.34), material=mat("blue")) for i in range(2)]
+    ob = join("quickreply_1_mesh", parts + ok)
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_2():
+    root = empty("quickreply_2")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _phone(-0.12, 0.06, h)
+    kb = box("MiniKb", (0.26, 0.1, 0.02), loc=(0.1, -0.12, h), material=mat("metal_light"), bevel=0.006)
+    parts.append(kb)
+    parts += _bubble(0.05, 0.02, h + 0.36, 0.18, "yellow", 0.4)
+    thumb = box("Thumb", (0.04, 0.034, 0.07), loc=(0.05, 0.0, h + 0.37), material=mat("orange"), bevel=0.01)
+    ob = join("quickreply_2_mesh", parts + [thumb])
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_3():
+    root = empty("quickreply_3")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_white")
+    stand = box("TStand", (0.16, 0.1, 0.03), loc=(0, 0.1, h), material=mat("metal"))
+    tab = box("Tablet", (0.36, 0.025, 0.26), loc=(0, 0.1, h + 0.04), material=mat("plastic_black"), bevel=0.01)
+    tscr = box("TScreen", (0.32, 0.004, 0.22), loc=(0, 0.086, h + 0.06), material=mat("screen_glow", emit=1.4))
+    kit.tilt([stand, tab, tscr], rx=0.2, pivot=(0, 0.1, h))
+    parts += [stand, tab, tscr]
+    parts.append(box("Kb", (0.36, 0.1, 0.02), loc=(0, -0.16, h), material=mat("plastic_black"), bevel=0.006))
+    for i, (col, w) in enumerate((("plastic_white", 0.16), ("yellow", 0.12), ("teal", 0.18))):
+        parts += _bubble(-0.18 + i * 0.16, 0.06, h + 0.42 + i * 0.1, w, col, 0.5)
+    ob = join("quickreply_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_presenter():
+    s = 1.45
+    root, body, hz = person("presenter", "blue", "charcoal", "skin_2", "hair_dark", style="side", h=s)
+    lanyard = box("Lanyard", (0.14 * s, 0.01 * s, 0.15 * s), loc=(0, -0.104 * s, 0.54 * s), material=mat("teal"), taper=0.5)
+    acc = join("Props", [lanyard])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -1.7
+    hp = _hand_world(arm, s)
+    clicker = box("Clicker", (0.04 * s, 0.09 * s, 0.03 * s), loc=(hp.x, hp.y - 0.03 * s, hp.z - 0.01 * s), material=mat("plastic_black"))
+    laser = cyl("Laser", 0.006 * s, 0.5 * s, loc=(hp.x, hp.y - 0.07 * s, hp.z), material=mat("red", emit=3.0), verts=6, rot=(math.pi / 2 - 0.1, 0, 0))
+    _hold(root, "R", s, [clicker, laser])
+    hl = _hand_world(_arm(root, "L"), s)
+    laptop = box("Laptop", (0.05 * s, 0.32 * s, 0.24 * s), loc=(hl.x + 0.03 * s, hl.y, hl.z - 0.04 * s), material=mat("metal_light", metal=0.6, rough=0.4), bevel=0.006)
+    _hold(root, "L", s, [laptop])
+    return root
+
+
+def b_projector_screen():
+    root = empty("projector_screen")
+    legs = [cyl(f"Leg{i}", 0.02, 1.5, loc=(x, 0.1, 0), material=mat("metal"), verts=6) for i, x in enumerate((-1.2, 1.2))]
+    bar = box("Bar", (2.6, 0.08, 0.08), loc=(0, 0.1, 1.5), material=mat("metal"))
+    cloth = box("Cloth", (2.4, 0.02, 1.0), loc=(0, 0.06, 0.45), material=mat("plastic_white", emit=0.2))
+    slide = box("Slide", (1.9, 0.024, 0.7), loc=(0, 0.04, 0.6), material=mat("blue", emit=0.6))
+    title = box("STitle", (1.2, 0.026, 0.1), loc=(-0.2, 0.035, 1.12), material=mat("plastic_white", emit=0.8))
+    bars = [box(f"Chart{i}", (0.18, 0.026, 0.12 + 0.12 * i), loc=(-0.6 + i * 0.3, 0.035, 0.68), material=mat(["yellow", "orange", "teal", "pink"][i], emit=0.8)) for i in range(4)]
+    ob = join("projector_screen_mesh", legs + [bar, cloth, slide, title] + bars)
+    parent(ob, root)
+    return root
+
+
+def b_meeting_table():
+    root = empty("meeting_table")
+    top = box("Top", (2.7, 1.5, 0.06), loc=(0, 0, 0.72), material=mat("wood_dark"), bevel=0.02)
+    base = box("Base", (2.2, 0.4, 0.72), loc=(0, 0, 0), material=mat("metal"))
+    parts = [top, base]
+    for i in range(3):
+        for side in (-1, 1):
+            x = -0.9 + i * 0.9
+            parts.append(box(f"Chair{i}{side}", (0.42, 0.42, 0.06), loc=(x, side * 1.0, 0.44), material=mat("charcoal"), bevel=0.02))
+            parts.append(box(f"Back{i}{side}", (0.42, 0.06, 0.42), loc=(x, side * 1.2, 0.48), material=mat("charcoal"), bevel=0.02))
+            parts.append(cyl(f"Post{i}{side}", 0.03, 0.44, loc=(x, side * 1.0, 0), material=mat("metal"), verts=6))
+            parts += _laptop(x, side * 0.45, 0.78, rot=0.0 if side > 0 else math.pi)[:2]
+    parts.append(cyl("Phone", 0.12, 0.04, loc=(0, 0, 0.78), material=mat("plastic_black"), verts=3))
+    ob = join("meeting_table_mesh", parts)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -748,6 +856,12 @@ BUILDERS = {
     "repairguy": b_repairguy,
     "coffee_bar": b_coffee_bar,
     "vending": b_vending,
+    "quickreply_1": b_quickreply_1,
+    "quickreply_2": b_quickreply_2,
+    "quickreply_3": b_quickreply_3,
+    "presenter": b_presenter,
+    "projector_screen": b_projector_screen,
+    "meeting_table": b_meeting_table,
 }
 
 

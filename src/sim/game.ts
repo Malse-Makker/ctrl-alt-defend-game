@@ -106,6 +106,9 @@ export interface Tower {
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
   rateBuff: number;
   pulseTimer: number;
+  /** Quick Reply: who it is building up on, and how far (1 = none yet). */
+  rampTarget: number;
+  ramp: number;
   invested: number;
   placedAtWave: number;
   stats: TowerStats;
@@ -143,6 +146,11 @@ export interface LiveTowerStats {
   killCoffee: number;
   waveIncome: number;
   silenceProof: boolean;
+  /** Quick Reply: build-up per hit, its ceiling (0 = no build-up), and what is kept on a switch. */
+  rampAdd: number;
+  rampMax: number;
+  rampKeep: number;
+  slowOnHit: Effect['slowOnHit'] | null;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -177,6 +185,8 @@ export type GameEvent =
   | { t: 'bossAdds'; enemyId: number; count: number }
   | { t: 'placed' | 'upgraded' | 'sold'; towerId: number; defId: string; player: number }
   | { t: 'gift'; from: number; to: number; amount: number }
+  | { t: 'hazard'; kind: string; on: boolean; until: number }
+  | { t: 'hazardSolved'; player: number; bonus: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -190,6 +200,7 @@ export interface RoundStats {
   coffeeFromSalary: number;
   coffeeFromMachines: number;
   coffeeFromBank: number;
+  coffeeFromBonus: number;
   coffeeFromSales: number;
   coffeeSpent: number;
   kills: Record<string, number>;
@@ -251,6 +262,7 @@ export interface Snapshot {
   towers: TowerSnap[];
   enemies: number[][];
   stats: RoundStats;
+  hz: { on: boolean; until: number; solved: number[] };
 }
 
 /** Fixed order of colleague types, so a snapshot can send a number instead of a name. */
@@ -309,6 +321,10 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     killCoffee: 0,
     waveIncome: 0,
     silenceProof: false,
+    rampAdd: b.ramp?.add ?? 0,
+    rampMax: b.ramp?.max ?? 0,
+    rampKeep: 0,
+    slowOnHit: null,
   };
   let dotAdd = 0;
   let dotMult = 1;
@@ -327,6 +343,10 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.bleed !== undefined) s.bleed = Math.max(s.bleed, e.bleed);
     if (e.unshared) s.unshared = true;
     if (e.silenceProof) s.silenceProof = true;
+    s.rampAdd += e.rampAdd ?? 0;
+    if (e.rampMax !== undefined) s.rampMax = Math.max(s.rampMax, e.rampMax);
+    if (e.rampKeep !== undefined) s.rampKeep = Math.max(s.rampKeep, e.rampKeep);
+    if (e.slowOnHit) s.slowOnHit = e.slowOnHit;
     if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
@@ -406,6 +426,7 @@ export class Game {
       coffeeFromSalary: 0,
       coffeeFromMachines: 0,
       coffeeFromBank: 0,
+      coffeeFromBonus: 0,
       coffeeFromSales: 0,
       coffeeSpent: 0,
       kills: {},
@@ -569,6 +590,7 @@ export class Game {
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
+    if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
     if (def.role !== 'economy' && !def.base.global) {
       const reach = def.base.range - 0.2;
@@ -617,6 +639,8 @@ export class Game {
       silenced: false,
       rateBuff: 1,
       pulseTimer: 0,
+      rampTarget: 0,
+      ramp: 1,
       invested: check.cost,
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -780,6 +804,7 @@ export class Game {
         e.slowTime > 0 || e.aura < 1 ? 1 : 0,
       ]),
       stats: this.stats,
+      hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved] },
     };
   }
 
@@ -794,6 +819,9 @@ export class Game {
     this.waveIndex = s.waveIndex;
     this.nextWaveTimer = s.nextWaveTimer;
     this.stats = s.stats;
+    this.hazardOn = s.hz.on;
+    this.hazardUntil = s.hz.until;
+    this.hazardSolved = [...s.hz.solved];
     const old = new Map(this.towers.map((t) => [t.id, t]));
     this.towers = s.towers.map((ts) => {
       const def = TOWERS[ts.def];
@@ -815,6 +843,8 @@ export class Game {
         silenced: false,
         rateBuff: 1,
         pulseTimer: 0,
+        rampTarget: 0,
+        ramp: 1,
         invested: 0,
         placedAtWave: s.waveIndex,
         stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
@@ -869,11 +899,58 @@ export class Game {
     });
   }
 
+  // ------------------------------------------------------------------ storingen (mini-games)
+
+  hazardOn = false;
+  hazardUntil = 0;
+  hazardSolved: number[] = [];
+  private hazardNext = Infinity;
+
+  /** Is the mini-game open for this player (and so blocking them)? */
+  hazardBlocks(player: number): boolean {
+    return this.hazardOn && this.level.hazard?.blocks === 'building' && !this.hazardSolved.includes(player);
+  }
+
+  /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
+  solveHazard(player: number): Check {
+    const hz = this.level.hazard;
+    if (!hz || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
+    if (this.hazardSolved.includes(player)) return { ok: false, reason: 'You already did your part.' };
+    this.hazardSolved.push(player);
+    const bonus = hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time));
+    const paid = this.earnFor(player, bonus);
+    this.stats.coffeeFromBonus += paid;
+    this.events.push({ t: 'hazardSolved', player, bonus: paid });
+    if (this.hazardSolved.length >= this.players) this.endHazard();
+    return { ok: true, cost: -paid };
+  }
+
+  private endHazard(): void {
+    this.hazardOn = false;
+    this.hazardNext = this.time + (this.level.hazard?.every ?? Infinity);
+    this.events.push({ t: 'hazard', kind: this.level.hazard?.type ?? '', on: false, until: this.time });
+  }
+
+  private updateHazard(): void {
+    const hz = this.level.hazard;
+    if (!hz) return;
+    if (this.hazardNext === Infinity && !this.hazardOn) this.hazardNext = hz.first;
+    if (!this.hazardOn && this.time >= this.hazardNext) {
+      this.hazardOn = true;
+      this.hazardUntil = this.time + hz.window;
+      this.hazardSolved = [];
+      this.events.push({ t: 'hazard', kind: hz.type, on: true, until: this.hazardUntil });
+    } else if (this.hazardOn && this.time >= this.hazardUntil) {
+      this.endHazard();
+    }
+  }
+
   // ------------------------------------------------------------------ the loop
 
   step(dt = TICK): void {
     if (this.phase !== 'running') return;
     this.time += dt;
+    this.updateHazard();
     this.spawnDue();
     this.updateBosses(dt);
     this.updateAuras();
@@ -1117,8 +1194,11 @@ export class Game {
   }
 
   private callIn(boss: Enemy, type: string, count: number): void {
+    const at = boss.def.boss?.addsAt;
+    // The Presenter beams his slides at your desk; everyone else calls people in next to him.
+    const from = at !== undefined ? this.paths[boss.pathIndex].length * at : boss.dist;
     for (let i = 0; i < count; i++) {
-      this.spawn(type, boss.pathIndex, boss.dist - 0.35 * (i + 1) - this.rng.range(0, 0.15), true);
+      this.spawn(type, boss.pathIndex, from - 0.35 * (i + 1) - this.rng.range(0, 0.15), true);
     }
   }
 
@@ -1168,7 +1248,19 @@ export class Game {
         t.cooldown = 0;
         continue;
       }
-      for (const e of targets) this.fire(t, e, s);
+      if (s.rampMax > 0) {
+        // Quick Reply: the build-up belongs to the first target; switching costs most of it.
+        const first = targets[0];
+        if (t.rampTarget !== first.id) {
+          t.ramp = 1 + (t.ramp - 1) * s.rampKeep;
+          t.rampTarget = first.id;
+        }
+        this.fire(t, first, s, t.ramp);
+        t.ramp = Math.min(s.rampMax, t.ramp + s.rampAdd);
+        for (const e of targets.slice(1)) this.fire(t, e, s);
+      } else {
+        for (const e of targets) this.fire(t, e, s);
+      }
       t.stats.shots++;
       const interval = s.interval * t.rateBuff;
       t.cooldown += interval;
@@ -1318,11 +1410,11 @@ export class Game {
   }
 
   /** One reply: hit the target, then the splash next to it, then the bounces. */
-  private fire(t: Tower, target: Enemy, s: LiveTowerStats): void {
+  private fire(t: Tower, target: Enemy, s: LiveTowerStats, mult = 1): void {
     // Office Artillery fires across the whole floor: its staples fly faster.
     const travel = dist(t, target) / (s.global ? SHOT_SPEED * 2.5 : SHOT_SPEED);
     const hit = new Set<Enemy>();
-    this.hitOne(t, target, s, t.x, t.y, travel, 'reply', hit);
+    this.hitOne(t, target, s, t.x, t.y, travel, 'reply', hit, mult);
     let from: Enemy = target;
     let delay = travel;
     if (s.splash > 0) {
@@ -1352,13 +1444,14 @@ export class Game {
     }
   }
 
-  private hitOne(t: Tower, e: Enemy, s: LiveTowerStats, fx: number, fy: number, travel: number, kind: 'reply' | 'hop', hit: Set<Enemy>): void {
+  private hitOne(t: Tower, e: Enemy, s: LiveTowerStats, fx: number, fy: number, travel: number, kind: 'reply' | 'hop', hit: Set<Enemy>, mult = 1): void {
     hit.add(e);
-    const amount = s.damage * (e.def.boss ? s.bossMult : 1);
+    const amount = s.damage * mult * (e.def.boss ? s.bossMult : 1);
     const { dealt, result } = this.damage(e, amount, t.def.damageClass);
     t.stats.damage += dealt;
     const killed = !e.alive;
     if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
+    if (!killed && result === 'hit' && s.slowOnHit) this.slowEnemy(e, s.slowOnHit.mult, s.slowOnHit.time);
     this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx, fy, tx: e.x, ty: e.y, travel, damage: dealt, result, killed, kind });
     if (killed) {
       t.stats.kills++;
@@ -1397,6 +1490,7 @@ export class Game {
     const want: 1 | 2 | 3 = ratio <= 0.33 ? 3 : ratio <= 0.66 ? 2 : 1;
     while (e.phase < want && e.hp > 1e-9) {
       e.phase = (e.phase + 1) as 2 | 3;
+      if (b.shieldRecharge) e.shield = e.maxShield;
       this.callIn(e, b.addType, b.phaseBurst);
       this.events.push({ t: 'bossPhase', enemyId: e.id, phase: e.phase as 2 | 3, called: b.phaseBurst });
     }

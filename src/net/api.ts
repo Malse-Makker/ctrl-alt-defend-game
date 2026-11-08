@@ -20,7 +20,7 @@ export interface RoundSummary {
   simSeconds: number;
   realSeconds: number;
   score: number;
-  coffee: { kills: number; bank: number; salary: number; machines: number; sales: number; spent: number; end: number };
+  coffee: { kills: number; bank: number; bonus: number; salary: number; machines: number; sales: number; spent: number; end: number };
   kills: Record<string, number>;
   leaks: Record<string, number>;
   leakFocus: Record<string, number>;
@@ -56,6 +56,7 @@ export function summarize(game: Game, player: string, realSeconds: number, speed
     coffee: {
       kills: r2(s.coffeeFromKills),
       bank: s.coffeeFromBank,
+      bonus: s.coffeeFromBonus,
       salary: s.coffeeFromSalary,
       machines: s.coffeeFromMachines,
       sales: s.coffeeFromSales,

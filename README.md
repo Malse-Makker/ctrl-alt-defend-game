@@ -17,14 +17,16 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.4.0)
+## Wat er nu in zit (v0.5.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: 22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open
   als je level 1 haalt.
+- **Level 3, Meeting Room**: 21 golven, The Presenter (beamt Chasers naast je bureau) en de
+  projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
 - **Torens**: Coffee Machine, Auto-Reply, Headphones (vertraagt en stunt een hele straal),
-  Office Artillery (raakt de hele verdieping, breekt schilden) en The Shredder (zone die vertraagt,
-  onthult en schade verdeelt).
+  Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die vertraagt,
+  onthult en schade verdeelt) en Quick Reply (bouwt schade op tegen hetzelfde doelwit).
 - **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
   (archiefdoos als schild, de Shredder mag er niet aan) en Board Member (immuun voor in persoon).
 - **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
@@ -32,9 +34,8 @@ komen daarvandaan; de ontwerpbijbel staat in `07_REMAKE_PROMPT.md` van die repo.
   doet, tier 4 is het paradepaardje.
 - **The Expense Claim** (Coffee Machine, pad 2): Coffee gaat in een pot met rente; jij kiest wanneer
   je claimt. Te vroeg is zonde, te laat ook: een volle pot groeit niet meer.
-- **Collega's**: The Intern, The New Hire, The Requester (splitst in twee Chasers) en The Chaser.
-- **Boss**: The Head of Comms. Zijn Interns lopen voor hem uit en vangen je schoten op; zet een
-  paar torens op Most HP.
+- **Bosses**: The Head of Comms (zijn Interns vangen je schoten op), The Repair Guy (blokkeert alle
+  inkomsten) en The Presenter (laadscherm dat bij elke fase terugkomt, Chasers naast je bureau).
 - **Targeting** per toren (First, Last, Closest, Farthest, Most HP, Least HP).
 - **Snelheden** 1x, 2x, 4x, 8x, pauze, en golven vroeg oproepen voor punten.
 - **Zichtbare feedback** op elke treffer: vliegende mails, schadegetallen, BLOCKED/IMMUNE.

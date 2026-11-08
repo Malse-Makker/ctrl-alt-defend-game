@@ -64,3 +64,24 @@ describe('Level 2 difficulty', () => {
     expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Level 3 difficulty', () => {
+  const level = LEVELS[3];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  it('good play is flawless, with a safety margin', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.focus).toBe(100);
+    expect(r.deepest).toBeLessThan(0.8);
+  });
+
+  it('going for Coffee first still wins', () => {
+    const r = runBot(level, greedyBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+});

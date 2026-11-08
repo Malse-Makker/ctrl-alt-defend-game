@@ -37,6 +37,12 @@ export const MODEL_NAMES = [
   'repairguy',
   'coffee_bar',
   'vending',
+  'quickreply_1',
+  'quickreply_2',
+  'quickreply_3',
+  'presenter',
+  'projector_screen',
+  'meeting_table',
 ] as const;
 
 export class Assets {

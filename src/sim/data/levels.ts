@@ -18,6 +18,20 @@ export interface Decor {
   turn?: number;
 }
 
+/** A storing: a mini-game that pops up during the level. The game keeps running behind it. */
+export interface HazardDef {
+  type: 'projector';
+  /** Seconds of play before the first one, and between the end of one and the next. */
+  first: number;
+  every: number;
+  /** It closes by itself after this long (auto-skip, so nobody gets stuck). */
+  window: number;
+  /** Coffee for solving it, plus one per second still left on the clock. */
+  reward: number;
+  /** What it stops while it is open for you. */
+  blocks: 'building';
+}
+
 export interface LevelDef {
   id: number;
   name: string;
@@ -31,6 +45,7 @@ export interface LevelDef {
   towers: readonly string[];
   startFocus: number;
   waves: readonly string[];
+  hazard?: HazardDef;
 }
 
 export function startCoffee(levelId: number): number {
@@ -153,7 +168,65 @@ const L2: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2 };
+const L3: LevelDef = {
+  id: 3,
+  name: 'Meeting Room',
+  block: 'junior',
+  intro: 'A meeting that could have been an email, and everyone is invited. They come in waves.',
+  gimmick: 'A comb: swarms against area damage. Quick Reply arrives, and someone has to connect the projector.',
+  size: { w: 21, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 10.5 },
+      { x: 4.5, y: 10.5 },
+      { x: 4.5, y: 3.5 },
+      { x: 10.5, y: 3.5 },
+      { x: 10.5, y: 10.5 },
+      { x: 16.5, y: 10.5 },
+      { x: 16.5, y: 3.5 },
+      { x: 20.0, y: 3.5 },
+    ],
+  ],
+  desk: { x: 20, y: 3 },
+  decor: [
+    { model: 'projector_screen', rect: { x: 5, y: 0, w: 3, h: 1 } },
+    { model: 'meeting_table', rect: { x: 12, y: 0, w: 3, h: 2 } },
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 20, y: 11, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 18, y: 0, w: 1, h: 1 } },
+    { model: 'printer', rect: { x: 0, y: 6, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'],
+  startFocus: 100,
+  hazard: { type: 'projector', first: 45, every: 40, window: 10, reward: 5, blocks: 'building' },
+  // Godot v0.88 table (Thread -> Chaser, Question -> New Hire, User Story -> Requester), rebuilt
+  // into a smooth curve with the same introductions. Tuned with tools/balance.ts.
+  waves: [
+    'intern:10@0.70 + newhire:2@1.20',
+    'intern:13@0.65 + newhire:3@1.10',
+    'chaser:12@0.22 + intern:9@0.60 + newhire:2@1.00',
+    'intern:8@0.60 + newhire:6@1.00',
+    'oldguard:1@2.00 + intern:6@0.65 + newhire:1@1.00',
+    'chaser:16@0.18 + intern:8@0.60 + newhire:4@1.00',
+    'intern:10@0.55 + newhire:4@1.00 + requester:2@1.50 + chaser:2@0.20',
+    'oldguard:1@2.00 + chaser:20@0.14 + newhire:1@1.00',
+    'chaser:30@0.12 + newhire:6@0.90',
+    'intern:13@0.50 + newhire:4@0.95 + oldguard:1@2.00',
+    'chaser:34@0.11 + requester:4@1.40',
+    'oldguard:2@1.80 + intern:14@0.50 + chaser:2@0.20',
+    'chaser:30@0.11 + newhire:7@0.90 + requester:2@1.40 + intern:2@0.50',
+    'intern:16@0.45 + oldguard:2@1.70 + newhire:1@0.90 + chaser:6@0.15',
+    'chaser:40@0.10 + newhire:8@0.85 + intern:3@0.50 + requester:2@1.30',
+    'oldguard:2@1.60 + requester:4@1.20 + intern:14@0.45',
+    'chaser:36@0.10 + intern:18@0.42 + newhire:8@0.80 + requester:2@1.20',
+    'oldguard:3@1.50 + chaser:18@0.10 + requester:3@1.20',
+    'intern:20@0.40 + newhire:10@0.75 + oldguard:2@1.50 + chaser:10@0.12',
+    'chaser:44@0.09 + oldguard:3@1.40 + requester:4@1.10',
+    'presenter:1@2.00 + chaser:12@0.14',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

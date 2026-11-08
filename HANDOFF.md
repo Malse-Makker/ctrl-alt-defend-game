@@ -3,15 +3,31 @@
 Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2).
 
-## Stand: v0.4.0 (2026-11-08)
+## Stand: v0.5.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
-multiplayer. Zie CHANGELOG.md.
+multiplayer. v0.4.0: level 2. v0.5.0: level 3. Zie CHANGELOG.md.
 
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
-(level 2 klaar in v0.4.0; volgende: level 3 Meeting Room met Quick Reply, The Presenter en de
-projector-mini-game).**
+(level 2 en 3 klaar; volgende: level 4 Canteen met Thumbtacks, Self-Service, The Impersonator,
+The Cleaner, de lunchpauze-zwerm en natte-vloer-vakken).**
+
+### Level 3 (v0.5.0): ontwerpkeuzes die ik maakte
+- Quick Reply: nieuw `ramp`-mechaniek. Elke treffer op hetzelfde doelwit +6% tot x2 (paden tillen
+  dat op tot x5, `rampKeep` houdt een deel vast bij wisselen). Alleen het eerste doelwit bouwt op;
+  extra doelwitten (Reply in Thread) krijgen basisschade. De economie-tests rekenen met de
+  opbouw mee (een kale Quick Reply is tegen een zwerm bewust slecht).
+- The Presenter roept zijn Chasers niet naast zich op maar op 82% van de route (`addsAt`), en zijn
+  schild laadt bij elke fase opnieuw (`shieldRecharge`). Verste-collega-meting telt alleen echte
+  collega's, geen opgeroepen hulpjes (anders meet je altijd ~82%).
+- Hazards zijn generiek in de simulatie (`level.hazard`, `hazardOn/Until/Solved`, opdracht
+  `solve`), zodat Boardroom III en latere mini-games hetzelfde pad gebruiken. Projector: eerst na
+  45 s, daarna elke 40 s, 10 s venster, beloning 5 + resterende seconden. Blokkeert alleen bouwen,
+  niet upgraden of verkopen. Online lost iedereen zijn eigen projector op; hij gaat uit als
+  iedereen klaar is of de tijd op is. De UI volgt de state (`hazardBlocks(me)`), niet de events,
+  zodat hij ook na een reconnect klopt.
+- De bots lossen de projector nooit op: de balansmeting is dus het slechtste geval.
 
 ### Level 2 (v0.4.0): ontwerpkeuzes die ik maakte
 - Nieuwe torensoorten in de simulatie: `pulse` (Headphones: elke paar seconden iedereen in de straal)
@@ -90,6 +106,10 @@ Level 1, totaal HP-equivalent 4234, golven stijgen vloeiend 10-20% per golf (gee
 
 Level 2: idle verliest op golf 7, alleen Auto-Replies (beginner, spam) verliest (Old Guard), goed
 spelen foutloos (verste 38%), eerst koffie wint met 81 Focus en de meeste Coffee (783).
+
+Level 3 (totaal 4934 HP-eq): idle verliest op golf 8, alleen Auto-Replies verliest op golf 20,
+goed spelen foutloos (verste 76%, de Presenter zelf), eerst koffie wint met 83 Focus. Allemaal
+zonder ooit de projector te repareren.
 
 Prijsregels in `tests/economy.test.ts`: tier 1 van een schadepad is beter dan een derde kopie, tier 3
 en 4 zijn tegen een groep beter dan hetzelfde geld in kopieen, elke brouw-upgrade verdient zich binnen

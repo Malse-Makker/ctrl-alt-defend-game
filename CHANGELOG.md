@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.5.0] - 2026-11-08
+
+### New
+- Level 3, Meeting Room: 21 waves along a walkway that zigzags around the meeting table. Opens once you finish level 2.
+- Quick Reply: a cheap, fast tower. Every reply on the same colleague hits harder than the last, up to double. KEEP TYPING builds up further and keeps half of it when the target changes, SHORTCUTS replies faster and to two colleagues at once, EMOJI reaches further, sees hidden colleagues, hits bosses harder and finally slows whoever it hits.
+- The projector breaks down now and then. Plug both cables into the right port, pick the right display setting, and you get Coffee for every second you had left. Until you do, you cannot build. Ignore it and it sorts itself out after 10 seconds. Online everyone fixes their own.
+- Boss: The Presenter. Every few seconds he beams a slide straight at your desk: a handful of Chasers appear right next to it. His loading screen fills up again at every phase.
+
+### Changed
+- Office Artillery shots fly faster, so they land where the colleague still is.
+
 ## [0.4.0] - 2026-11-08
 
 ### New

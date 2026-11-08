@@ -14,13 +14,13 @@ Elke fase eindigt live op game.makkers.net, met tests, balansmeting en een UI-co
 
 ## Tussendoor (KLAAR): upgrades zoals Bloons (v0.2) en multiplayer (v0.3)
 
-## Fase 2: het junior-blok (v0.4 en verder)
+## Fase 2: het junior-blok (v0.4 tot v0.7)
 
 Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 
 1. **Level 2 Coffee Corner** (KLAAR, v0.4.0): Headphones, Office Artillery, The Shredder; The
    Chatterbox, The Old Guard, The Board Member en The Repair Guy.
-2. **Level 3 Meeting Room**: Quick Reply, The Presenter, de projector-mini-game.
+2. **Level 3 Meeting Room** (KLAAR, v0.5.0): Quick Reply, The Presenter, de projector-mini-game.
 3. **Level 4 Canteen**: Thumbtacks, Self-Service, The Impersonator (onzichtbaar), The Cleaner,
    lunchpauze-zwerm, natte-vloer-vakken.
 4. **Level 5 Boardroom**: Keyboard Smash, Your Line Manager (drie fases).

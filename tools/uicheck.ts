@@ -302,6 +302,120 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+/** Level 3: the projector mini-game (both ways of plugging in), then The Presenter. */
+async function level3Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 3)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l3: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'Meeting Room');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    hazardUntil: number;
+    hazardSolved: number[];
+    level: { size: { w: number; h: number } };
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    phase: string;
+    waveIndex: number;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 4000;
+    const want = ['quickreply', 'quickreply', 'autoreply', 'shredder', 'headphones', 'artillery'];
+    let n = 0;
+    for (let y = 2; y < g.level.size.h && n < want.length; y += 2)
+      for (let x = 1; x < g.level.size.w && n < want.length; x += 3) {
+        const r = g.place(want[n], x, y);
+        if (r.ok && r.tower) {
+          for (let i = 0; i < 3; i++) g.upgrade(r.tower.id, 0);
+          n++;
+        }
+      }
+    return `${n} towers`;
+  });
+  console.log(`  placed: ${placed}`);
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'hazard' && g.hazardOn) {
+          g.hazardUntil = g.time + 600;
+          break;
+        }
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      g.events.push(...keep.slice(-3));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)}`;
+    }, stop);
+  console.log(`  ${await ff('hazard')}`);
+  await page.waitForSelector('.qte', { timeout: 5000 });
+  total += await check(page, 'l3-projector', size);
+  const refused = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    return g.place('autoreply', 1, 1).reason ?? 'placed anyway';
+  });
+  console.log(`  building while it is on: ${refused}`);
+  // VGA by clicking, power by dragging.
+  await page.click('.qte-plug.plug-vga');
+  await page.click('.qte-port.port-vga');
+  total += await check(page, 'l3-one-cable', size);
+  const centre = async (sel: string) => {
+    const b = (await (await page.$(sel))!.boundingBox())!;
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  };
+  const from = await centre('.qte-plug.plug-pwr');
+  const to = await centre('.qte-port.port-pwr');
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / 8, from.y + ((to.y - from.y) * i) / 8);
+  await page.mouse.up();
+  await page.waitForSelector('.xp-window', { timeout: 3000 });
+  total += await check(page, 'l3-settings', size);
+  await clickText(page, 'Extend these displays');
+  const before = await page.evaluate(() => (window as unknown as { cad: { session: { game: G } } }).cad.session.game.coffee);
+  await clickText(page, 'Duplicate desktop');
+  await page.waitForFunction(() => !document.querySelector('.qte'), { timeout: 3000 });
+  const after = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    return { coffee: g.coffee, solved: g.hazardSolved, on: g.hazardOn };
+  });
+  console.log(`  solved: ${JSON.stringify(after.solved)} on=${after.on} coffee +${Math.round(after.coffee - before)}`);
+  if (!after.solved.includes(0) || after.on) errors.push('l3: projector was not solved');
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l3-fixed', size);
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    s.selected = s.game.towers.find((t) => t.defId === 'quickreply')?.id ?? null;
+  });
+  total += await check(page, 'l3-panel-qr', size);
+  await page.keyboard.press('Escape');
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l3-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -333,6 +447,10 @@ async function run(): Promise<void> {
   try {
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
+      throw new Done();
+    }
+    if (args.includes('--l3-only')) {
+      total += await level3Flow(browser, errors);
       throw new Done();
     }
     if (args.includes('--mp-only')) {
@@ -451,6 +569,7 @@ async function run(): Promise<void> {
     await page.close();
 
     total += await level2Flow(browser, errors);
+    total += await level3Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

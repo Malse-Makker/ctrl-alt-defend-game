@@ -21,7 +21,7 @@ export interface BotResult {
   build: string;
   /** Coffee in hand at the start of every wave. */
   coffeeByWave: number[];
-  /** Furthest any colleague got along the route, 0..1 (1 = reached your desk). The safety margin. */
+  /** Furthest any colleague who came in through the door got along the route, 0..1 (1 = reached your desk). */
   deepest: number;
 }
 
@@ -141,7 +141,7 @@ export const beginnerBot: Bot = {
 // ------------------------------------------------------------------ scripted build orders
 
 type Step =
-  | { place: string; spot: 'cover' | 'far' | 'zone'; from?: number }
+  | { place: string; spot: 'cover' | 'far' | 'zone' | 'desk'; from?: number }
   | { up: string; path: number; all?: boolean };
 
 /** A good player's build order for a level, step by step; each step waits until it is affordable. */
@@ -182,7 +182,47 @@ function placeable(g: Game, def: string, tx: number, ty: number): boolean {
   return c.ok || c.reason === 'Not enough Coffee.';
 }
 
-function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone'): Spot | undefined {
+SCRIPTS[3] = [
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'shredder', spot: 'zone' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'artillery', spot: 'far' },
+  { up: 'shredder', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { place: 'shredder', spot: 'zone' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'shredder', path: 0, all: true },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'autoreply', spot: 'desk' },
+  { place: 'quickreply', spot: 'cover' },
+  { up: 'quickreply', path: 0 },
+  { up: 'quickreply', path: 2 },
+  { up: 'quickreply', path: 0 },
+  { up: 'artillery', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { place: 'quickreply', spot: 'cover' },
+  { up: 'quickreply', path: 0, all: true },
+  { up: 'quickreply', path: 2, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
+function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'): Spot | undefined {
+  if (kind === 'desk') {
+    // The best spot that still covers the last stretch before your desk.
+    const path = g.paths[0];
+    const end = path.points[path.points.length - 1];
+    const r = TOWERS[def].base.range;
+    return rankSpots(g, Math.min(r, 4))
+      .filter((p) => Math.hypot(p.tx + 0.5 - end.x, p.ty + 0.5 - end.y) <= r * 0.9)
+      .find((p) => placeable(g, def, p.tx, p.ty));
+  }
   if (kind === 'far') {
     for (let ty = g.level.size.h - 1; ty >= 0; ty--) {
       for (let tx = 0; tx < g.level.size.w; tx++) {
@@ -362,7 +402,8 @@ export function runBot(level: LevelDef, bot: Bot, seed = 1): BotResult {
   let acc = 0;
   let deepest = 0;
   g.runFor(60 * 30, (gg) => {
-    for (const e of gg.enemies) deepest = Math.max(deepest, e.dist / gg.paths[e.pathIndex].length);
+    // Only colleagues who came in through the door: The Presenter beams his own right next to the desk.
+    for (const e of gg.enemies) if (!e.isAdd) deepest = Math.max(deepest, e.dist / gg.paths[e.pathIndex].length);
     if (gg.waveIndex !== lastWave) {
       lastWave = gg.waveIndex;
       coffeeByWave.push(Math.floor(gg.coffee));

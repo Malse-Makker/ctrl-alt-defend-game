@@ -82,6 +82,15 @@ export interface Effect {
   buffRate?: number;
   /** The Chatterbox cannot silence this tower. */
   silenceProof?: boolean;
+  // Ramping towers (Quick Reply)
+  /** Extra damage per hit on the same target (0.06 = +6% each time). */
+  rampAdd?: number;
+  /** Highest damage multiplier the ramp reaches (highest counts). */
+  rampMax?: number;
+  /** Share of the ramp kept when switching to a new target (highest counts). */
+  rampKeep?: number;
+  /** Each hit slows the target a little for a moment. */
+  slowOnHit?: { mult: number; time: number };
   // Zone towers (The Shredder)
   dotAdd?: number;
   dotMult?: number;
@@ -117,6 +126,8 @@ export interface PathDef {
 export interface TowerBase {
   cost: number;
   range: number;
+  /** Quick Reply: damage builds up per hit on the same target, to this multiplier. */
+  ramp?: { add: number; max: number };
   interval?: number;
   damage?: number;
   coffeeAmount?: number;
@@ -395,6 +406,53 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  quickreply: {
+    id: 'quickreply',
+    name: 'Quick Reply',
+    flavour: 'Two words. Efficient.',
+    verb: 'Every reply on the SAME colleague hits harder than the last, up to double. Switch target and it starts over. Hopeless against a swarm, relentless against one big problem.',
+    role: 'damage',
+    damageClass: 'written',
+    unlockLevel: 3,
+    accent: '#8fa0b4',
+    models: ['quickreply_1', 'quickreply_2', 'quickreply_3'],
+    base: { cost: 16, range: 2.875, interval: 0.13, damage: 0.5, ramp: { add: 0.06, max: 2 } },
+    paths: [
+      {
+        name: 'KEEP TYPING',
+        quote: 'Typing...',
+        color: '#8fa0b4',
+        tiers: [
+          { name: '"OK"', desc: '+0.5 damage, and it builds up faster.', cost: 18, effect: { damageAdd: 0.5, rampAdd: 0.04 } },
+          { name: 'Thumbs-Up', desc: '+0.5 damage, and it builds up to three times the damage.', cost: 35, effect: { damageAdd: 0.5, rampMax: 3 } },
+          { name: 'Seen', desc: '+1 damage, and it keeps half its build-up when it switches to someone new.', cost: 80, effect: { damageAdd: 1, rampKeep: 0.5 } },
+          { name: 'Typing Forever', desc: '+2.5 damage, and it builds up to five times the damage.', cost: 200, effect: { damageAdd: 2.5, rampMax: 5 } },
+        ],
+      },
+      {
+        name: 'SHORTCUTS',
+        quote: 'Ctrl+Enter. Sent.',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Ctrl+Enter', desc: 'Replies 40% faster.', cost: 9, effect: { intervalMult: 0.7 } },
+          { name: 'Text Expander', desc: 'Replies 40% faster again.', cost: 20, effect: { intervalMult: 0.7 } },
+          { name: 'Reply in Thread', desc: '+0.5 damage, and it replies to 2 colleagues at once. The build-up stays on the first one.', cost: 65, effect: { targetsAdd: 1, damageAdd: 0.5 } },
+          { name: 'Autocomplete', desc: 'Replies twice as fast.', cost: 180, effect: { intervalMult: 0.5 } },
+        ],
+      },
+      {
+        name: 'EMOJI',
+        quote: 'Reacted with a thumbs-up.',
+        color: '#f2c641',
+        tiers: [
+          { name: 'Reaction', desc: '+20% range.', cost: 12, effect: { rangeMult: 1.2 } },
+          { name: 'Eyes Emoji', desc: 'Can see hidden colleagues.', cost: 20, effect: { seesHidden: true } },
+          { name: 'Thumbs-Down', desc: 'Two and a half times the damage against bosses.', cost: 55, effect: { bossMult: 2.5 } },
+          { name: 'Party Parrot', desc: 'Every reply slows the target a little, and three and a half times the damage against bosses.', cost: 160, effect: { slowOnHit: { mult: 0.85, time: 0.6 }, bossMult: 3.5 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (any path at 2-3), top (any path at 4). */
@@ -423,11 +481,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Quick Reply', unlockLevel: 3 },
   { name: 'Thumbtacks', unlockLevel: 4 },
   { name: 'Self-Service', unlockLevel: 4 },
   { name: 'Keyboard Smash', unlockLevel: 5 },

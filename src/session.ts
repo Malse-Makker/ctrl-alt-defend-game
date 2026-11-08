@@ -24,6 +24,7 @@ import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
 import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, textScreen } from './ui/screens';
+import { projectorGame, type ProjectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
 
 export interface SessionHost {
@@ -62,6 +63,7 @@ export class Session {
   private readonly hud: Hud | null;
   private readonly root: HTMLElement;
   private overlay: HTMLElement | null = null;
+  private qte: ProjectorGame | null = null;
   private speed = 1;
   private paused = false;
   private selected: number | null = null;
@@ -199,7 +201,28 @@ export class Session {
       mp: this.room ? { players: this.room.players, host: this.room.host } : null,
     });
     this.updatePreview();
+    this.updateHazard();
     if (this.attract && g.over) this.host.retry(g.level.id);
+  }
+
+  /** The projector mini-game follows the game state, so it also survives a reconnect online. */
+  private updateHazard(): void {
+    const g = this.game;
+    const want = this.hud !== null && !this.ended && g.hazardBlocks(this.me);
+    if (want && !this.qte) {
+      this.qte = projectorGame(
+        () => this.run({ c: 'solve' }),
+        (msg) => this.refuse(msg),
+      );
+      this.root.append(this.qte.el);
+    } else if (!want && this.qte) {
+      this.qte.close();
+      this.qte = null;
+    }
+    if (this.qte) {
+      this.qte.setTimeLeft(g.hazardUntil - g.time);
+      this.qte.el.hidden = this.overlay !== null;
+    }
   }
 
   private snapshot(): void {
@@ -381,6 +404,23 @@ export class Session {
       case 'sold':
         sfx.play('sell', { gain: ev.player === this.me ? 1 : 0.5 });
         if (this.selected === ev.towerId) this.selected = null;
+        break;
+      case 'hazard':
+        if (ev.on) {
+          sfx.play('bossphase', { pitch: 1.3, gain: 0.7 });
+          this.hud?.toast(T.projStarts, 'warn', 3);
+          if (this.placing) this.placing = null;
+        } else if (!g.hazardSolved.includes(this.me)) {
+          this.hud?.toast(T.projTimeout, '', 2.5);
+        }
+        break;
+      case 'hazardSolved':
+        if (ev.player === this.me) {
+          sfx.play('upgrade', { pitch: 1.2 });
+          this.hud?.toast(T.projFixed.replace('{n}', String(ev.bonus)), 'good', 3);
+        } else if (this.mp) {
+          this.hud?.toast(T.projOtherFixed.replace('{name}', this.nameOf(ev.player)), '', 2.2);
+        }
         break;
       case 'end':
         this.onEnd();
