@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.11.0 (2026-11-08)
+## Stand: v0.12.0 (2026-11-08)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -21,8 +21,27 @@ Klaar: Shredder. Nog te doen: Coffee Machine, Auto-Reply, Headphones, Office Art
 Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of icoon ontbreekt.
 
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
-(level 2, 3 en 4 klaar; volgende: level 5 Boardroom met Keyboard Smash en Your Line Manager,
-daarna de meta-shop met Recognition en de promotie na L5).**
+(level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
+voor de overige torens, daarna levels 6-15).**
+
+### Level 5 (v0.12.0): ontwerpkeuzes die ik maakte
+- Specials: `special: true` op TowerDef, maximaal één per speler (`canPlace`). Ze hebben wel drie
+  paden, zoals de rest.
+- Keyboard Smash (`role: 'smash'`): slag rond de eerste collega in bereik, daarna een `Barrier` op
+  0,6 tegel vóór die collega. Collega's stoppen 0,3 ervoor en trappen hem kapot met hun Focus-waarde
+  per seconde (bosses 25). Eén toetsenbord per toren; het blokkeert iedereen (ook de Board Member).
+- Bureaustoel (`role: 'chair'`, idee van de maker): richting 0-3 (+x, +y, -x, -y), standaard de
+  baan die het meeste looppad kruist; daarna kiest de speler met de pijlen (`dir`-opdracht). Hij
+  rijdt alleen als er iemand in de baan staat. Elke klap kost hem zoveel HP als hij schade doet.
+  Langs het looppad gericht raakt hij veel meer dan dwars erover: dat is de slimme plaatsing.
+- Your Line Manager: `addsFromPhase` (peer reviewers pas vanaf fase 2) en `towerSlow` (fase 3:
+  torens binnen 3,2 herladen 1,4x trager). Getuned van 950+250 naar 720+180; goed spelen haalt
+  99-100 Focus (soms glipt één Chaser van een peer reviewer door). De balanstest eist >= 95 en 3
+  sterren.
+- Bot-les: zet een dure upgrade niet midden in een script, de bot spaart er dan voor en koopt
+  niets anders (`SCRIPTS[5]`).
+- Fout gevonden: de geluiden van v0.6.0 waren nooit aangesloten. `tests/assets.test.ts` eist nu dat
+  elk `.wav` in `SOUNDS` staat.
 
 ### Level 4 (v0.6.0): ontwerpkeuzes die ik maakte
 - Nieuwe torenrol `trap` (Thumbtacks): legt hoopjes (`game.piles`) op het looppad binnen bereik.

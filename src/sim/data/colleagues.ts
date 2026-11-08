@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -26,6 +26,10 @@ export interface BossDef {
   haste?: { radius: number; mult: number };
   /** Sweeps away tack piles this close, and mops Shredder zones he walks into (off for mopTime). */
   sweep?: { radius: number; mopTime: number };
+  /** He only starts calling people in from this phase on. */
+  addsFromPhase?: 2 | 3;
+  /** From this phase on, towers this close to him reload this much slower (1.6 = 60% slower). */
+  towerSlow?: { radius: number; mult: number; fromPhase: 1 | 2 | 3 };
   intro: string;
 }
 
@@ -321,6 +325,36 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#4a8fd6',
     model: 'cleaner',
     armSwing: 0.2,
+  },
+  linemanager: {
+    id: 'linemanager',
+    name: 'Your Line Manager',
+    role: 'Boss',
+    quote: 'Do you have a minute? It will not take long.',
+    ability:
+      'Three phases. First a stack of agenda points as a shield. At 66% he calls in peer reviewers who keep coming. At 33% he walks faster, and every tower near him reloads a lot slower while he asks how you are getting on.',
+    counter: 'Break the agenda early with anything that hits hard. Keep damage away from his route for the last phase: Office Artillery from across the floor, or a barrier he has to kick.',
+    hp: 720,
+    shield: 180,
+    speed: 0.9,
+    focus: 30,
+    rewardFlat: 40,
+    boss: {
+      kind: 'linemanager',
+      addType: 'requester',
+      addEvery: 8,
+      addCount: 2,
+      addsFromPhase: 2,
+      phaseBurst: 3,
+      phase3Speed: 1.5,
+      towerSlow: { radius: 3.2, mult: 1.4, fromPhase: 3 },
+      intro: 'He has a stack of agenda points, then peer reviewers, then questions. Hit hard early, and keep your towers out of his way at the end.',
+    },
+    stunResist: 0.35,
+    scale: 1.1,
+    accent: '#8e6fbf',
+    model: 'linemanager',
+    armSwing: 0.3,
   },
 };
 

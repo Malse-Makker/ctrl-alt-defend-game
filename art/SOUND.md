@@ -20,3 +20,5 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | tacks | Thumbtacks laat een hoopje vallen | preset `click`, profiel `mechanical-click`, 2400 Hz, ruis 0.35, herhaling 25 ms |
 | mop | The Cleaner veegt punaises op of dweilt een Shredder | preset `swoosh`, profiel `muffled-distant`, 300 Hz, ruis 0.85 |
 | lunch | lunchpauze begint | preset `success`, profiel `soft-notification`, 880 Hz sinus, toon omlaag |
+| smash | Keyboard Smash slaat op het looppad | preset `hit`, profiel `punchy-impact`, 180 Hz, ruis 0.6, herhaling 30 ms |
+| roll | de bureaustoel gaat rijden | preset `swoosh`, profiel `mechanical-click`, 420 Hz, tremolo (wieltjes) |

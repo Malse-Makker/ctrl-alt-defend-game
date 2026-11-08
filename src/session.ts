@@ -19,7 +19,7 @@ import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
 import { LEVELS } from './sim/data/levels';
 import { TOWERS, type TargetMode } from './sim/data/towers';
-import { Game, TICK, type GameEvent } from './sim/game';
+import { CHAIR_DIRS, Game, TICK, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
@@ -139,6 +139,10 @@ export class Session {
         gift: (to, amount) => this.run({ c: 'gift', to, amount }),
         settings: () => this.openSettings(false),
         leave: () => this.confirmLeave(),
+        dir: (id, dir) => {
+          this.run({ c: 'dir', id, dir });
+          this.host.sfx.play('click');
+        },
       },
       this.me,
     );
@@ -387,6 +391,11 @@ export class Session {
       }
       case 'placed':
         sfx.play('place', { gain: ev.player === this.me ? 1 : 0.5 });
+        if (ev.player === this.me && ev.defId === 'chair') {
+          // Straight to its panel, so you can turn it.
+          this.select(ev.towerId);
+          this.hud?.hint(T.chairHint, 8);
+        }
         if (this.hintStage === 1) {
           this.hintStage = 2;
           if (g.phase === 'plan') this.hud?.hint(T.hintStart, 10);
@@ -412,7 +421,7 @@ export class Session {
       case 'hazard':
         if (ev.kind === 'lunch') {
           if (ev.on) {
-            sfx.play('wave', { pitch: 1.25 });
+            sfx.play('lunch');
             this.hud?.toast(T.lunchStarts, 'warn', 3.5);
           } else this.hud?.toast(T.lunchEnds, '', 2);
         } else if (ev.on) {
@@ -423,14 +432,21 @@ export class Session {
           this.hud?.toast(T.projTimeout, '', 2.5);
         }
         break;
+      case 'smash':
+        sfx.play('smash');
+        break;
+      case 'chairRoll':
+        sfx.play('roll', { gain: 0.8 });
+        break;
       case 'tacks':
-        sfx.play('staple', { pitch: 1.7, gain: 0.25 });
+        sfx.play('tacks');
         break;
       case 'swept':
+        sfx.play('mop', { pitch: 1.2, gain: 0.6 });
         this.toastOnce('swept', T.tackSwept, 12);
         break;
       case 'mopped':
-        sfx.play('split', { pitch: 0.6 });
+        sfx.play('mop');
         this.toastOnce('mopped', T.zoneMopped, 12);
         break;
       case 'hazardSolved':
@@ -786,9 +802,16 @@ export class Session {
       const def = TOWERS[this.placing];
       const check = g.canPlace(this.placing, this.hover.tx, this.hover.ty, this.me);
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
-      const range = def.role === 'economy' || def.base.global ? 0 : def.base.range;
+      const chair = def.role === 'chair';
+      const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
       this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range);
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
+      if (chair) {
+        // The lane it would take; turn it afterwards with the arrows.
+        const lane = g.chairLaneAt(this.placing, this.hover.tx, this.hover.ty);
+        const d = CHAIR_DIRS[lane.dir];
+        this.actors.showLane(this.hover.tx + 0.5, this.hover.ty + 0.5, d.x, d.y, lane.length, placeable ? '#ffffff' : '#e5534b');
+      } else this.actors.showLane(null, 0, 0, 0, 0);
       return;
     }
     this.actors.showGhost(null, 0, 0, false, 0);
@@ -796,6 +819,13 @@ export class Session {
     const hov = this.hover ? g.towerAt(this.hover.tx, this.hover.ty) : undefined;
     const t = sel ?? hov;
     const tipRange = t && t.def.role === 'economy' && g.liveStats(t).tip > 0;
+    if (t && t.def.role === 'chair') {
+      const d = CHAIR_DIRS[t.dir];
+      this.actors.showLane(t.x, t.y, d.x, d.y, g.laneLength(t, g.liveStats(t).range));
+      this.actors.showRange(null, 0, 0);
+      return;
+    }
+    this.actors.showLane(null, 0, 0, 0, 0);
     if (t && (t.def.role !== 'economy' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
     else this.actors.showRange(null, 0, 0);
   }

@@ -40,6 +40,15 @@ export const VULNERABLE_AFTER = 1.5;
 export const PILE_RADIUS = 0.42;
 /** A Thumbtacks tower keeps at most this many piles on the floor; the oldest goes first. */
 export const MAX_PILES = 24;
+/** Colleagues stop this far in front of a keyboard barrier. */
+export const BARRIER_GAP = 0.3;
+/** Office chair lanes: +x, +y, -x, -y. */
+export const CHAIR_DIRS: readonly { x: number; y: number }[] = [
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+  { x: 0, y: -1 },
+];
 
 export type Phase = 'plan' | 'running' | 'won' | 'lost';
 export type EndReason = 'won' | 'burnout' | 'gaveup';
@@ -119,6 +128,13 @@ export interface Tower {
   ramp: number;
   /** Seconds left before a mopped Shredder zone works again (The Cleaner). */
   mopped: number;
+  /** Office chair: lane direction (0 +x, 1 +y, 2 -x, 3 -y), how far out it is, which way it rolls
+   * (1 out, -1 back, 0 resting), HP left this run, and who it already knocked this run. */
+  dir: number;
+  roll: number;
+  rolling: number;
+  chairHp: number;
+  knocked: Set<number>;
   invested: number;
   /** Coffee each player put into this tower, so selling pays everyone back their own share. */
   paidBy: number[];
@@ -136,6 +152,22 @@ export interface Pile {
   maxPierce: number;
   life: number;
   hit: Set<number>;
+}
+
+/** Keyboard Smash: a keyboard across the walkway. Nobody passes until it is kicked away. */
+export interface Barrier {
+  id: number;
+  tower: number;
+  pathIndex: number;
+  dist: number;
+  x: number;
+  y: number;
+  dirX: number;
+  dirY: number;
+  hp: number;
+  maxHp: number;
+  time: number;
+  thorns: number;
 }
 
 export interface LiveTowerStats {
@@ -182,6 +214,16 @@ export interface LiveTowerStats {
   pileLife: number;
   piles: number;
   ignoresMinHit: boolean;
+  /** Keyboard Smash: slam radius, barrier HP and seconds, damage to kickers, double smash. */
+  smashRadius: number;
+  barrierHp: number;
+  barrierTime: number;
+  barrierThorns: number;
+  doubleSmash: boolean;
+  /** Office chair: HP per run, roll speed, hits on the way back. */
+  chairHp: number;
+  rollSpeed: number;
+  rollBack: boolean;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -221,6 +263,8 @@ export type GameEvent =
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
   | { t: 'mopped'; towerId: number; enemyId: number }
+  | { t: 'smash'; towerId: number; x: number; y: number; radius: number }
+  | { t: 'chairRoll'; towerId: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -281,6 +325,10 @@ export interface TowerSnap {
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
+  /** Office chair: direction, how far out, which way rolling. */
+  dir: number;
+  roll: number;
+  rl: number;
 }
 
 /**
@@ -301,6 +349,8 @@ export interface Snapshot {
   enemies: number[][];
   /** Tack piles: [id, x, y, tacks left, tacks at the start]. */
   piles: number[][];
+  /** Keyboard barriers: [id, x, y, dirX, dirY, hp, maxHp]. */
+  barriers?: number[][];
   stats: RoundStats;
   hz: { on: boolean; until: number; solved: number[] };
 }
@@ -370,7 +420,20 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     pileLife: b.pileLife ?? 0,
     piles: 1,
     ignoresMinHit: false,
+    smashRadius: b.smashRadius ?? 0,
+    barrierHp: b.barrierHp ?? 0,
+    barrierTime: b.barrierTime ?? 0,
+    barrierThorns: 0,
+    doubleSmash: false,
+    chairHp: b.chairHp ?? 0,
+    rollSpeed: b.rollSpeed ?? 0,
+    rollBack: false,
   };
+  let radiusMult = 1;
+  let barrierHpMult = 1;
+  let chairHpMult = 1;
+  let speedMult = 1;
+  let rangeAdd = 0;
   let pileLifeMult = 1;
   let dotAdd = 0;
   let dotMult = 1;
@@ -398,6 +461,17 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     s.piles += e.pilesAdd ?? 0;
     pileLifeMult *= e.pileLifeMult ?? 1;
     if (e.ignoresMinHit) s.ignoresMinHit = true;
+    radiusMult *= e.radiusMult ?? 1;
+    s.barrierHp += e.barrierHpAdd ?? 0;
+    barrierHpMult *= e.barrierHpMult ?? 1;
+    s.barrierTime += e.barrierTimeAdd ?? 0;
+    s.barrierThorns = Math.max(s.barrierThorns, e.barrierThorns ?? 0);
+    if (e.doubleSmash) s.doubleSmash = true;
+    s.chairHp += e.chairHpAdd ?? 0;
+    chairHpMult *= e.chairHpMult ?? 1;
+    speedMult *= e.speedMult ?? 1;
+    rangeAdd += e.rangeAdd ?? 0;
+    if (e.rollBack) s.rollBack = true;
     if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
@@ -419,7 +493,11 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
   }
   s.damage = (s.damage + damageAdd) * damageMult;
   s.dot = (s.dot + dotAdd) * dotMult;
-  s.range = s.global ? Infinity : s.range * rangeMult;
+  s.range = s.global ? Infinity : (s.range + rangeAdd) * rangeMult;
+  s.smashRadius *= radiusMult;
+  s.barrierHp *= barrierHpMult;
+  s.chairHp *= chairHpMult;
+  s.rollSpeed *= speedMult;
   if (def.role === 'economy') s.coffeeInterval *= intervalMult;
   else s.interval *= intervalMult;
   s.coffeeAmount = (s.coffeeAmount + coffeeAdd) * coffeeMult;
@@ -451,6 +529,7 @@ export class Game {
   towers: Tower[] = [];
   enemies: Enemy[] = [];
   piles: Pile[] = [];
+  barriers: Barrier[] = [];
   events: GameEvent[] = [];
   stats: RoundStats;
 
@@ -645,6 +724,7 @@ export class Game {
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
+    if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
     if (def.role !== 'economy' && !def.base.global) {
@@ -697,11 +777,17 @@ export class Game {
       rampTarget: 0,
       ramp: 1,
       mopped: 0,
+      dir: 0,
+      roll: 0,
+      rolling: 0,
+      chairHp: 0,
+      knocked: new Set(),
       invested: check.cost,
       paidBy: this.paidList(player, check.cost),
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
     };
+    if (def.role === 'chair') t.dir = this.bestLane(t);
     this.spend(player, check.cost);
     this.towers.push(t);
     this.stats.built[defId] = (this.stats.built[defId] ?? 0) + 1;
@@ -879,6 +965,9 @@ export class Game {
         coffee: r3(t.stats.coffee),
         sil: t.silenced ? 1 : 0,
         mop: t.mopped > 0 ? 1 : 0,
+        dir: t.dir,
+        roll: r3(t.roll),
+        rl: t.rolling,
       })),
       enemies: this.enemies.map((e) => [
         e.id,
@@ -900,6 +989,7 @@ export class Game {
         e.revealed ? 1 : 0,
       ]),
       piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
+      barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
       stats: this.stats,
       hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved] },
     };
@@ -943,6 +1033,11 @@ export class Game {
         rampTarget: 0,
         ramp: 1,
         mopped: 0,
+        dir: 0,
+        roll: 0,
+        rolling: 0,
+        chairHp: 0,
+        knocked: new Set(),
         invested: 0,
         paidBy: [],
         placedAtWave: s.waveIndex,
@@ -958,6 +1053,9 @@ export class Game {
       t.stats.coffee = ts.coffee;
       t.silenced = ts.sil === 1;
       t.mopped = ts.mop === 1 ? 1 : 0;
+      t.dir = ts.dir ?? 0;
+      t.roll = ts.roll ?? 0;
+      t.rolling = ts.rl ?? 0;
       return t;
     });
     this.enemies = s.enemies.map((a) => {
@@ -999,6 +1097,7 @@ export class Game {
       };
     });
     this.piles = (s.piles ?? []).map((a) => ({ id: a[0], tower: 0, x: a[1], y: a[2], pierce: a[3], maxPierce: a[4], life: 1, hit: new Set<number>() }));
+    this.barriers = (s.barriers ?? []).map((a) => ({ id: a[0], tower: 0, pathIndex: 0, dist: 0, x: a[1], y: a[2], dirX: a[3], dirY: a[4], hp: a[5], maxHp: a[6], time: 1, thorns: 0 }));
   }
 
   // ------------------------------------------------------------------ storingen (mini-games)
@@ -1081,6 +1180,7 @@ export class Game {
     this.updateTowers(dt);
     this.moveEnemies(dt);
     this.updatePiles(dt);
+    this.updateBarriers(dt);
     this.enemies = this.enemies.filter((e) => e.alive);
     this.stats.peakOnFloor = Math.max(this.stats.peakOnFloor, this.enemies.length);
     if (this.over) return;
@@ -1226,7 +1326,28 @@ export class Game {
         }
       }
       const path = this.paths[e.pathIndex];
-      e.dist += this.speedOf(e) * dt;
+      let next = e.dist + this.speedOf(e) * dt;
+      // A keyboard across the walkway: stop in front of it and kick it until it gives.
+      for (const b of this.barriers) {
+        if (b.pathIndex !== e.pathIndex || b.hp <= 0) continue;
+        const stop = b.dist - BARRIER_GAP;
+        if (e.dist <= stop + 1e-6 && next > stop) {
+          next = Math.max(e.dist, stop);
+          b.hp -= (e.def.boss ? 25 : Math.max(1, e.def.focus)) * dt;
+          if (b.thorns > 0) {
+            const owner = this.tower(b.tower);
+            const { dealt } = this.damage(e, b.thorns * dt, 'in_person', false);
+            if (owner) owner.stats.damage += dealt;
+            if (!e.alive) {
+              if (owner) owner.stats.kills++;
+              this.onKill(e, 0, owner);
+              break;
+            }
+          }
+        }
+      }
+      if (!e.alive) continue;
+      e.dist = next;
       if (e.dist >= path.length) {
         this.leak(e);
         continue;
@@ -1266,9 +1387,15 @@ export class Game {
       e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
+    // Your Line Manager's last phase: towers near him reload slower.
+    const nags = this.enemies.filter((e) => e.alive && e.def.boss?.towerSlow && e.phase >= e.def.boss.towerSlow.fromPhase);
     for (const t of this.towers) {
       let r = 1;
       for (const b of buffs) if (b.id !== t.id && Math.hypot(t.x - b.x, t.y - b.y) <= b.r) r = Math.min(r, b.f);
+      for (const n of nags) {
+        const ts = n.def.boss!.towerSlow!;
+        if (Math.hypot(t.x - n.x, t.y - n.y) <= ts.radius) r *= ts.mult;
+      }
       t.rateBuff = r;
       t.silenced =
         t.def.role !== 'economy' && talkers.length > 0 && !this.liveStats(t).silenceProof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!);
@@ -1318,6 +1445,7 @@ export class Game {
       const b = e.def.boss;
       if (!e.alive || !b) continue;
       if (b.sweep && this.onFloor(e)) this.sweep(e, b.sweep);
+      if (b.addsFromPhase && e.phase < b.addsFromPhase) continue;
       e.addTimer -= dt;
       if (e.addTimer <= 0) {
         e.addTimer += b.addEvery;
@@ -1390,6 +1518,14 @@ export class Game {
       }
       if (t.def.role === 'trap') {
         this.updateTrap(t, s, dt);
+        continue;
+      }
+      if (t.def.role === 'smash') {
+        this.updateSmash(t, s, dt);
+        continue;
+      }
+      if (t.def.role === 'chair') {
+        this.updateChair(t, s, dt);
         continue;
       }
       if (s.ability) this.updateAbility(t, s, dt);
@@ -1522,6 +1658,194 @@ export class Game {
       }
     }
     this.piles = this.piles.filter((p) => p.life > 0 && p.pierce > 0);
+  }
+
+  /** Keyboard Smash: slam in front of the first colleague, then leave the keyboard there. */
+  private updateSmash(t: Tower, s: LiveTowerStats, dt: number): void {
+    // Autorepeat: the second smash half a second after the first.
+    if (t.pulseTimer > 0 && (t.pulseTimer -= dt) <= 0) {
+      const again = this.pickTargets(t, s.range, 1, true)[0];
+      if (again) this.slam(t, s, again);
+    }
+    t.cooldown -= dt;
+    if (t.cooldown > 0) return;
+    const target = this.pickTargets(t, s.range, 1, true)[0];
+    if (!target) {
+      t.cooldown = 0;
+      return;
+    }
+    this.slam(t, s, target);
+    if (s.doubleSmash) t.pulseTimer = 0.5;
+    t.stats.shots++;
+    t.cooldown = s.interval * t.rateBuff;
+  }
+
+  private slam(t: Tower, s: LiveTowerStats, target: Enemy): void {
+    const cx = target.x;
+    const cy = target.y;
+    for (const e of [...this.enemies]) {
+      if (!e.alive || !this.onFloor(e) || Math.hypot(e.x - cx, e.y - cy) > s.smashRadius) continue;
+      const { dealt, result } = this.damage(e, s.damage * (e.def.boss ? s.bossMult : 1), t.def.damageClass, true, s.ignoresMinHit);
+      t.stats.damage += dealt;
+      const killed = !e.alive;
+      if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
+      this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx: cx, fy: cy, tx: e.x, ty: e.y, travel: 0, damage: dealt, result, killed, kind: 'tack' });
+      if (killed) {
+        t.stats.kills++;
+        this.onKill(e, 0, t);
+      }
+    }
+    this.events.push({ t: 'smash', towerId: t.id, x: cx, y: cy, radius: s.smashRadius });
+    // The keyboard lands just ahead of where it hit. One keyboard per tower.
+    const path = this.paths[target.pathIndex];
+    const dist = Math.min(path.length - 0.6, target.dist + 0.6);
+    const pt = path.pointAt(dist);
+    this.barriers = this.barriers.filter((b) => b.tower !== t.id);
+    this.barriers.push({
+      id: this.nextId++,
+      tower: t.id,
+      pathIndex: target.pathIndex,
+      dist,
+      x: pt.x,
+      y: pt.y,
+      dirX: pt.dirX,
+      dirY: pt.dirY,
+      hp: s.barrierHp,
+      maxHp: s.barrierHp,
+      time: s.barrierTime,
+      thorns: s.barrierThorns,
+    });
+  }
+
+  private updateBarriers(dt: number): void {
+    if (this.barriers.length === 0) return;
+    for (const b of this.barriers) b.time -= dt;
+    this.barriers = this.barriers.filter((b) => b.hp > 0 && b.time > 0 && this.tower(b.tower));
+  }
+
+  /** How far the chair can roll from its tile in its direction before it hits a wall. */
+  laneLength(t: Tower, range: number): number {
+    const d = CHAIR_DIRS[t.dir];
+    const { w, h } = this.level.size;
+    const room = d.x > 0 ? w - t.x : d.x < 0 ? t.x : d.y > 0 ? h - t.y : t.y;
+    return Math.max(0, Math.min(range, room - 0.3));
+  }
+
+  private inLane(t: Tower, e: { x: number; y: number }, length: number): boolean {
+    const d = CHAIR_DIRS[t.dir];
+    const ax = e.x - t.x;
+    const ay = e.y - t.y;
+    const along = ax * d.x + ay * d.y;
+    const side = Math.abs(ax * d.y - ay * d.x);
+    return along > 0.3 && along <= length + 0.3 && side <= 0.55;
+  }
+
+  /** The lane that crosses the most walkway: where a new chair points until you turn it. */
+  private bestLane(t: Tower): number {
+    const range = computeStats(t.def, t.tiers).range;
+    let best = 0;
+    let bestCount = -1;
+    for (let dir = 0; dir < 4; dir++) {
+      t.dir = dir;
+      const length = this.laneLength(t, range);
+      let count = 0;
+      for (const path of this.paths) for (let d = 0; d <= path.length; d += 0.25) if (this.inLane(t, path.pointAt(d), length)) count++;
+      if (count > bestCount) {
+        best = dir;
+        bestCount = count;
+      }
+    }
+    return best;
+  }
+
+  /** Where a chair placed on this tile would roll: the best lane and its length. */
+  chairLaneAt(defId: string, tx: number, ty: number): { dir: number; length: number } {
+    const def = TOWERS[defId];
+    const probe = { x: tx + 0.5, y: ty + 0.5, dir: 0, def, tiers: [0, 0, 0] } as unknown as Tower;
+    const dir = this.bestLane(probe);
+    probe.dir = dir;
+    return { dir, length: this.laneLength(probe, computeStats(def, [0, 0, 0]).range) };
+  }
+
+  /** Turn the chair. A run in progress is called off. */
+  setDir(towerId: number, dir: number, player = 0): Check {
+    const t = this.tower(towerId);
+    if (!t || t.def.role !== 'chair') return { ok: false, reason: 'Only the chair can be turned.' };
+    if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
+    if (!Number.isInteger(dir) || dir < 0 || dir > 3) return { ok: false, reason: 'No such direction.' };
+    t.dir = dir;
+    t.roll = 0;
+    t.rolling = 0;
+    t.cooldown = Math.min(t.cooldown, 0.5);
+    return { ok: true };
+  }
+
+  /** The office chair: wait, roll out knocking into colleagues, roll back, repeat. */
+  private updateChair(t: Tower, s: LiveTowerStats, dt: number): void {
+    const length = this.laneLength(t, s.range);
+    if (t.rolling === 0) {
+      t.cooldown -= dt;
+      if (t.cooldown > 0) return;
+      // Only bother when somebody is in the lane.
+      if (!this.enemies.some((e) => e.alive && this.onFloor(e) && this.inLane(t, e, length))) {
+        t.cooldown = 0;
+        return;
+      }
+      t.rolling = 1;
+      t.roll = 0;
+      t.chairHp = s.chairHp;
+      t.knocked.clear();
+      t.stats.shots++;
+      this.events.push({ t: 'chairRoll', towerId: t.id });
+    }
+    const step = s.rollSpeed * dt;
+    if (t.rolling === 1) {
+      t.roll = Math.min(length, t.roll + step);
+      this.knock(t, s);
+      if (t.chairHp <= 0 || t.roll >= length) {
+        t.rolling = -1;
+        t.knocked.clear();
+      }
+    } else {
+      t.roll = Math.max(0, t.roll - step);
+      if (s.rollBack && t.chairHp > 0) this.knock(t, s);
+      if (t.roll <= 0) {
+        t.rolling = 0;
+        t.cooldown = s.interval * t.rateBuff;
+      }
+    }
+  }
+
+  /** Every colleague the chair runs into: it deals damage and loses as much HP itself. */
+  private knock(t: Tower, s: LiveTowerStats): void {
+    const d = CHAIR_DIRS[t.dir];
+    const cx = t.x + d.x * t.roll;
+    const cy = t.y + d.y * t.roll;
+    for (const e of [...this.enemies]) {
+      if (t.chairHp <= 0) break;
+      if (!e.alive || t.knocked.has(e.id) || !this.onFloor(e) || Math.hypot(e.x - cx, e.y - cy) > 0.5) continue;
+      t.knocked.add(e.id);
+      if (e.def.immune === t.def.damageClass) continue;
+      const amount = Math.min(s.damage * (e.def.boss ? s.bossMult : 1), t.chairHp);
+      const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
+      t.chairHp -= result === 'blocked' ? amount : Math.max(dealt, 1);
+      t.stats.damage += dealt;
+      const killed = !e.alive;
+      if (!killed && result === 'hit') {
+        if (s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
+        if (s.knockback > 0) {
+          e.dist = Math.max(0, e.dist - s.knockback * (e.def.boss ? 0.2 : 1));
+          const pt = this.paths[e.pathIndex].pointAt(e.dist);
+          e.x = pt.x;
+          e.y = pt.y;
+        }
+      }
+      this.events.push({ t: 'shot', towerId: t.id, enemyId: e.id, fx: cx, fy: cy, tx: e.x, ty: e.y, travel: 0, damage: dealt, result, killed, kind: 'tack' });
+      if (killed) {
+        t.stats.kills++;
+        this.onKill(e, 0, t);
+      }
+    }
   }
 
   /** Headphones: every few seconds, everyone in range slows (or is stunned), no damage. */

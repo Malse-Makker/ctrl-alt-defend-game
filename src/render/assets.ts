@@ -65,6 +65,16 @@ export const MODEL_NAMES = [
   'high_table',
   'kitchen_table',
   'recycle_bins',
+  'keyboardsmash_1',
+  'keyboardsmash_2',
+  'keyboardsmash_3',
+  'chair_1',
+  'chair_2',
+  'chair_3',
+  'keyboard_barrier',
+  'linemanager',
+  'boardroom_table',
+  'sideboard',
 ] as const;
 
 export class Assets {

@@ -107,3 +107,24 @@ describe('Level 4 difficulty', () => {
     expect(r.stars).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('Level 5 difficulty', () => {
+  const level = LEVELS[5];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  it('good play wins with three stars; at most a stray Chaser from the boss gets through', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(r.focus).toBeGreaterThanOrEqual(95);
+  });
+
+  it('going for Coffee first still wins', () => {
+    const r = runBot(level, greedyBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+});

@@ -17,6 +17,11 @@ export const UI_TEXT = {
   footerSource: 'Source',
   footerLicense: 'CC BY-NC 4.0',
   claimAll: 'Claim all',
+  oneEach: '1 each',
+  oneEachHelp: 'A special: everyone gets one of these at most.',
+  placed: 'placed',
+  chairDirection: 'Rolls',
+  chairHint: 'Pick which way the chair rolls with the arrows in its panel.',
   claimAllHelp: 'Empty every pot of yours at once (C)',
 
   levelSelect: 'Your career',

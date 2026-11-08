@@ -21,6 +21,11 @@ export const SOUNDS = [
   'split',
   'pulse',
   'staple',
+  'tacks',
+  'mop',
+  'lunch',
+  'smash',
+  'roll',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
@@ -34,6 +39,10 @@ const THROTTLE: Partial<Record<SoundName, number>> = {
   split: 0.1,
   pulse: 0.2,
   staple: 0.08,
+  tacks: 0.12,
+  mop: 0.4,
+  smash: 0.15,
+  roll: 0.3,
 };
 
 const GAIN: Partial<Record<SoundName, number>> = {
@@ -46,6 +55,11 @@ const GAIN: Partial<Record<SoundName, number>> = {
   boss: 0.8,
   pulse: 0.35,
   staple: 0.5,
+  tacks: 0.3,
+  mop: 0.7,
+  lunch: 0.7,
+  smash: 0.8,
+  roll: 0.5,
 };
 
 export class Sfx {

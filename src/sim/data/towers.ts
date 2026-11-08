@@ -13,8 +13,9 @@ export type DamageClass = 'written' | 'in_person';
 /**
  * damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on
  * everyone standing in it. trap: drops piles on the walkway that hit whoever walks over them.
+ * smash: slams the walkway and leaves a barrier. chair: rolls down a straight lane and back.
  */
-export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap';
+export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap' | 'smash' | 'chair';
 export type TargetMode = 'first' | 'last' | 'closest' | 'farthest' | 'strongest' | 'weakest';
 export type Tiers = [number, number, number];
 
@@ -139,6 +140,24 @@ export interface Effect {
   pilesAdd?: number;
   /** Hits get through a shield no matter how light they are (the Old Guard's archive box). */
   ignoresMinHit?: boolean;
+  // Keyboard Smash
+  /** Bigger slam. */
+  radiusMult?: number;
+  barrierHpAdd?: number;
+  barrierHpMult?: number;
+  barrierTimeAdd?: number;
+  /** Colleagues pushing against the barrier take this much damage per second. */
+  barrierThorns?: number;
+  /** Every smash comes twice. */
+  doubleSmash?: boolean;
+  // The office chair
+  chairHpAdd?: number;
+  chairHpMult?: number;
+  /** Extra tiles of lane. */
+  rangeAdd?: number;
+  speedMult?: number;
+  /** It also hits colleagues on the way back. */
+  rollBack?: boolean;
 }
 
 export interface UpgradeDef {
@@ -159,6 +178,13 @@ export interface PathDef {
 export interface TowerBase {
   cost: number;
   range: number;
+  /** Keyboard Smash: slam radius, and the barrier it leaves (HP and seconds). */
+  smashRadius?: number;
+  barrierHp?: number;
+  barrierTime?: number;
+  /** Office chair: how much it can plough through per run, and how fast it rolls (tiles/s). */
+  chairHp?: number;
+  rollSpeed?: number;
   /** How many colleagues one shot hits (Self-Service answers everyone around it). */
   targets?: number;
   /** Trap: tacks per pile, and how long a pile stays on the floor. */
@@ -194,6 +220,8 @@ export interface TowerDef {
   paths: readonly [PathDef, PathDef, PathDef];
   /** Model per stage: base, mid (a path at tier 2-3), top (a path at tier 4). */
   models: readonly [string, string, string];
+  /** A special: everyone gets one of these at most. */
+  special?: boolean;
   /**
    * Each path's own look at tier 3 and tier 4, like Bloons. Optional: a tower without them falls
    * back to `models`. Only one path can pass tier 2 (the 4-2-0 rule), so the choice is clear.
@@ -602,6 +630,102 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  keyboardsmash: {
+    id: 'keyboardsmash',
+    name: 'Keyboard Smash',
+    flavour: 'ASDFGHJKL.',
+    verb: 'Special, one each. Every few seconds it slams the walkway in front of the first colleague, hitting everyone around, and leaves the keyboard lying across the walkway. Nobody gets past until they have kicked it out of the way.',
+    role: 'smash',
+    damageClass: 'in_person',
+    unlockLevel: 5,
+    special: true,
+    accent: '#e5534b',
+    models: ['keyboardsmash_1', 'keyboardsmash_2', 'keyboardsmash_3'],
+    base: { cost: 60, range: 2.2, interval: 8, damage: 8, smashRadius: 1.2, barrierHp: 30, barrierTime: 5 },
+    paths: [
+      {
+        name: 'SLAM',
+        quote: 'Have you tried turning it off and on again?',
+        color: '#e5534b',
+        tiers: [
+          { name: 'Mechanical Keys', desc: '+6 slam damage.', cost: 30, effect: { damageAdd: 6 } },
+          { name: 'Rage Quit', desc: 'The slam reaches 40% further.', cost: 40, effect: { radiusMult: 1.4 } },
+          { name: 'Ctrl+Z', desc: 'Everyone slammed stops for 1.5 seconds.', cost: 90, effect: { stunOnHit: 1.5 } },
+          { name: 'Keyboard Warrior', desc: '+25 slam damage, and bosses take three times as much.', cost: 250, effect: { damageAdd: 25, bossMult: 3 } },
+        ],
+      },
+      {
+        name: 'CAPS LOCK',
+        quote: 'WHY IS EVERYONE SHOUTING',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Wrist Rest', desc: 'The barrier takes 20 more kicks.', cost: 20, effect: { barrierHpAdd: 20 } },
+          { name: 'Ergonomic', desc: 'The barrier stays 4 seconds longer.', cost: 35, effect: { barrierTimeAdd: 4 } },
+          { name: 'Sharp Keycaps', desc: 'Kicking the barrier hurts: 4 damage a second, and it takes twice the kicks.', cost: 90, effect: { barrierThorns: 4, barrierHpMult: 2 } },
+          { name: 'Server Rack', desc: 'Three times the kicks, and it stays 8 seconds longer.', cost: 220, effect: { barrierHpMult: 3, barrierTimeAdd: 8 } },
+        ],
+      },
+      {
+        name: 'SHORTCUTS',
+        quote: 'Ctrl+Alt+Defend.',
+        color: '#f2c641',
+        tiers: [
+          { name: 'Hotkeys', desc: 'Smashes 33% more often.', cost: 15, effect: { intervalMult: 0.75 } },
+          { name: 'Macro', desc: 'Smashes 33% more often again, and reaches 20% further.', cost: 35, effect: { intervalMult: 0.75, rangeMult: 1.2 } },
+          { name: 'Autorepeat', desc: 'Every smash comes twice.', cost: 95, effect: { doubleSmash: true } },
+          { name: 'Any Key', desc: 'Smashes twice as often.', cost: 240, effect: { intervalMult: 0.5 } },
+        ],
+      },
+    ],
+  },
+  chair: {
+    id: 'chair',
+    name: 'Office Chair',
+    flavour: 'Wheee.',
+    verb: 'Special, one each. Rolls in a straight line you choose, knocking into every colleague on the way. Every knock costs it as much as it deals; empty, or at the end of its lane, it rolls back and goes again.',
+    role: 'chair',
+    damageClass: 'in_person',
+    unlockLevel: 5,
+    special: true,
+    accent: '#3e7cc9',
+    models: ['chair_1', 'chair_2', 'chair_3'],
+    base: { cost: 45, range: 5, interval: 2.5, damage: 5, chairHp: 20, rollSpeed: 6 },
+    paths: [
+      {
+        name: 'RAMMING',
+        quote: 'Coming through.',
+        color: '#e5534b',
+        tiers: [
+          { name: 'Gas Lift', desc: '+3 damage per knock.', cost: 20, effect: { damageAdd: 3 } },
+          { name: 'Armrests', desc: '+4 damage per knock.', cost: 35, effect: { damageAdd: 4 } },
+          { name: 'Executive Chair', desc: 'Knocks colleagues a tile back.', cost: 80, effect: { knockback: 1 } },
+          { name: 'Racing Chair', desc: '+10 damage, three times as much to bosses, and it rolls faster.', cost: 220, effect: { damageAdd: 10, bossMult: 3, speedMult: 1.5 } },
+        ],
+      },
+      {
+        name: 'ROLLING',
+        quote: 'Who waxed the floor?',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Smooth Castors', desc: '+2 tiles of lane.', cost: 15, effect: { rangeAdd: 2 } },
+          { name: 'Polished Floor', desc: '+2 tiles of lane, and it rolls faster.', cost: 30, effect: { rangeAdd: 2, speedMult: 1.3 } },
+          { name: 'Swivel', desc: 'It knocks into colleagues on the way back too.', cost: 85, effect: { rollBack: true } },
+          { name: 'Office Olympics', desc: '+4 tiles of lane, and it rests half as long between runs.', cost: 200, effect: { rangeAdd: 4, intervalMult: 0.5 } },
+        ],
+      },
+      {
+        name: 'STURDY',
+        quote: 'Built to last a reorganisation.',
+        color: '#6fcf7f',
+        tiers: [
+          { name: 'Cushion', desc: '+15 HP per run.', cost: 15, effect: { chairHpAdd: 15 } },
+          { name: 'Steel Frame', desc: '+20 HP per run.', cost: 30, effect: { chairHpAdd: 20 } },
+          { name: 'Ergonomic', desc: '+20 HP, and it gets through any shield.', cost: 80, effect: { chairHpAdd: 20, ignoresMinHit: true } },
+          { name: 'Throne', desc: 'Three times the HP, and everyone it knocks stops for half a second.', cost: 210, effect: { chairHpMult: 3, stunOnHit: 0.5 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
@@ -631,11 +755,10 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice'];
+export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Keyboard Smash', unlockLevel: 5 },
   { name: 'Reply All', unlockLevel: 6 },
   { name: 'Delegation', unlockLevel: 7 },
   { name: 'Pomodoro Timer', unlockLevel: 8 },

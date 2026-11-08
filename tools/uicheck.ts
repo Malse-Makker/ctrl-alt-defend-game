@@ -513,6 +513,112 @@ async function level4Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+/** Level 5: the specials (one each, the chair's arrows), keyboards on the walkway, Your Line Manager. */
+async function level5Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 5)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l5: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'Boardroom');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    barriers: unknown[];
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    phase: string;
+    waveIndex: number;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string; rolling: number }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    const want: [string, number, number, number][] = [
+      ['keyboardsmash', 5, 3, 1],
+      ['autoreply', 5, 7, 0],
+      ['autoreply', 16, 3, 0],
+      ['quickreply', 12, 8, 0],
+      ['artillery', 19, 10, 0],
+      ['selfservice', 9, 2, 0],
+      ['thumbtacks', 15, 8, 0],
+    ];
+    const out: string[] = [];
+    for (const [d, x, y, p] of want) {
+      const r = g.place(d, x, y);
+      out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
+      if (r.tower) for (let i = 0; i < 2; i++) g.upgrade(r.tower.id, p);
+    }
+    out.push(`second keyboard: ${g.place('keyboardsmash', 16, 7).reason}`);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  // The chair is placed by hand, so its panel and arrows open by themselves.
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { pick(d: string): void } } }).cad.session;
+    s.pick('chair');
+  });
+  // A screen point over tile (2, 5), asked from the view each time: the camera refits whenever
+  // the panels change size, so a point worked out earlier can be stale.
+  const tilePoint = () =>
+    page.evaluate(() => {
+      const cad = (window as unknown as { cad: { view: { project(x: number, y: number, h: number): { sx: number; sy: number } } } }).cad;
+      const p = cad.view.project(2.5, 5.5, 0);
+      return { x: p.sx, y: p.sy };
+    });
+  let pt = await tilePoint();
+  await page.mouse.move(pt.x, pt.y);
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l5-chair-ghost', size);
+  pt = await tilePoint();
+  await page.mouse.move(pt.x, pt.y);
+  await page.mouse.click(pt.x, pt.y);
+  await new Promise((r) => setTimeout(r, 300));
+  const chairPanel = await page.waitForSelector('.chair-dirs', { timeout: 3000 }).then(() => true).catch(() => false);
+  if (!chairPanel) errors.push('l5: the chair panel with arrows did not open after placing it');
+  total += await check(page, 'l5-chair-panel', size);
+  await page.click('.chair-dirs button[aria-label="Roll down-right"]').catch(() => errors.push('l5: no down-right arrow'));
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'keyboard' && g.barriers.length > 0 && g.towers.some((t) => t.defId === 'chair' && t.rolling !== 0)) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave');
+      g.events.push(...keep.slice(-2));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)} keyboards=${g.barriers.length}`;
+    }, stop);
+  console.log(`  ${await ff('keyboard')}`);
+  await new Promise((r) => setTimeout(r, 300));
+  total += await check(page, 'l5-keyboard', size);
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    s.selected = s.game.towers.find((t) => t.defId === 'keyboardsmash')?.id ?? null;
+  });
+  total += await check(page, 'l5-panel-keyboard', size);
+  await page.keyboard.press('Escape');
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l5-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Run the multiplayer flow; on any failure, save what every open page shows before rethrowing. */
 async function mpFlowLogged(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   try {
@@ -544,6 +650,10 @@ async function run(): Promise<void> {
   try {
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
+      throw new Done();
+    }
+    if (args.includes('--l5-only')) {
+      total += await level5Flow(browser, errors);
       throw new Done();
     }
     if (args.includes('--l4-only')) {
@@ -703,6 +813,7 @@ async function run(): Promise<void> {
     total += await level2Flow(browser, errors);
     total += await level3Flow(browser, errors);
     total += await level4Flow(browser, errors);
+    total += await level5Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

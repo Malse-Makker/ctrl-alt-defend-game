@@ -1,7 +1,7 @@
 // Every model, icon and sound the data points at must exist, and be in the loader's list.
 // A missing one would only show up in the browser as a grey box or silence.
 
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SOUNDS } from '../src/audio/sfx';
 import { MODEL_NAMES } from '../src/render/assets';
@@ -42,8 +42,11 @@ describe('assets', () => {
     for (const n of ['vga', 'pwr']) expect(existsSync(`public/ui/plug_${n}.png`), n).toBe(true);
   });
 
-  it('every sound has a file', () => {
+  it('every sound has a file, and every sound file is one the game plays', () => {
     for (const s of SOUNDS) expect(existsSync(`public/sfx/${s}.wav`), `${s}.wav`).toBe(true);
+    // A file nobody loads is a sound that was made and then forgotten.
+    const known = new Set<string>(SOUNDS);
+    for (const f of readdirSync('public/sfx').filter((x) => x.endsWith('.wav'))) expect(known.has(f.replace('.wav', '')), `${f} is not in SOUNDS`).toBe(true);
   });
 
   it('a tower takes on the look of its leading path at tier 3 and 4', () => {

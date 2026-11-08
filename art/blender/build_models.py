@@ -1292,6 +1292,184 @@ def b_recycle_bins():
     return root
 
 
+# ---------------------------------------------------------------- level 5: the boardroom
+
+def _keyboard(x, y, z, w=0.42, d=0.15, rgb=False, name="Kb"):
+    base = box(f"{name}Base", (w, d, 0.025), loc=(x, y, z), material=mat("plastic_black"), bevel=0.006)
+    keys = []
+    cols = max(6, int(w / 0.045))
+    for r in range(3):
+        for c in range(cols):
+            col = ["red", "orange", "yellow", "plant", "teal", "blue", "pink"][(c + r) % 7] if rgb else "charcoal"
+            keys.append(box(f"{name}K{r}{c}", (w / cols * 0.8, d / 3 * 0.75, 0.012), loc=(x - w / 2 + (c + 0.5) * w / cols, y - d / 2 + (r + 0.5) * d / 3, z + 0.025), material=mat(col, rough=0.5, emit=0.6 if rgb else 0.0)))
+    return [base] + keys
+
+
+def _flying_keys(h, seed=0):
+    out = []
+    for i, (x, y, z) in enumerate(((-0.2, -0.2, 0.22), (0.18, -0.25, 0.3), (0.02, -0.32, 0.38), (-0.08, -0.15, 0.45))):
+        k = box(f"Fly{seed}{i}", (0.035, 0.035, 0.02), loc=(x, y, h + z), material=mat(["charcoal", "red", "yellow", "teal"][(i + seed) % 4] if seed else "charcoal"))
+        kit.tilt([k], rx=0.5 * i, rz=0.7 * i)
+        out.append(k)
+    return out
+
+
+def b_keyboardsmash_1():
+    root = empty("keyboardsmash_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _monitor(0, 0.18, h, screen_key="red", emit=1.4)
+    parts += _keyboard(0, -0.12, h, name="Kb")
+    parts += _flying_keys(h)
+    ob = join("keyboardsmash_1_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_2():
+    root = empty("keyboardsmash_2")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    parts += _monitor(0, 0.18, h, screen_key="red", emit=1.6)
+    parts.append(box("Crack", (0.2, 0.01, 0.006), loc=(0.05, 0.16, h + 0.22), material=mat("plastic_white", emit=1.0), rot_z=0.6))
+    parts += _keyboard(0, -0.12, h, w=0.5, d=0.17, rgb=True, name="Kb")
+    parts += _flying_keys(h, seed=1)
+    ob = join("keyboardsmash_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_3():
+    """A huge RGB keyboard on a pedestal, ready to come down on someone."""
+    root = empty("keyboardsmash_3")
+    base = box("Base", (0.55, 0.5, 0.14), loc=(0, 0, 0), material=mat("charcoal"), bevel=0.02)
+    warn = box("Warn", (0.57, 0.01, 0.05), loc=(0, -0.252, 0.05), material=mat("yellow"))
+    post = cyl("Post", 0.04, 0.5, loc=(0, 0.05, 0.14), material=mat("metal_light", metal=0.7, rough=0.3), verts=10)
+    # The keyboard stands on its long edge, keys to the front.
+    slab = box("Slab", (0.7, 0.06, 0.26), loc=(0, 0.05, 0.64), material=mat("plastic_black"), bevel=0.01)
+    keys = []
+    for r in range(4):
+        for c in range(11):
+            col = ["red", "orange", "yellow", "plant", "teal", "blue", "pink"][(c + r) % 7]
+            keys.append(box(f"BK{r}{c}", (0.05, 0.015, 0.045), loc=(-0.3 + c * 0.06, 0.012, 0.67 + r * 0.055), material=mat(col, rough=0.5, emit=0.7)))
+    ob = join("keyboardsmash_3_mesh", [base, warn, post, slab] + keys + _flying_keys(0.2, seed=2))
+    parent(ob, root)
+    return root
+
+
+def _chair(seat_col, back_col, arms=False, racing=False, s=1.0):
+    parts = []
+    for i in range(5):
+        a = i * TAU / 5
+        parts.append(box(f"Leg{i}", (0.05 * s, 0.26 * s, 0.03 * s), loc=(math.sin(a) * 0.12 * s, -math.cos(a) * 0.12 * s, 0.04 * s), material=mat("plastic_black"), rot_z=a))
+        parts.append(ball(f"Castor{i}", 0.03 * s, loc=(math.sin(a) * 0.25 * s, -math.cos(a) * 0.25 * s, 0.03 * s), material=mat("charcoal"), subdiv=1))
+    parts.append(cyl("Gas", 0.03 * s, 0.3 * s, loc=(0, 0, 0.06 * s), material=mat("metal_light", metal=0.7, rough=0.3), verts=10))
+    parts.append(box("Seat", (0.42 * s, 0.42 * s, 0.08 * s), loc=(0, 0, 0.36 * s), material=mat(seat_col, rough=0.6), bevel=0.03 * s))
+    back_h = 0.62 if racing else 0.42
+    back = box("Back", (0.4 * s, 0.07 * s, back_h * s), loc=(0, 0.2 * s, 0.44 * s), material=mat(back_col, rough=0.6), bevel=0.03 * s, taper=0.9)
+    kit.tilt([back], rx=-0.12, pivot=(0, 0.2 * s, 0.44 * s))
+    parts.append(back)
+    if racing:
+        for side in (-1, 1):
+            wing = box(f"Wing{side}", (0.06 * s, 0.1 * s, 0.3 * s), loc=(side * 0.2 * s, 0.17 * s, 0.75 * s), material=mat("red", rough=0.5), bevel=0.02 * s)
+            parts.append(wing)
+        parts.append(box("Stripe", (0.08 * s, 0.075 * s, back_h * s * 0.9), loc=(0, 0.2 * s, 0.46 * s), material=mat("red", rough=0.5)))
+    if arms or racing:
+        for side in (-1, 1):
+            parts.append(box(f"ArmPost{side}", (0.03 * s, 0.03 * s, 0.18 * s), loc=(side * 0.22 * s, 0.02 * s, 0.42 * s), material=mat("plastic_black")))
+            parts.append(box(f"ArmPad{side}", (0.06 * s, 0.26 * s, 0.03 * s), loc=(side * 0.22 * s, 0.02 * s, 0.6 * s), material=mat("plastic_black"), bevel=0.01 * s))
+    return parts
+
+
+def b_chair_1():
+    root = empty("chair_1")
+    ob = join("chair_1_mesh", _chair("charcoal", "charcoal"))
+    parent(ob, root)
+    return root
+
+
+def b_chair_2():
+    root = empty("chair_2")
+    ob = join("chair_2_mesh", _chair("blue", "navy", arms=True))
+    parent(ob, root)
+    return root
+
+
+def b_chair_3():
+    root = empty("chair_3")
+    ob = join("chair_3_mesh", _chair("plastic_black", "plastic_black", racing=True, s=1.1))
+    parent(ob, root)
+    return root
+
+
+def b_keyboard_barrier():
+    """The keyboard lying across the walkway. Long side along x; turned in the game."""
+    root = empty("keyboard_barrier")
+    parts = _keyboard(0, 0, 0, w=0.95, d=0.32, rgb=False, name="Bar")
+    parts.append(box("Cable", (0.02, 0.3, 0.015), loc=(0.2, 0.3, 0.0), material=mat("plastic_black"), rot_z=0.3))
+    ob = join("keyboard_barrier_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_linemanager():
+    s = 1.5
+    root, body, hz = person("linemanager", "navy", "charcoal", "skin_1", "hair_brown", style="side", h=s)
+    shirt = box("ShirtV", (0.1 * s, 0.012 * s, 0.16 * s), loc=(0, -0.104 * s, 0.52 * s), material=mat("plastic_white"), taper=0.4)
+    tie = box("Tie", (0.035 * s, 0.014 * s, 0.15 * s), loc=(0, -0.108 * s, 0.5 * s), material=mat("#8e6fbf"), taper=0.6)
+    glasses = box("Glasses", (0.17 * s, 0.02 * s, 0.03 * s), loc=(0, -0.125 * s, hz), material=mat("plastic_black"))
+    badge = box("Badge", (0.06 * s, 0.012 * s, 0.08 * s), loc=(0.09 * s, -0.106 * s, 0.56 * s), material=mat("plastic_white"))
+    acc = join("Props", [shirt, tie, glasses, badge])
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -0.9
+    hp = _hand_world(arm, s)
+    board = box("Clipboard", (0.02 * s, 0.22 * s, 0.28 * s), loc=(hp.x, hp.y - 0.02 * s, hp.z - 0.18 * s), material=mat("wood", rough=0.6))
+    paper = box("Paper", (0.022 * s, 0.18 * s, 0.22 * s), loc=(hp.x - 0.002 * s, hp.y - 0.02 * s, hp.z - 0.16 * s), material=mat("paper"))
+    clip = box("Clip", (0.025 * s, 0.08 * s, 0.03 * s), loc=(hp.x, hp.y - 0.02 * s, hp.z + 0.08 * s), material=mat("metal_light", metal=0.8))
+    _hold(root, "R", s, [board, paper, clip])
+    hl = _hand_world(_arm(root, "L"), s)
+    mug = cyl("Mug", 0.045 * s, 0.1 * s, loc=(hl.x, hl.y - 0.05 * s, hl.z - 0.06 * s), material=mat("plastic_white"), verts=10)
+    _hold(root, "L", s, [mug])
+    return root
+
+
+def b_boardroom_table():
+    """Nine by three tiles: a long dark table with leather chairs, glasses and notepads."""
+    root = empty("boardroom_table")
+    top = box("Top", (8.4, 2.2, 0.08), loc=(0, 0, 0.74), material=mat("#4a3628", rough=0.35), bevel=0.04)
+    inlay = box("Inlay", (7.6, 1.5, 0.005), loc=(0, 0, 0.82), material=mat("#5d4533", rough=0.3))
+    legs = [box(f"Pedestal{i}", (0.7, 0.9, 0.74), loc=(x, 0, 0), material=mat("#3a2a1f", rough=0.5)) for i, x in enumerate((-3.0, 0.0, 3.0))]
+    parts = [top, inlay] + legs
+    for i in range(5):
+        x = -3.2 + i * 1.6
+        for side in (-1, 1):
+            cy = side * 1.35
+            parts.append(box(f"Seat{i}{side}", (0.5, 0.5, 0.1), loc=(x, cy, 0.42), material=mat("#2a2420", rough=0.45), bevel=0.04))
+            parts.append(box(f"Back{i}{side}", (0.5, 0.12, 0.6), loc=(x, cy + side * 0.25, 0.5), material=mat("#2a2420", rough=0.45), bevel=0.04))
+            parts.append(cyl(f"Gas{i}{side}", 0.035, 0.42, loc=(x, cy, 0), material=mat("metal_light", metal=0.7), verts=8))
+            parts.append(cyl(f"Glass{i}{side}", 0.035, 0.11, loc=(x + 0.3, side * 0.75, 0.82), material=mat("window", rough=0.05), verts=8))
+            parts.append(box(f"Pad{i}{side}", (0.3, 0.4, 0.015), loc=(x - 0.1, side * 0.7, 0.82), material=mat("paper"), rot_z=0.1 * side))
+    parts.append(box("Jug", (0.15, 0.15, 0.25), loc=(0, 0, 0.82), material=mat("window", rough=0.05)))
+    parts.append(cyl("Phone", 0.16, 0.05, loc=(1.6, 0, 0.82), material=mat("plastic_black"), verts=3))
+    ob = join("boardroom_table_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_sideboard():
+    root = empty("sideboard")
+    body = box("Body", (1.8, 0.5, 0.8), loc=(0, 0.1, 0), material=mat("#4a3628", rough=0.4), bevel=0.02)
+    doors = [box(f"Door{i}", (0.42, 0.01, 0.6), loc=(-0.66 + i * 0.44, -0.155, 0.1), material=mat("#5d4533", rough=0.4)) for i in range(4)]
+    bottles = [cyl(f"Bottle{i}", 0.04, 0.26, loc=(-0.6 + i * 0.12, 0.1, 0.8), material=mat("window", rough=0.05), verts=10) for i in range(4)]
+    caps = [cyl(f"Cap{i}", 0.02, 0.03, loc=(-0.6 + i * 0.12, 0.1, 1.06), material=mat("blue"), verts=8) for i in range(4)]
+    thermos = cyl("Thermos", 0.08, 0.32, loc=(0.4, 0.1, 0.8), material=mat("metal", metal=0.7, rough=0.3), verts=12)
+    cups = [cyl(f"Cup{i}", 0.04, 0.07, loc=(0.6 + i * 0.1, 0.0, 0.8), material=mat("plastic_white"), verts=10) for i in range(3)]
+    ob = join("sideboard_mesh", [body] + doors + bottles + caps + [thermos] + cups)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -1353,6 +1531,16 @@ BUILDERS = {
     "high_table": b_high_table,
     "kitchen_table": b_kitchen_table,
     "recycle_bins": b_recycle_bins,
+    "keyboardsmash_1": b_keyboardsmash_1,
+    "keyboardsmash_2": b_keyboardsmash_2,
+    "keyboardsmash_3": b_keyboardsmash_3,
+    "chair_1": b_chair_1,
+    "chair_2": b_chair_2,
+    "chair_3": b_chair_3,
+    "keyboard_barrier": b_keyboard_barrier,
+    "linemanager": b_linemanager,
+    "boardroom_table": b_boardroom_table,
+    "sideboard": b_sideboard,
 }
 
 

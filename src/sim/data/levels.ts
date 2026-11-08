@@ -326,7 +326,67 @@ const L4: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4 };
+const L5: LevelDef = {
+  id: 5,
+  name: 'Boardroom',
+  block: 'junior',
+  intro: 'The board meets today. Everyone walks the long way round the table to get to you.',
+  gimmick: 'A loop round the boardroom table. The specials arrive: Keyboard Smash and the Office Chair, one each. And Your Line Manager wants a word.',
+  size: { w: 21, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 9.5 },
+      { x: 3.5, y: 9.5 },
+      { x: 3.5, y: 1.5 },
+      { x: 17.5, y: 1.5 },
+      { x: 17.5, y: 9.5 },
+      { x: 10.5, y: 9.5 },
+      { x: 10.5, y: 11.0 },
+    ],
+  ],
+  desk: { x: 10, y: 11 },
+  decor: [
+    { model: 'boardroom_table', rect: { x: 6, y: 4, w: 9, h: 3 } },
+    { model: 'projector_screen', rect: { x: 8, y: 0, w: 3, h: 1 } },
+    { model: 'sideboard', rect: { x: 12, y: 0, w: 2, h: 1 } },
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 20, y: 11, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 20, y: 5, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair'],
+  startFocus: 100,
+  // Dark wood, and a burgundy runner where everyone walks.
+  look: { floorA: '#6b5644', floorB: '#634f3e', walkway: '#8f3b33', edge: '#6d2b25', wall: '#e7e1d5' },
+  // A smooth curve of about 10% per wave, with Board Members (only WRITTEN hurts them) from wave 7.
+  waves: [
+    'intern:14@0.65 + newhire:3@1.10',
+    'intern:12@0.60 + newhire:3@1.00 + chaser:6@0.25',
+    'chaser:15@0.20 + intern:10@0.55 + newhire:2@1.00',
+    'impersonator:3@1.40 + intern:10@0.60 + newhire:4@1.00 + chaser:2@0.25',
+    'oldguard:1@2.00 + intern:10@0.60 + chaser:6@0.20',
+    'chatterbox:1@2.00 + intern:12@0.55 + newhire:5@0.95 + chaser:6@0.20',
+    'boardmember:1@2.00 + intern:12@0.50 + newhire:5@0.95 + chaser:4@0.20',
+    'oldguard:1@2.00 + chaser:20@0.14 + impersonator:4@0.90',
+    'chaser:30@0.12 + newhire:7@0.90 + intern:6@0.50',
+    'chatterbox:2@1.80 + intern:14@0.50 + oldguard:1@2.00 + newhire:2@0.90 + chaser:5@0.15',
+    'chaser:34@0.11 + requester:4@1.40 + boardmember:1@2.00 + intern:2@0.50',
+    'oldguard:2@1.80 + intern:16@0.48 + chaser:6@0.20 + impersonator:3@0.80',
+    'chaser:32@0.11 + newhire:8@0.85 + impersonator:5@0.70 + boardmember:1@2.00',
+    'intern:18@0.45 + oldguard:2@1.70 + requester:3@1.30 + chatterbox:1@1.80',
+    'chaser:46@0.10 + newhire:10@0.80 + impersonator:5@0.70 + boardmember:1@2.00',
+    'oldguard:2@1.60 + requester:4@1.20 + intern:20@0.42 + chatterbox:1@1.80 + newhire:3@0.80',
+    'impersonator:10@0.55 + chaser:36@0.10 + newhire:12@0.75 + boardmember:2@1.80',
+    'oldguard:3@1.50 + chaser:24@0.10 + requester:4@1.20 + chatterbox:2@1.60 + newhire:2@0.80',
+    'intern:24@0.40 + newhire:18@0.70 + impersonator:8@0.60 + chaser:24@0.11 + boardmember:1@1.80',
+    'chaser:48@0.09 + oldguard:3@1.40 + requester:5@1.10 + boardmember:2@1.60',
+    'oldguard:4@1.30 + impersonator:10@0.50 + newhire:8@0.70 + chaser:12@0.10 + chatterbox:2@1.50 + boardmember:1@1.60',
+    'linemanager:1@2.00 + newhire:6@0.80',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

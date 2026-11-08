@@ -24,7 +24,7 @@ Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 2. **Level 3 Meeting Room** (KLAAR, v0.5.0): Quick Reply, The Presenter, de projector-mini-game.
 3. **Level 4 Canteen** (KLAAR, v0.6.0): Thumbtacks, Self-Service, The Impersonator (onzichtbaar),
    The Cleaner, lunchpauze-zwerm, natte-vloer-vakken.
-4. **Level 5 Boardroom**: Keyboard Smash, de bureaustoel (idee van de maker: rijdt in een rechte
+4. **Level 5 Boardroom** (KLAAR, v0.12.0): Keyboard Smash, de bureaustoel (idee van de maker: rijdt in een rechte
    lijn die je zelf kiest, raakt en verliest HP, rijdt dan terug), Your Line Manager (drie fases).
    Daarvoor of tussendoor: eigen modellen per pad op tier 3 en 4, toren voor toren.
 5. Meta-shop met Recognition (Startup Budget, Extra Caffeine, Bulk Discount, Smoke Break) en de

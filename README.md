@@ -17,7 +17,7 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.11.0)
+## What is in it now (v0.12.0)
 
 - **Level 1, Open-Plan Office**: 21 waves and The Head of Comms.
 - **Level 2, Coffee Corner**: a small square office kitchen, 22 waves and The Repair Guy (no
@@ -26,11 +26,15 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
   projector mini-game: right cable in the right port, right display setting, or no building.
 - **Level 4, Canteen**: 22 waves on a spiral round the tables, wet floor where you cannot build,
   the lunch break (a crowd of Interns, and everyone walks faster for a while) and The Cleaner.
+- **Level 5, Boardroom**: 22 waves on a loop round the boardroom table, the two specials and
+  Your Line Manager.
 - **Towers**: Coffee Machine, Auto-Reply, Headphones (everyone in range stops for a moment),
   Office Artillery (reaches the whole floor, breaks shields), The Shredder (a zone that shares its
   damage and reveals hidden colleagues; it only slows if you jam it), Quick Reply (builds up
   damage on the same target), Thumbtacks (piles of tacks on the walkway, they hit hidden
   colleagues too) and Self-Service (hits everyone in a small circle).
+- **Specials** (one each): Keyboard Smash (slams the walkway and leaves the keyboard across it)
+  and the Office Chair (rolls down a lane you choose, trading its HP for damage).
 - **Colleagues**: Intern, New Hire, Requester, Chaser, Chatterbox (silences towers), Old Guard
   (archive box as a shield, the Shredder may not touch it), Board Member (immune to anything in
   person) and Impersonator (invisible until a Shredder zone shows him up).
@@ -43,7 +47,8 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
   when to claim. Too early is a waste, too late too: a full pot stops growing.
 - **Bosses**: The Head of Comms (his Interns soak up your shots), The Repair Guy (blocks all
   income), The Presenter (a loading screen that comes back every phase, Chasers next to your
-  desk) and The Cleaner (hurries everyone along, sweeps up tacks, mops Shredders).
+  desk), The Cleaner (hurries everyone along, sweeps up tacks, mops Shredders) and Your Line
+  Manager (agenda shield, peer reviewers, slows your towers at the end).
 - **Targeting** per tower (First, Last, Closest, Farthest, Most HP, Least HP).
 - **Top bar**: which floor you are on, Settings (sound and the rest) and Go home, without leaving
   the game.

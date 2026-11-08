@@ -17,7 +17,7 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.11.0)
+## Wat er nu in zit (v0.12.0)
 
 - **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
 - **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy
@@ -26,11 +26,15 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
   projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
 - **Level 4, Canteen**: 22 golven over een spiraal rond de tafels, natte vloer waar je niet mag
   bouwen, de lunchpauze (een stoet Interns en iedereen loopt even sneller) en The Cleaner.
+- **Level 5, Boardroom**: 22 golven in een lus rond de vergadertafel, de twee specials en Your
+  Line Manager.
 - **Torens**: Coffee Machine, Auto-Reply, Headphones (zet iedereen in een straal even stil),
   Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die schade
   verdeelt en onzichtbaren laat zien; vertraagt alleen als je hem laat vastlopen), Quick Reply (bouwt schade op tegen hetzelfde doelwit), Thumbtacks
   (punaise-hoopjes op het pad, zien ook onzichtbare collega's) en Self-Service (raakt iedereen in een
   kleine cirkel).
+- **Specials** (één per speler): Keyboard Smash (slaat op het pad en laat het toetsenbord dwars
+  liggen) en de bureaustoel (rijdt een baan die jij kiest en ruilt zijn HP voor schade).
 - **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
   (archiefdoos als schild, de Shredder mag er niet aan), Board Member (immuun voor in persoon) en
   Impersonator (onzichtbaar tot een Shredder-zone hem laat zien).

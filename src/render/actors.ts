@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { modelFor } from '../sim/data/towers';
-import type { Enemy, Game, GameEvent, Tower } from '../sim/game';
+import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '../sim/game';
 import { part, type Assets } from './assets';
 import { PAL } from './palette';
 
@@ -97,6 +97,9 @@ export class Actors {
   private readonly flapGeo = new THREE.BoxGeometry(0.2, 0.024, 0.04);
   private readonly flapMat = new THREE.MeshStandardMaterial({ color: PAL.envelopeFlap });
   readonly rangeRing: THREE.Mesh;
+  /** The office chair's lane: a strip instead of a circle. */
+  private readonly lane: THREE.Mesh;
+  private barrierViews = new Map<number, THREE.Object3D>();
   readonly ghostTile: THREE.Mesh;
   private ghost: THREE.Object3D | null = null;
   /** Multiplayer: a ring in the owner's colour under every tower. Empty in single player. */
@@ -131,6 +134,14 @@ export class Actors {
     this.rangeRing.visible = false;
     this.rangeRing.renderOrder = 2;
     this.group.add(this.rangeRing);
+    // A unit strip from the origin along +z, scaled to the lane's length when shown.
+    this.lane = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, depthWrite: false }),
+    );
+    this.lane.visible = false;
+    this.lane.renderOrder = 2;
+    this.group.add(this.lane);
 
     this.ghostTile = new THREE.Mesh(
       new THREE.PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2),
@@ -167,6 +178,19 @@ export class Actors {
     this.ghostTile.position.set(tx + 0.5, 0.01, ty + 0.5);
     (this.ghostTile.material as THREE.MeshBasicMaterial).color.set(ok ? PAL.ok : PAL.bad);
     this.showRange(range > 0 ? tx + 0.5 : null, ty + 0.5, range, ok ? '#ffffff' : PAL.bad);
+  }
+
+  /** Show the chair's lane from (x, y) in direction (dx, dy), or hide it with null. */
+  showLane(x: number | null, y: number, dx: number, dy: number, length: number, color = '#ffffff'): void {
+    if (x === null || length <= 0) {
+      this.lane.visible = false;
+      return;
+    }
+    this.lane.visible = true;
+    this.lane.position.set(x, 0.025, y);
+    this.lane.rotation.y = Math.atan2(dx, dy);
+    this.lane.scale.set(1.1, 1, length + 0.5);
+    (this.lane.material as THREE.MeshBasicMaterial).color.set(color);
   }
 
   showRange(x: number | null, y: number, r: number, color = '#ffffff'): void {
@@ -220,6 +244,12 @@ export class Actors {
         v.zone.scale.setScalar(game.liveStats(t).range);
         (v.zone.material as THREE.MeshBasicMaterial).opacity = t.silenced || t.mopped > 0 ? 0.05 : 0.16 + Math.sin(this.clock * 6) * 0.03;
       }
+      if (t.def.role === 'chair') {
+        // Out along its lane and back, spinning as it goes.
+        const d = CHAIR_DIRS[t.dir] ?? CHAIR_DIRS[0];
+        v.model.position.set(d.x * t.roll, 0, d.y * t.roll);
+        v.model.rotation.y = Math.atan2(d.x, d.y) + (t.rolling !== 0 ? t.roll * 1.6 : 0);
+      }
       if (t.mopped > 0 && !v.wet) {
         v.wet = this.assets.clone('wet_floor');
         v.wet.scale.setScalar(0.7);
@@ -245,9 +275,35 @@ export class Actors {
       }
     }
     this.syncTacks(game);
+    this.syncBarriers(game);
     this.updateShots(dt);
     this.updateScraps(dt);
     this.updatePulses(dt);
+  }
+
+  /** Keyboards across the walkway, lying crosswise. They sink a little as they get kicked. */
+  private syncBarriers(game: Game): void {
+    const seen = new Set<number>();
+    for (const b of game.barriers) {
+      seen.add(b.id);
+      let obj = this.barrierViews.get(b.id);
+      if (!obj) {
+        obj = this.assets.clone('keyboard_barrier');
+        this.barrierViews.set(b.id, obj);
+        this.group.add(obj);
+        this.burst(b.x, 0.3, b.y, 8, '#2a2d33');
+      }
+      obj.position.set(b.x, 0.02, b.y);
+      obj.rotation.y = Math.atan2(b.dirX, b.dirY);
+      const k = Math.max(0.35, b.hp / Math.max(1, b.maxHp));
+      obj.scale.set(1, k, 1);
+    }
+    for (const [id, obj] of this.barrierViews) {
+      if (seen.has(id)) continue;
+      this.group.remove(obj);
+      this.barrierViews.delete(id);
+      this.burst(obj.position.x, 0.2, obj.position.z, 6, '#a7adb5');
+    }
   }
 
   private syncTacks(game: Game): void {
@@ -324,6 +380,11 @@ export class Actors {
       case 'ability':
         this.pulse(ev.x, ev.y, ev.range, '#bfe2ff');
         break;
+      case 'smash':
+        this.pulse(ev.x, ev.y, ev.radius, '#e5534b');
+        this.burst(ev.x, 0.3, ev.y, 10, '#f2c641');
+        this.burst(ev.x, 0.3, ev.y, 8, '#3e7cc9');
+        break;
       case 'pulse':
         this.pulse(ev.x, ev.y, ev.range, ev.stun ? '#f2c641' : '#6fcf7f');
         break;
@@ -358,7 +419,8 @@ export class Actors {
       }
     }
     const angle = Math.atan2(best.x - t.x, best.y - t.y);
-    root.rotation.y = Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
+    // A chair turns with its lane (in sync); everything else faces the walkway.
+    root.rotation.y = t.def.role === 'chair' ? 0 : Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
     const color = this.ownerColors[t.owner];
     if (color) {
       let mat = this.ringMats.get(color);
@@ -775,5 +837,8 @@ export class Actors {
     this.shots = [];
     this.scraps = [];
     this.tacks.count = 0;
+    for (const obj of this.barrierViews.values()) this.group.remove(obj);
+    this.barrierViews.clear();
+    this.lane.visible = false;
   }
 }

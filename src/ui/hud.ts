@@ -35,6 +35,7 @@ export interface HudActions {
   gift(to: number, amount: number): void;
   settings(): void;
   leave(): void;
+  dir(id: number, dir: number): void;
 }
 
 export interface MpPlayer {
@@ -230,6 +231,7 @@ export class Hud {
         img(`icons/${def.models[0]}.png`, def.name),
         h('span', { class: 'name', text: def.name }),
         cost,
+        def.special ? h('span', { class: 'special', text: T.oneEach, title: T.oneEachHelp }) : null,
       );
       this.shop.push({ defId, el, cost });
       grid.append(el);
@@ -301,8 +303,9 @@ export class Hud {
     const wallet = g.walletOf(this.me);
     for (const s of this.shop) {
       const cost = g.placeCostFor(s.defId, this.me);
-      setText(s.cost, String(cost));
-      toggle(s.el, 'broke', wallet < cost);
+      const taken = TOWERS[s.defId].special === true && g.towers.some((t) => t.defId === s.defId && t.owner === this.me);
+      setText(s.cost, taken ? T.placed : String(cost));
+      toggle(s.el, 'broke', taken || wallet < cost);
       toggle(s.el, 'selected', st.placing === s.defId);
     }
     this.updatePlayers(st);
@@ -420,7 +423,7 @@ export class Hud {
       }
       return;
     }
-    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.silenced ? 1 : 0}:${t.mopped > 0 ? 1 : 0}`;
+    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.silenced ? 1 : 0}:${t.mopped > 0 ? 1 : 0}:${t.dir}`;
     if (key !== this.towerKey) {
       this.towerKey = key;
       this.buildTowerPanel(t);
@@ -514,6 +517,40 @@ export class Hud {
         setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`);
         setText(per, fmt(t.stats.damage / Math.max(1, t.invested), 1));
       });
+    } else if (def.role === 'smash') {
+      stats.append(
+        h('span', { class: 'k', text: 'Slam' }),
+        h('span', { class: 'v', text: `${fmt(s.damage, 0)} damage, ${fmt(s.smashRadius, 1)} wide` }),
+        h('span', { class: 'k', text: 'Every' }),
+        h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
+        h('span', { class: 'k', text: 'Keyboard' }),
+        h('span', { class: 'v', text: `${fmt(s.barrierHp, 0)} kicks, ${fmt(s.barrierTime, 0)}s` }),
+      );
+      const sl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      const extra = [s.doubleSmash ? 'smashes twice' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.barrierThorns > 0 ? `kicking it hurts (${s.barrierThorns}/s)` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      const dealt = h('span', { class: 'v' });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
+    } else if (def.role === 'chair') {
+      stats.append(
+        h('span', { class: 'k', text: 'Per knock' }),
+        h('span', { class: 'v', text: `${fmt(s.damage, 0)} damage` }),
+        h('span', { class: 'k', text: 'HP per run' }),
+        h('span', { class: 'v', text: fmt(s.chairHp, 0) }),
+        h('span', { class: 'k', text: 'Lane' }),
+        h('span', { class: 'v', text: `${fmt(g.laneLength(t, s.range), 1)} tiles` }),
+        h('span', { class: 'k', text: 'Rests' }),
+        h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
+      );
+      const sl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      const extra = [s.knockback > 0 ? 'knocks back' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.rollBack ? 'hits on the way back' : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      const dealt = h('span', { class: 'v' });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
     } else if (def.role === 'damage') {
       const extra = [s.targets >= 50 ? 'everyone in range' : s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
       stats.append(
@@ -608,6 +645,22 @@ export class Hud {
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
 
     // Targeting
+    if (def.role === 'chair') {
+      // Four arrows laid out the way they look on screen: +x runs down-right, +y down-left.
+      const arrows = h('div', { class: 'chair-dirs', attrs: { role: 'group', 'aria-label': T.chairDirection } });
+      const layout: { dir: number; deg: number; label: string }[] = [
+        { dir: 2, deg: -45, label: 'up-left' },
+        { dir: 3, deg: 45, label: 'up-right' },
+        { dir: 1, deg: -135, label: 'down-left' },
+        { dir: 0, deg: 135, label: 'down-right' },
+      ];
+      for (const a of layout) {
+        const i = icon('arrow-up');
+        i.style.transform = `rotate(${a.deg}deg)`;
+        arrows.append(h('button', { class: `btn small${t.dir === a.dir ? ' active' : ''}`, title: `Roll ${a.label}`, attrs: { 'aria-label': `Roll ${a.label}` }, on: { click: () => this.act.dir(t.id, a.dir) } }, i));
+      }
+      parts.push(h('div', { class: 'label', text: T.chairDirection }), arrows);
+    }
     if (def.role === 'damage' || def.role === 'trap') {
       const trap = def.role === 'trap';
       const tg = h('div', { class: 'targets', attrs: { role: 'group', 'aria-label': trap ? T.trapTargeting : T.targeting } });

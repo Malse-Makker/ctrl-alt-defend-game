@@ -3,6 +3,18 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.12.0] - 2026-11-08
+
+### New
+- Level 5, Boardroom: 22 waves on a loop round the boardroom table, on a dark wood floor with a burgundy runner. Opens once you finish level 4.
+- Specials: towers you get one of each. They come with their own three paths.
+- Keyboard Smash: every few seconds it slams the walkway in front of the first colleague, hitting everyone around, and leaves the keyboard across the walkway. Nobody gets past until they have kicked it out of the way.
+- Office Chair: rolls in a straight line, and you pick which way with the arrows in its panel. Every colleague it runs into takes damage, and the chair loses as much HP itself. Empty, or at the end of its lane, it rolls back and goes again.
+- Boss: Your Line Manager. A stack of agenda points as a shield, then peer reviewers who keep coming, and in the end every tower near him reloads a lot slower.
+
+### Fixed
+- The sounds for tacks, mopping and the lunch bell that 0.6.0 promised were made but never played. They play now.
+
 ## [0.11.0] - 2026-11-08
 
 ### New

@@ -1715,3 +1715,18 @@ select {
   color: var(--coffee);
   border-color: rgba(217, 160, 91, 0.6);
 }
+
+.shop-item .special {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--warn);
+}
+
+.chair-dirs {
+  display: grid;
+  grid-template-columns: repeat(2, 40px);
+  gap: 4px;
+}
