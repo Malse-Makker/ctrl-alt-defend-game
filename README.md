@@ -87,6 +87,13 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 Meer achtergrond, beslissingen en valkuilen: [HANDOFF.md](HANDOFF.md). Het bouwplan per fase:
 [docs/BOUWPLAN.md](docs/BOUWPLAN.md).
 
+## Meebouwen
+
+Pull requests zijn welkom, ook als ze met AI geschreven zijn. Lees eerst
+[CONTRIBUTING.md](CONTRIBUTING.md) (opzet, checks, hoe je een PR instuurt) en
+[AGENTS.md](AGENTS.md) (de huisregels; AI-tools lezen die vanzelf). Elke PR draait automatisch de
+tests en de UI-check.
+
 ## Lokaal draaien
 
 Nodig: Node.js 24.

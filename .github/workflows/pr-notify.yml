@@ -1,0 +1,54 @@
+name: Pull request to Mattermost
+
+# Posts a message in Mattermost when someone opens a pull request.
+#
+# pull_request_target runs in the context of this repo, so it can read the webhook secret even
+# for pull requests from forks. That is only safe because this job never checks out or runs
+# code from the pull request: it only reads the title, author and numbers from the event.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions: {}
+
+jobs:
+  notify:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post to Mattermost
+        env:
+          WEBHOOK: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          ACTION: ${{ github.event.action }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          URL: ${{ github.event.pull_request.html_url }}
+          HEAD: ${{ github.event.pull_request.head.label }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          ADDS: ${{ github.event.pull_request.additions }}
+          DELS: ${{ github.event.pull_request.deletions }}
+          FILES: ${{ github.event.pull_request.changed_files }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$WEBHOOK" ]; then
+            echo "MATTERMOST_WEBHOOK_URL is not set for this repo; nothing sent."
+            exit 0
+          fi
+          # Everything from the event goes in through jq as data, never into the shell or as
+          # markdown: an @mention or a link in a PR title must not ping or trick anyone.
+          jq -n \
+            --arg action "$ACTION" --arg number "$NUMBER" --arg title "$TITLE" --arg author "$AUTHOR" \
+            --arg url "$URL" --arg head "$HEAD" --arg base "$BASE" \
+            --arg adds "$ADDS" --arg dels "$DELS" --arg files "$FILES" '
+            def safe: .[0:200] | gsub("@"; "@​") | gsub("(?<c>[\\\\`*_\\[\\]()#<>|~!])"; "\\\(.c)");
+            {
+              username: "CTRL-ALT-DEFEND",
+              text: ("#### Pull request #\($number) " + (if $action == "reopened" then "reopened" else "opened" end) + "\n"
+                + "**\($title | safe)** by \($author | safe)\n"
+                + "+\($adds) / -\($dels) in \($files) files, \($head | safe) into \($base | safe)\n"
+                + $url)
+            }' | curl -fsS -X POST -H 'Content-Type: application/json' --data @- "$WEBHOOK" > /dev/null
+          echo "Sent."
