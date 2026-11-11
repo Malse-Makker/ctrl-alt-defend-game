@@ -79,7 +79,7 @@ describe('levels', () => {
         for (const d of level.decor) {
           for (let y = d.rect.y; y < d.rect.y + d.rect.h; y++) {
             for (let x = d.rect.x; x < d.rect.x + d.rect.w; x++) {
-              expect(g.isPathTile(x, y), `${d.model} at ${x},${y}`).toBe(false);
+              if (!d.walkThrough) expect(g.isPathTile(x, y), `${d.model} at ${x},${y}`).toBe(false);
               expect(g.inBounds(x, y)).toBe(true);
             }
           }

@@ -137,7 +137,7 @@ describe('the multiplayer server', () => {
     host.send({ t: 'start' });
     await host.until((m) => m.t === 'room' && (m.room as { phase: string }).phase === 'game');
 
-    guest.send({ t: 'cmd', c: { c: 'place', def: 'autoreply', tx: 6, ty: 3 } });
+    guest.send({ t: 'cmd', c: { c: 'place', def: 'autoreply', tx: 6, ty: 2 } });
     guest.send({ t: 'cmd', c: { c: 'place', def: 'autoreply', tx: 7.5, ty: 3 } });
     const update = (await host.until(
       (m) => m.t === 'update' && (m.s as { towers: unknown[] }).towers.length === 1,

@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.17.0] - 2026-11-12
+
+### New
+- Level 1 is now Reception: your first day behind the reception desk. A marble hall with a glass front, waiting benches, lounge chairs, the lifts and a golden sculpture nobody understands. Same waves, same Head of Comms.
+- The gates: everyone stops at the speed gates for a moment to scan their pass, then the glass flaps swing open. A good spot for your first Auto-Reply.
+- Tall things block sight now on these floors: pillars, the logo wall, the lifts. Benches, tables and lounge chairs do not.
+
+### Changed
+- Coffee Corner is furnished like a real office kitchen: counters with the sink, the coffee machines and a hob, a long dining table with chairs, two standing tables and a bar by the window.
+- In Coffee Corner you build on the worktops only: counters, tables and the bar. Your things stand on top, without their cabinet.
+
 ## [0.16.0] - 2026-11-08
 
 ### New

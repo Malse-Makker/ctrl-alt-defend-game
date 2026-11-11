@@ -177,8 +177,20 @@ def empty(name, loc=(0, 0, 0)):
 
 
 def join(name, objs):
-    """Join meshes into one object (keeps materials). Returns the joined object."""
+    """Join meshes into one object (keeps materials). Returns the joined object.
+
+    Parts tagged ob["desk"] (the cabinet a tower stands on) are joined separately into
+    "<name>_Desk", a child of the result, so the game can hide it when the tower stands on a
+    kitchen counter."""
     objs = [o for o in objs if o is not None]
+    desk = [o for o in objs if o.get("desk")]
+    rest = [o for o in objs if not o.get("desk")]
+    if desk and rest:
+        ob = join(name, rest)
+        d = join(name + "_Desk", desk)
+        del d["desk"]
+        parent(d, ob)
+        return ob
     if len(objs) == 1:
         objs[0].name = name
         return objs[0]

@@ -14,7 +14,7 @@ import { Actors } from './render/actors';
 import type { Assets } from './render/assets';
 import { Popups } from './render/popups';
 import type { View } from './render/view';
-import { World } from './render/world';
+import { surfaceAt, World } from './render/world';
 import { solidBot, type Bot } from './sim/bots';
 import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
@@ -62,6 +62,8 @@ export class Session {
   /** The player this screen belongs to (0 in single player). */
   private readonly me: number;
   private readonly world: World;
+  /** Heights of the worktops on this floor, highest first (for pointing at them). */
+  private readonly surfaces: number[];
   private readonly actors: Actors;
   private readonly popups: Popups;
   private readonly hud: Hud | null;
@@ -108,6 +110,7 @@ export class Session {
       this.game = new Game(level, { seed: this.attract ? 7 : Math.floor(Math.random() * 1e9), ...perks });
     }
     this.world = new World(level, this.game, host.assets, this.me);
+    this.surfaces = [...new Set(level.decor.flatMap((d) => (d.surface === undefined ? [] : [d.surface])))].sort((x, y) => y - x);
     this.actors = new Actors(host.assets, host.view.screenRight);
     if (this.room) this.actors.setOwnerColors(this.room.players.map((p) => p.color));
     host.view.scene.add(this.world.group, this.actors.group);
@@ -206,6 +209,7 @@ export class Session {
       const animDt = blocked ? 0 : running ? dt * this.speed : dt;
       this.actors.sync(g, this.prev, Math.min(1, this.acc / TICK), animDt);
     }
+    this.world.update(dt, g);
     this.popups.update(dt);
     this.hud?.update({
       selected: this.selected,
@@ -453,6 +457,9 @@ export class Session {
         break;
       case 'puff':
         sfx.play('mop', { pitch: 0.5, gain: 0.4 });
+        break;
+      case 'gate':
+        sfx.play('gate');
         break;
       case 'cry':
         sfx.play('cry');
@@ -744,6 +751,12 @@ export class Session {
   }
 
   private tileAt(px: number, py: number): { tx: number; ty: number } | null {
+    // A worktop (Coffee Corner) is higher than the floor: what you point at is its top, not the
+    // floor tile behind it. Try the tops first, highest first.
+    for (const h of this.surfaces) {
+      const q = this.host.view.groundAt(px, py, h);
+      if (q && surfaceAt(this.game.level, Math.floor(q.x), Math.floor(q.y)) === h) return { tx: Math.floor(q.x), ty: Math.floor(q.y) };
+    }
     const p = this.host.view.groundAt(px, py);
     if (!p) return null;
     const tx = Math.floor(p.x);
@@ -847,7 +860,7 @@ export class Session {
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
       const chair = def.role === 'chair';
       const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
-      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range);
+      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty));
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
       if (chair) {
         // The lane it would take; turn it afterwards with the arrows.

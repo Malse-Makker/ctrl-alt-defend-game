@@ -193,11 +193,13 @@ export class View {
     return 1 / this.scale;
   }
 
-  /** Ground point (simulation coordinates) under a screen pixel. */
-  groundAt(px: number, py: number): { x: number; y: number } | null {
+  /** Ground point (simulation coordinates) under a screen pixel, or on a level `height` above it. */
+  groundAt(px: number, py: number, height = 0): { x: number; y: number } | null {
     const ndc = new THREE.Vector2((px / this.width) * 2 - 1, -(py / this.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
+    this.ground.constant = -height;
     const hit = this.raycaster.ray.intersectPlane(this.ground, this.tmp);
+    this.ground.constant = 0;
     if (!hit) return null;
     return { x: hit.x, y: hit.z };
   }

@@ -8,6 +8,25 @@ import { PAL } from './palette';
 
 const WALL_H = 1.6;
 const WALL_T = 0.16;
+/** Height of the cabinet every tower stands on (side_desk in the Blender script). */
+export const TOWER_CABINET_H = 0.42;
+
+/** The top of a worktop on this tile (kitchen counter, table, bar), or undefined on the floor. */
+export function surfaceAt(level: LevelDef, tx: number, ty: number): number | undefined {
+  for (const d of level.decor) {
+    if (d.surface !== undefined && tx >= d.rect.x && tx < d.rect.x + d.rect.w && ty >= d.rect.y && ty < d.rect.y + d.rect.h) return d.surface;
+  }
+  return undefined;
+}
+
+interface GateView {
+  flap: THREE.Object3D;
+  x: number;
+  y: number;
+  /** Which way it swings open: with the people walking through. */
+  sign: number;
+  open: number;
+}
 
 export class World {
   readonly group = new THREE.Group();
@@ -16,6 +35,7 @@ export class World {
   readonly deskPos: THREE.Vector3;
   /** Asset clones share geometry with the loaded models and must survive a retry. */
   private readonly shared = new Set<THREE.Object3D>();
+  private readonly gates: GateView[] = [];
 
   constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
@@ -59,8 +79,9 @@ export class World {
     const wallMat = new THREE.MeshStandardMaterial({ color: level.look?.wall ?? PAL.wall, roughness: 0.9 });
     const trimMat = new THREE.MeshStandardMaterial({ color: PAL.wallTrim, roughness: 0.9 });
     const windowMat = new THREE.MeshStandardMaterial({ color: PAL.window, roughness: 0.2, emissive: new THREE.Color(PAL.window), emissiveIntensity: 0.25 });
-    const doors = level.paths.map((p) => p[0]).filter((p) => p.x < 0).map((p) => p.y);
-    this.wallAlongZ(0, h, doors, wallMat, trimMat);
+    // A glass front (Reception) is furniture of its own, with its own doors.
+    const doors = level.look?.glassFront ? [] : level.paths.map((p) => p[0]).filter((p) => p.x < 0).map((p) => p.y);
+    if (!level.look?.glassFront) this.wallAlongZ(0, h, doors, wallMat, trimMat);
     this.wallAlongX(w, wallMat, trimMat, windowMat);
     for (const dz of doors) {
       const door = assets.clone('door');
@@ -91,6 +112,8 @@ export class World {
       obj.rotation.y = ((d.turn ?? 0) * Math.PI) / 2;
       this.shared.add(obj);
       g.add(obj);
+      const flap = obj.getObjectByName('GateFlap');
+      if (flap) this.addGate(flap, obj, game);
     }
 
     const desk = assets.clone('player_desk');
@@ -117,6 +140,37 @@ export class World {
     });
     this.buildGrid.visible = false;
     g.add(this.buildGrid);
+  }
+
+  /** Speed gates swing open for whoever is walking through, once they have scanned their pass. */
+  update(dt: number, game: Game): void {
+    for (const gv of this.gates) {
+      const through = game.enemies.some((e) => e.alive && !(e.gateHold && e.gateHold > 0) && Math.hypot(e.x - gv.x, e.y - gv.y) < 0.75);
+      gv.open += ((through ? 1 : 0) - gv.open) * Math.min(1, dt * 10);
+      gv.flap.rotation.y = gv.sign * gv.open * (Math.PI / 2);
+    }
+  }
+
+  private addGate(flap: THREE.Object3D, obj: THREE.Object3D, game: Game): void {
+    obj.updateMatrixWorld(true);
+    const hinge = flap.getWorldPosition(new THREE.Vector3());
+    // The gate this flap closes: the nearest one on the walkway.
+    let best = { d: Infinity, x: hinge.x, y: hinge.z, dir: { x: 0, y: 1 } };
+    for (const gt of game.gates) {
+      const d = Math.hypot(gt.x - hinge.x, gt.y - hinge.z);
+      const p = game.paths[gt.pathIndex].pointAt(gt.dist);
+      if (d < best.d) best = { d, x: gt.x, y: gt.y, dir: { x: p.dirX, y: p.dirY } };
+    }
+    // Try both ways round and keep the one that swings along with the walkers.
+    let sign = 1;
+    for (const s of [1, -1]) {
+      flap.rotation.y = (s * Math.PI) / 2;
+      flap.updateMatrixWorld(true);
+      const tip = flap.localToWorld(new THREE.Vector3(0.4, 0, 0));
+      if ((tip.x - hinge.x) * best.dir.x + (tip.z - hinge.z) * best.dir.y > 0) sign = s;
+    }
+    flap.rotation.y = 0;
+    this.gates.push({ flap, x: best.x, y: best.y, sign, open: 0 });
   }
 
   /** Free the GPU memory of everything this floor built itself (not the shared models). */

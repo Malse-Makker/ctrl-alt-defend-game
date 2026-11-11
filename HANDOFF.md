@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.16.0 (2026-11-08)
+## Stand: v0.17.0 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,34 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Nieuw leveldesign (v0.17.0, besluit maker 2026-11-12)
+De maker heeft met een andere sessie alle 15 levels opnieuw ontworpen:
+`/home/mick/projecten/CTRL-ALT-DEFEND/docs/leveldesign/` (`LEVELDESIGN.md`, `levels.json`,
+`levelNN.svg/.txt`; alleen lokaal). **Daaruit bouwen, level voor level; de maker reviewt eerst
+L1 en L2, daarna de rest.** Art-stijl blijft, alleen de inrichting is nieuw.
+- Tegelraster: `LevelDef.grid` (letters, zie `src/sim/grid.ts`). Met een raster beslist alleen het
+  raster over bouwen (`.` en de speciale bouwletters) en zicht (`#`, `H`, `R`); `decor` is dan
+  alleen nog wat je ziet. `tests/grid.test.ts` controleert dat het looppad in het raster precies
+  het pad van de waypoints is, en dat meubels niet op bouwtegels staan (behalve werkbladen).
+- Poortje (`G`): collega's staan `GATE_HOLD` (0,4 s) stil (`gates` in `game.ts`, event `gate`,
+  piepje `gate.wav`). Het model `speed_gate` heeft een los deel `GateFlap` dat de render laat
+  openzwaaien (`World.update`), de draairichting wordt berekend uit de looprichting.
+- Werkbladen (`o`): decor met `surface` (hoogte van het blad). Torens staan erop zonder hun kastje:
+  `side_desk` in de Blender-scripts is getagd, `kit.join` maakt er een los kind `<naam>_Desk` van,
+  en de render verbergt dat (`Actors.standOn`). Aanwijzen met de muis gebeurt op de hoogte van het
+  blad (`View.groundAt(px, py, height)`), anders klik je op de tegel erachter.
+- Glazen gevel: `look.glassFront` laat de muur langs x = 0 weg; `glass_front` en `glass_doors`
+  zijn decor.
+- Kleine afwijkingen van het ontwerp: tegel (0, 8) in L1 is glas (`g`) in plaats van vloer, anders
+  zat er een gat in de gevel naast de deur. Paden eindigen op x.0 van je bureau (zoals altijd), niet
+  in het midden van de tegel. Alles verder volgens het ontwerp.
+- Balans L1 (Reception is langer: 34,5 tegels, was 30,5): goed spelen blijft foutloos, maar The Head
+  of Comms komt tot 6,3 tegels van je bureau (oude kaart: 17). Beginner 80 Focus (was 73), alleen
+  Auto-Replies 76 (was 80). De test meet de marge nu in tegels (> 5). Golven en boss volgens het
+  ontwerp ongewijzigd. L2: goed spelen 12 tegels marge (was 10,2), beginner en spam verliezen.
+- Nog niet gedaan uit het ontwerp: het hernoemen naar DIGITAL/PHYSICAL (`damageClass`) met een
+  label in het torenmenu. Dat komt bij level 3 (laptopplekken), waar het voor het eerst telt.
 
 ### Level 7 (v0.16.0): ontwerpkeuzes die ik maakte
 - Uitlaatgassen (`type: 'smoke'`): elke 45 s twee wolken (straal 2,4) op willekeurige plekken

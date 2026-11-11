@@ -12,10 +12,14 @@ export interface TileRect {
 
 export interface Decor {
   model: string;
-  /** Tile rect it occupies (blocks building). */
+  /** Tile rect it occupies (blocks building, unless the floor has a grid: then the grid decides). */
   rect: TileRect;
   /** Rotation in quarter turns, 0 = front faces +y. */
   turn?: number;
+  /** A worktop you may build on: the height of its top. Towers stand on it without their cabinet. */
+  surface?: number;
+  /** Something people walk through (a door): it may stand on the walkway. */
+  walkThrough?: boolean;
 }
 
 /** A storing: a mini-game that pops up during the level. The game keeps running behind it. */
@@ -75,6 +79,8 @@ export interface LevelLook {
   walkway: string;
   edge: string;
   wall?: string;
+  /** The wall along x = 0 is a glass front, drawn by the decor (with its own doors). */
+  glassFront?: boolean;
 }
 
 export interface LevelDef {
@@ -95,7 +101,22 @@ export interface LevelDef {
   look?: LevelLook;
   /** Walls inside the floor: nothing is built on them, and towers cannot shoot through them. */
   walls?: TileRect[];
+  /**
+   * One letter per tile (see src/sim/grid.ts). When a floor has one, it alone decides where you
+   * may build and what blocks sight; `decor` is then only the furniture you see.
+   */
+  grid?: readonly string[];
 }
+
+/** A run of one-tile pieces (counter segments, stools): `n` of them from (x, y), along x or y. */
+function run(model: string, x: number, y: number, n: number, along: 'x' | 'y', extra: Omit<Decor, 'model' | 'rect'> = {}): Decor[] {
+  return Array.from({ length: n }, (_, i) => ({ model, rect: { x: along === 'x' ? x + i : x, y: along === 'y' ? y + i : y, w: 1, h: 1 }, ...extra }));
+}
+
+/** Kitchen counters and bars: the height of the top you put your things on. */
+const COUNTER_TOP = 0.9;
+const BAR_TOP = 1.0;
+const TABLE_TOP = 0.74;
 
 export function startCoffee(levelId: number): number {
   return 40 + 5 * (levelId - 1);
@@ -103,31 +124,71 @@ export function startCoffee(levelId: number): number {
 
 const L1: LevelDef = {
   id: 1,
-  name: 'Open-Plan Office',
+  name: 'Reception',
   block: 'junior',
-  intro: 'Your first day with a desk of your own. Everyone in the building knows where it is.',
-  gimmick: 'A simple S-bend. Learn that Coffee and damage have to grow together.',
-  size: { w: 21, h: 11 },
+  intro: 'Your first day, behind the reception desk. Everyone who comes into the building passes you.',
+  gimmick: 'A winding hall through the gates. Everyone stops to scan their pass: a good place for your first Auto-Reply.',
+  size: { w: 20, h: 12 },
   paths: [
     [
-      { x: -1.5, y: 2.5 },
-      { x: 7.5, y: 2.5 },
-      { x: 7.5, y: 7.5 },
-      { x: 14.5, y: 7.5 },
-      { x: 14.5, y: 3.5 },
-      { x: 20.0, y: 3.5 },
+      { x: -1.5, y: 9.5 },
+      { x: 5.5, y: 9.5 },
+      { x: 5.5, y: 3.5 },
+      { x: 11.5, y: 3.5 },
+      { x: 11.5, y: 8.5 },
+      { x: 16.5, y: 8.5 },
+      { x: 16.5, y: 4.5 },
+      { x: 18.0, y: 4.5 },
     ],
   ],
-  desk: { x: 20, y: 3 },
-  decor: [
-    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
-    { model: 'printer', rect: { x: 10, y: 0, w: 1, h: 1 } },
-    { model: 'cooler', rect: { x: 17, y: 0, w: 1, h: 1 } },
-    { model: 'plant', rect: { x: 0, y: 10, w: 1, h: 1 } },
-    { model: 'desk_pair', rect: { x: 2, y: 9, w: 2, h: 2 } },
-    { model: 'desk_pair', rect: { x: 17, y: 8, w: 2, h: 2 } },
-    { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
+  desk: { x: 18, y: 4 },
+  // The level design (docs/leveldesign, level 1). The glass front runs along the left, with the
+  // doors at the entrance; the gates are halfway, in front of the logo wall.
+  grid: [
+    'g.ttt..ttt...tt..HHH',
+    'gtt.....t...H.......',
+    'gtt................t',
+    'g....=======.......t',
+    'g.t..=.....=.H..==Dt',
+    'g....=ttt..=.H..=..t',
+    'g..H.=ttt.tGt...=H.t',
+    'g....=.....=....=H..',
+    'gt...=..tt.======...',
+    'S=====..tt.........t',
+    'g.....HH.H...HHHHttt',
+    'gt....HH.....HHHHtt.',
   ],
+  decor: [
+    ...run('glass_front', 0, 0, 9, 'y', { turn: 1 }),
+    ...run('glass_front', 0, 10, 2, 'y', { turn: 1 }),
+    { model: 'glass_doors', rect: { x: 0, y: 9, w: 1, h: 1 }, turn: 1, walkThrough: true },
+    { model: 'waiting_bench', rect: { x: 2, y: 0, w: 3, h: 1 } },
+    { model: 'waiting_bench', rect: { x: 7, y: 0, w: 3, h: 1 } },
+    { model: 'brochure_rack', rect: { x: 13, y: 0, w: 2, h: 1 } },
+    { model: 'mail_slots', rect: { x: 17, y: 0, w: 3, h: 1 } },
+    { model: 'coat_rack', rect: { x: 1, y: 1, w: 2, h: 2 } },
+    { model: 'lounge_wide', rect: { x: 6, y: 5, w: 3, h: 2 } },
+    { model: 'lounge_square', rect: { x: 8, y: 8, w: 2, h: 2 } },
+    { model: 'pillar', rect: { x: 3, y: 6, w: 1, h: 1 } },
+    { model: 'pillar', rect: { x: 9, y: 10, w: 1, h: 1 } },
+    { model: 'pillar', rect: { x: 12, y: 1, w: 1, h: 1 } },
+    { model: 'logo_wall', rect: { x: 13, y: 4, w: 1, h: 2 }, turn: 3 },
+    { model: 'speed_gate', rect: { x: 10, y: 6, w: 1, h: 1 } },
+    { model: 'speed_gate', rect: { x: 12, y: 6, w: 1, h: 1 }, turn: 2 },
+    { model: 'lifts', rect: { x: 13, y: 10, w: 4, h: 2 }, turn: 2 },
+    { model: 'reception_desk', rect: { x: 19, y: 2, w: 1, h: 5 }, turn: 3 },
+    { model: 'security_post', rect: { x: 17, y: 6, w: 1, h: 2 }, turn: 3 },
+    { model: 'sculpture', rect: { x: 6, y: 10, w: 2, h: 2 } },
+    { model: 'plant', rect: { x: 8, y: 1, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 1, y: 8, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 2, y: 4, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 1, y: 11, w: 1, h: 1 } },
+    { model: 'planter_big', rect: { x: 17, y: 10, w: 2, h: 2 } },
+    { model: 'plant', rect: { x: 19, y: 9, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 19, y: 10, w: 1, h: 1 } },
+  ],
+  // Light marble with a dark brown runner.
+  look: { floorA: '#e9e6df', floorB: '#dedad1', walkway: '#5b4336', edge: '#3d2c22', wall: '#f2f0ea', glassFront: true },
   towers: ['coffee', 'autoreply'],
   startFocus: 100,
   // Godot v0.88 table, translated: Notification -> Intern, Question -> New Hire,
@@ -162,7 +223,7 @@ const L2: LevelDef = {
   name: 'Coffee Corner',
   block: 'junior',
   intro: 'The office kitchen. One good coffee machine, one queue, and everyone is in a hurry.',
-  gimmick: 'A small square kitchen with long straight stretches: speed and crowd control. Headphones, Office Artillery and The Shredder arrive.',
+  gimmick: 'You put your things down where you can in a kitchen: on the counters, the tables and the bar. Headphones, Office Artillery and The Shredder arrive.',
   size: { w: 14, h: 14 },
   paths: [
     [
@@ -175,17 +236,50 @@ const L2: LevelDef = {
     ],
   ],
   desk: { x: 13, y: 2 },
+  // The level design (docs/leveldesign, level 2): you build on worktops only (o).
+  grid: [
+    'HooooooooooooH',
+    '-------------H',
+    '---==========D',
+    'H--=----------',
+    'H--=--o--o---o',
+    '---=---------o',
+    '---========--o',
+    '-----ttt--=t-o',
+    't---tooot-=--o',
+    '----tooot-=---',
+    '-----ttt--=-t-',
+    'S==========---',
+    '-tttttttt-----',
+    'toooooooo----t',
+  ],
   decor: [
     { model: 'fridge', rect: { x: 0, y: 0, w: 1, h: 1 } },
-    { model: 'kitchen_counter', rect: { x: 1, y: 0, w: 4, h: 1 } },
-    { model: 'coffee_bar', rect: { x: 5, y: 0, w: 3, h: 1 } },
-    { model: 'vending', rect: { x: 9, y: 0, w: 1, h: 1 } },
-    { model: 'cooler', rect: { x: 11, y: 0, w: 1, h: 1 } },
-    { model: 'high_table', rect: { x: 7, y: 3, w: 2, h: 2 } },
-    { model: 'kitchen_table', rect: { x: 5, y: 8, w: 2, h: 2 } },
-    { model: 'recycle_bins', rect: { x: 0, y: 4, w: 1, h: 1 }, turn: 1 },
+    { model: 'counter', rect: { x: 1, y: 0, w: 1, h: 1 }, surface: COUNTER_TOP },
+    { model: 'counter_sink', rect: { x: 2, y: 0, w: 1, h: 1 }, surface: COUNTER_TOP },
+    ...run('counter', 3, 0, 2, 'x', { surface: COUNTER_TOP }),
+    ...run('counter_coffee', 5, 0, 3, 'x', { surface: COUNTER_TOP }),
+    { model: 'counter', rect: { x: 8, y: 0, w: 1, h: 1 }, surface: COUNTER_TOP },
+    { model: 'counter_microwave', rect: { x: 9, y: 0, w: 1, h: 1 }, surface: COUNTER_TOP },
+    ...run('counter', 10, 0, 3, 'x', { surface: COUNTER_TOP }),
+    { model: 'tall_cabinet', rect: { x: 13, y: 0, w: 1, h: 2 }, turn: 3 },
+    ...run('counter_hob', 13, 4, 2, 'y', { surface: COUNTER_TOP, turn: 3 }),
+    ...run('counter', 13, 6, 3, 'y', { surface: COUNTER_TOP, turn: 3 }),
+    ...run('vending', 0, 3, 2, 'y', { turn: 1 }),
+    { model: 'recycle_bins', rect: { x: 0, y: 8, w: 1, h: 1 }, turn: 1 },
+    { model: 'dining_table', rect: { x: 5, y: 8, w: 3, h: 2 }, surface: TABLE_TOP },
+    ...run('kitchen_chair', 5, 7, 3, 'x'),
+    ...run('kitchen_chair', 5, 10, 3, 'x', { turn: 2 }),
+    ...run('kitchen_chair', 4, 8, 2, 'y', { turn: 1 }),
+    ...run('kitchen_chair', 8, 8, 2, 'y', { turn: 3 }),
+    { model: 'bar_table', rect: { x: 6, y: 4, w: 1, h: 1 }, surface: BAR_TOP },
+    { model: 'bar_table', rect: { x: 9, y: 4, w: 1, h: 1 }, surface: BAR_TOP },
+    ...run('bar_stool', 1, 12, 8, 'x'),
+    ...run('window_bar', 1, 13, 8, 'x', { surface: BAR_TOP, turn: 2 }),
+    { model: 'cooler', rect: { x: 12, y: 10, w: 1, h: 1 }, turn: 3 },
     { model: 'plant', rect: { x: 13, y: 13, w: 1, h: 1 } },
     { model: 'plant', rect: { x: 0, y: 13, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 11, y: 7, w: 1, h: 1 } },
   ],
   // Kitchen tiles, with a dark anti-slip mat as the walkway.
   look: { floorA: '#e7e2d6', floorB: '#d5cfc1', walkway: '#6f7c8a', edge: '#4f5a66', wall: '#eef0ee' },
@@ -539,7 +633,7 @@ export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5:
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [
-  'Open-Plan Office',
+  'Reception',
   'Coffee Corner',
   'Meeting Room',
   'Canteen',

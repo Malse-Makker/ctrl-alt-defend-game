@@ -33,6 +33,13 @@ Volgorde volgt de ontgrendeling uit de bijbel (één nieuwe toren per level).
 Per level: modellen in Blender (zelfde stijl), golven vertaald uit v0.88 en daarna gemeten met de
 bots, een eigen boss-mechaniek die een andere aanpak afdwingt.
 
+## Nieuw leveldesign (besluit maker, 2026-11-12)
+
+Alle 15 levels opnieuw ingericht volgens `/home/mick/projecten/CTRL-ALT-DEFEND/docs/leveldesign/`
+(tegelraster, meubels op schaal, zichtblokkades, een eigen kaartregel per level).
+KLAAR: L1 Reception (poortjes) en L2 Coffee Corner (alleen werkbladen), v0.17.0. Eerst review van
+de maker, dan L3-L15 in die volgorde (inclusief het hernoemen naar DIGITAL/PHYSICAL bij L3).
+
 ## Fase 3: medior en senior
 
 KLAAR: Level 6 Work From Home (v0.15.0): zichtmuren, No Internet-dino, Reply All, The Cold Caller,

@@ -22,6 +22,7 @@ import {
   starsFor,
 } from './economy';
 import { Path, dist, type Vec2 } from './geometry';
+import { parseGrid } from './grid';
 import { Rng } from './rng';
 import { parseWave, type SpawnGroup } from './waves';
 
@@ -94,6 +95,8 @@ export interface Enemy {
   cryTimer: number;
   /** Spawned mid-route (split or boss add) rather than at the door. */
   isAdd: boolean;
+  /** Seconds left standing at a gate, scanning a pass. */
+  gateHold?: number;
   spawnedAt: number;
 }
 
@@ -278,6 +281,7 @@ export type GameEvent =
   | { t: 'chairRoll'; towerId: number }
   | { t: 'cry'; enemyId: number; x: number; y: number; radius: number }
   | { t: 'puff'; enemyId: number; x: number; y: number }
+  | { t: 'gate'; enemyId: number; x: number; y: number }
   | { t: 'end'; reason: EndReason };
 
 export interface Check {
@@ -383,6 +387,8 @@ interface PendingSpawn {
 }
 
 const TILE_BLOCKED = 1;
+/** Seconds a colleague stands at a gate to scan their pass. */
+export const GATE_HOLD = 0.4;
 const TILE_PATH = 2;
 
 /** Combine the base numbers of a tower with every upgrade bought. Pure, shared with the UI. */
@@ -603,9 +609,19 @@ export class Game {
       peakOnFloor: 0,
     };
     this.tiles = new Uint8Array(level.size.w * level.size.h);
-    for (const d of level.decor) this.markRect(d.rect.x, d.rect.y, d.rect.w, d.rect.h, TILE_BLOCKED);
+    if (level.grid) {
+      // The grid decides: what you may build on, and what blocks sight.
+      const g = parseGrid(level.grid, level.size.w, level.size.h);
+      g.build.forEach((ok, i) => {
+        if (!ok) this.tiles[i] |= TILE_BLOCKED;
+      });
+      this.walls = g.sight.some((v) => v === 1) ? g.sight : null;
+      this.gates = this.gatesOnPaths(g.gates);
+    } else {
+      for (const d of level.decor) this.markRect(d.rect.x, d.rect.y, d.rect.w, d.rect.h, TILE_BLOCKED);
+    }
     // Walls block building, and sight.
-    this.walls = level.walls && level.walls.length ? new Uint8Array(level.size.w * level.size.h) : null;
+    if (level.walls && level.walls.length && !this.walls) this.walls = new Uint8Array(level.size.w * level.size.h);
     for (const r of level.walls ?? []) {
       this.markRect(r.x, r.y, r.w, r.h, TILE_BLOCKED);
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (this.inBounds(x, y)) this.walls![y * level.size.w + x] = 1;
@@ -617,6 +633,28 @@ export class Game {
         if (this.paths.some((p) => p.distanceTo(c) < PATH_CLEARANCE)) this.tiles[ty * level.size.w + tx] |= TILE_PATH;
       }
     }
+  }
+
+  /** Gates, as a distance along each path that walks through them. */
+  gates: { pathIndex: number; dist: number; x: number; y: number }[] = [];
+
+  private gatesOnPaths(tiles: { x: number; y: number }[]): { pathIndex: number; dist: number; x: number; y: number }[] {
+    const out: { pathIndex: number; dist: number; x: number; y: number }[] = [];
+    for (const tile of tiles) {
+      const c = { x: tile.x + 0.5, y: tile.y + 0.5 };
+      this.paths.forEach((path, pathIndex) => {
+        if (path.distanceTo(c) > 0.3) return;
+        // The point on the path closest to the middle of the gate.
+        let best = { d: 0, gap: Infinity };
+        for (let d = 0; d <= path.length; d += 0.05) {
+          const p = path.pointAt(d);
+          const gap = Math.hypot(p.x - c.x, p.y - c.y);
+          if (gap < best.gap) best = { d, gap };
+        }
+        out.push({ pathIndex, dist: best.d, x: c.x, y: c.y });
+      });
+    }
+    return out;
   }
 
   get totalWaves(): number {
@@ -1425,7 +1463,19 @@ export class Game {
         }
       }
       const path = this.paths[e.pathIndex];
+      // Scanning a pass at a gate: stand still until it beeps.
+      if (e.gateHold && e.gateHold > 0) {
+        e.gateHold = Math.max(0, e.gateHold - dt);
+        continue;
+      }
       let next = e.dist + this.speedOf(e) * dt;
+      for (const g of this.gates) {
+        if (g.pathIndex === e.pathIndex && e.dist < g.dist && next >= g.dist) {
+          next = g.dist;
+          e.gateHold = GATE_HOLD;
+          this.events.push({ t: 'gate', enemyId: e.id, x: g.x, y: g.y });
+        }
+      }
       // A keyboard across the walkway: stop in front of it and kick it until it gives.
       for (const b of this.barriers) {
         if (b.pathIndex !== e.pathIndex || b.hp <= 0) continue;

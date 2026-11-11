@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
+import { Path } from '../src/sim/geometry';
 import { beginnerBot, greedyBot, idleBot, runBot, solidBot, spamBot } from '../tools/bots';
 
 describe('Level 1 difficulty', () => {
@@ -30,7 +31,10 @@ describe('Level 1 difficulty', () => {
     const r = runBot(level, solidBot);
     expect(r.won).toBe(true);
     expect(r.focus).toBe(100);
-    expect(r.deepest).toBeLessThan(0.8);
+    // In tiles, not as a share of the route: Reception is longer than the old Open-Plan Office.
+    // Measured: The Head of Comms gets within 6.3 tiles of your desk (the old floor: 17).
+    const length = new Path(level.paths[0]).length;
+    expect((1 - r.deepest) * length).toBeGreaterThan(5);
   });
 
   it('investing in Coffee first is a valid way to win', () => {

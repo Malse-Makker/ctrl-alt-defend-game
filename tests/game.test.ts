@@ -494,8 +494,8 @@ describe('commands and snapshots (multiplayer)', () => {
   it('a copy fed with snapshots agrees with the real game', () => {
     const level = LEVELS[1];
     const server = new Game(level, { seed: 5, players: 2, sharedWallet: false });
-    applyCommand(server, 0, { c: 'place', def: 'autoreply', tx: 6, ty: 3 });
-    applyCommand(server, 1, { c: 'place', def: 'coffee', tx: 4, ty: 9 });
+    applyCommand(server, 0, { c: 'place', def: 'autoreply', tx: 6, ty: 2 });
+    applyCommand(server, 1, { c: 'place', def: 'coffee', tx: 3, ty: 10 });
     applyCommand(server, 0, { c: 'upgrade', id: server.towers[0].id, path: 1 });
     server.start();
     server.runFor(30);

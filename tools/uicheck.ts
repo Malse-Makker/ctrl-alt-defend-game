@@ -208,7 +208,7 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   }
   await new Promise((r) => setTimeout(r, 500));
   type Remote = { cad: { session: { run(c: unknown): void } } };
-  await host.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 6, ty: 3 }));
+  await host.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 4, ty: 7 }));
   await guest.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 13, ty: 6 }));
   await host.keyboard.press('Space');
   await new Promise((r) => setTimeout(r, 2500));
@@ -262,19 +262,22 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
       out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
       return r.tower;
     };
-    // The Coffee Corner kitchen (14 x 14).
-    tryPlace('autoreply', 5, 4);
-    tryPlace('autoreply', 9, 5);
-    tryPlace('autoreply', 8, 9);
-    const sh = tryPlace('shredder', 9, 7);
-    const hp = tryPlace('headphones', 11, 4);
-    const art = tryPlace('artillery', 12, 12);
+    // The Coffee Corner kitchen (14 x 14): only the worktops.
+    tryPlace('coffee', 2, 0);
+    tryPlace('autoreply', 6, 4);
+    tryPlace('autoreply', 9, 4);
+    tryPlace('autoreply', 7, 9);
+    const sh = tryPlace('shredder', 12, 0);
+    const hp = tryPlace('headphones', 6, 8);
+    const art = tryPlace('artillery', 3, 13);
+    out.push(`on the floor: ${g.place('autoreply', 5, 4).reason}`);
     if (sh) for (let i = 0; i < 3; i++) g.upgrade(sh.id, 0);
     if (hp) for (let i = 0; i < 2; i++) g.upgrade(hp.id, 0);
     if (art) for (let i = 0; i < 3; i++) g.upgrade(art.id, 0);
     return out.join(' ');
   });
   console.log(`  placed: ${placed}`);
+  total += await check(page, 'l2-kitchen', size);
   await page.keyboard.press('Space');
   const ff = (stop: string) =>
     page.evaluate((what) => {
@@ -903,15 +906,15 @@ async function run(): Promise<void> {
       await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'));
       await clickText(page, 'Clock in');
       total += await check(page, 'career', size);
-      await clickText(page, 'Open-Plan Office');
+      await clickText(page, 'Reception');
       await page.waitForFunction(() => document.querySelector('.hud'));
       total += await check(page, 'plan', size);
       // Build a little, start, and fast-forward a few waves.
       await page.evaluate(() => {
         const g = (window as unknown as { cad: Cad }).cad.session.game;
         g.coffee = 600;
-        g.place('autoreply', 6, 3);
-        g.place('autoreply', 8, 6);
+        g.place('autoreply', 6, 2);
+        g.place('autoreply', 9, 5);
         g.place('autoreply', 13, 6);
         g.place('coffee', 4, 6);
         const t = g.towers[0];
@@ -982,7 +985,7 @@ async function run(): Promise<void> {
     await page.goto(URL_, { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
     await clickText(page, 'Clock in');
-    await clickText(page, 'Open-Plan Office');
+    await clickText(page, 'Reception');
     await page.waitForFunction(() => document.querySelector('.hud'));
     // Fast-forward in the simulation itself; keep only the events the screens react to, so a
     // whole level of shots does not land on the renderer in one frame.

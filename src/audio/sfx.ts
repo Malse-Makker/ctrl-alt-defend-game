@@ -32,11 +32,13 @@ export const SOUNDS = [
   'key3',
   'keyspace',
   'cry',
+  'gate',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
 /** Minimum seconds between two plays of the same sound, so a busy floor does not become noise. */
 const THROTTLE: Partial<Record<SoundName, number>> = {
+  gate: 0.12,
   shot: 0.06,
   hit: 0.05,
   kill: 0.05,
@@ -54,6 +56,7 @@ const THROTTLE: Partial<Record<SoundName, number>> = {
 };
 
 const GAIN: Partial<Record<SoundName, number>> = {
+  gate: 0.22,
   shot: 0.28,
   hit: 0.3,
   kill: 0.45,

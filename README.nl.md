@@ -17,11 +17,12 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.16.0)
+## Wat er nu in zit (v0.17.0)
 
-- **Level 1, Open-Plan Office**: 21 golven en The Head of Comms.
-- **Level 2, Coffee Corner**: een klein vierkant kantoorkeukentje, 22 golven en The Repair Guy
-  (geen Coffee zolang hij er is). Gaat open als je level 1 haalt.
+- **Level 1, Reception**: 21 golven door de hal, poortjes waar iedereen even stilstaat om zijn
+  pasje te scannen, en The Head of Comms.
+- **Level 2, Coffee Corner**: een klein kantoorkeukentje waar je alleen op de werkbladen bouwt,
+  22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open als je level 1 haalt.
 - **Level 3, Meeting Room**: 21 golven, The Presenter (beamt Chasers naast je bureau) en de
   projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
 - **Level 4, Canteen**: 22 golven over een spiraal rond de tafels, natte vloer waar je niet mag

@@ -6,6 +6,7 @@ import { modelFor } from '../sim/data/towers';
 import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '../sim/game';
 import { part, type Assets } from './assets';
 import { PAL } from './palette';
+import { surfaceAt, TOWER_CABINET_H } from './world';
 
 interface EnemyView {
   id: number;
@@ -53,6 +54,8 @@ interface TowerView {
   mute: THREE.Sprite | null;
   /** Wet floor sign while The Cleaner has mopped it. */
   wet: THREE.Object3D | null;
+  /** The top of the worktop it stands on (Coffee Corner), or undefined on the floor. */
+  surface: number | undefined;
 }
 
 interface Shot {
@@ -63,6 +66,8 @@ interface Shot {
   ty: number;
   t: number;
   dur: number;
+  /** How far above the floor the tower that fired it stands (a worktop). */
+  lift: number;
 }
 
 interface Scrap {
@@ -163,7 +168,7 @@ export class Actors {
 
   // ------------------------------------------------------------- placement preview
 
-  showGhost(model: string | null, tx: number, ty: number, ok: boolean, range: number): void {
+  showGhost(model: string | null, tx: number, ty: number, ok: boolean, range: number, surface?: number): void {
     if (!model) {
       if (this.ghost) this.ghost.visible = false;
       this.ghostTile.visible = false;
@@ -177,9 +182,13 @@ export class Actors {
       this.group.add(this.ghost);
     }
     this.ghost!.visible = true;
-    this.ghost!.position.set(tx + 0.5, 0, ty + 0.5);
+    // On a worktop, show it the way it will stand there: without its cabinet, on the top.
+    this.ghost!.traverse((o) => {
+      if (o.name.endsWith('_Desk')) o.visible = surface === undefined;
+    });
+    this.ghost!.position.set(tx + 0.5, surface === undefined ? 0 : Actors.standOn(this.ghost!, surface), ty + 0.5);
     this.ghostTile.visible = true;
-    this.ghostTile.position.set(tx + 0.5, 0.01, ty + 0.5);
+    this.ghostTile.position.set(tx + 0.5, (surface ?? 0) + 0.01, ty + 0.5);
     (this.ghostTile.material as THREE.MeshBasicMaterial).color.set(ok ? PAL.ok : PAL.bad);
     this.showRange(range > 0 ? tx + 0.5 : null, ty + 0.5, range, ok ? '#ffffff' : PAL.bad);
   }
@@ -375,7 +384,7 @@ export class Actors {
         }
         const travel = ev.travel;
         const staple = game.tower(ev.towerId)?.defId === 'artillery';
-        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, staple ? 'staple' : 'reply');
+        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, staple ? 'staple' : 'reply', this.towers.get(ev.towerId)?.root.position.y ?? 0);
         if (staple) this.burst(ev.tx, 0.5, ev.ty, 5, '#a7adb5');
         const tv = this.towers.get(ev.towerId);
         if (tv) tv.recoil = 1;
@@ -441,6 +450,8 @@ export class Actors {
     const modelKey = modelFor(t.def, t.tiers);
     const model = this.assets.clone(modelKey);
     root.add(model);
+    const surface = surfaceAt(game.level, t.tx, t.ty);
+    root.position.y = Actors.standOn(model, surface);
     // Face the nearest bit of walkway, snapped to a quarter turn so desks line up with the grid.
     let best = { d: Infinity, x: t.x, y: t.y + 1 };
     for (const path of game.paths) {
@@ -461,12 +472,13 @@ export class Actors {
         this.ringMats.set(color, mat);
       }
       const ring = new THREE.Mesh(this.ringGeo, mat);
-      ring.position.y = 0.012;
+      // On a worktop the ring lies on the top, not on the floor under it.
+      ring.position.y = (surface !== undefined ? surface - root.position.y : 0) + 0.012;
       ring.renderOrder = 1;
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null };
+    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null, surface };
     this.towers.set(t.id, v);
     return v;
   }
@@ -476,7 +488,24 @@ export class Actors {
     v.modelKey = modelFor(t.def, t.tiers);
     v.model = this.assets.clone(v.modelKey);
     v.root.add(v.model);
+    v.root.position.y = Actors.standOn(v.model, v.surface);
     v.pop = 1;
+  }
+
+  /**
+   * On a worktop a tower leaves its cabinet behind: only the thing itself stands on the counter.
+   * Returns how high the tower has to sit.
+   */
+  private static standOn(model: THREE.Object3D, surface: number | undefined): number {
+    if (surface === undefined) return 0;
+    let cabinet = false;
+    model.traverse((o) => {
+      if (o.name.endsWith('_Desk')) {
+        o.visible = false;
+        cabinet = true;
+      }
+    });
+    return cabinet ? surface - TOWER_CABINET_H : surface;
   }
 
   // ------------------------------------------------------------- colleagues
@@ -765,7 +794,7 @@ export class Actors {
   private readonly stapleGeo = new THREE.BoxGeometry(0.22, 0.04, 0.05);
   private readonly stapleMat = new THREE.MeshStandardMaterial({ color: '#c8ccd2', metalness: 0.8, roughness: 0.3 });
 
-  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number, kind: 'reply' | 'staple' = 'reply'): void {
+  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number, kind: 'reply' | 'staple' = 'reply', lift = 0): void {
     const pool = kind === 'staple' ? this.staplePool : this.shotPool;
     let mesh = pool.pop();
     if (!mesh) {
@@ -782,7 +811,7 @@ export class Actors {
     }
     mesh.visible = true;
     this.group.add(mesh);
-    this.shots.push({ mesh, fx, fy, tx, ty, t: 0, dur: Math.max(0.05, dur) });
+    this.shots.push({ mesh, fx, fy, tx, ty, t: 0, dur: Math.max(0.05, dur), lift });
   }
 
   private updateShots(dt: number): void {
@@ -792,7 +821,7 @@ export class Actors {
       const k = Math.min(1, s.t / s.dur);
       const x = s.fx + (s.tx - s.fx) * k;
       const y = s.fy + (s.ty - s.fy) * k;
-      const h = 0.75 + (0.45 - 0.75) * k + Math.sin(k * Math.PI) * 0.35;
+      const h = 0.75 + s.lift * (1 - k) + (0.45 - 0.75) * k + Math.sin(k * Math.PI) * 0.35;
       s.mesh.position.set(x, h, y);
       s.mesh.rotation.y = Math.atan2(s.tx - s.fx, s.ty - s.fy);
       s.mesh.rotation.z = Math.sin(s.t * 20) * 0.3;
