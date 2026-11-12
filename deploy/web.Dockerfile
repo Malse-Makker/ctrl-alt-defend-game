@@ -1,6 +1,6 @@
 # The game: built with Node, served by nginx. Tests and the typecheck run inside the build, so an
 # image with failing tests never reaches the server.
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
