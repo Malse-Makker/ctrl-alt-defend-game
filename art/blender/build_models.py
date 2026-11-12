@@ -2472,6 +2472,70 @@ def b_trophy_cabinet():
     return root
 
 
+# ---------------------------------------------------------------- level 6: the house (new design)
+
+def b_nightstand():
+    root = empty("nightstand")
+    body = box("Body", (0.5, 0.45, 0.5), loc=(0, 0.1, 0), material=mat("wood", rough=0.6), bevel=0.02)
+    drawer = box("Drawer", (0.42, 0.01, 0.16), loc=(0, -0.13, 0.28), material=mat("wood_dark", rough=0.6))
+    knob = ball("Knob", 0.02, loc=(0, -0.145, 0.36), material=mat("metal_light"), subdiv=1)
+    base = cyl("LampBase", 0.07, 0.04, loc=(0.08, 0.15, 0.5), material=mat("charcoal"), verts=12)
+    shade = cyl("LampShade", 0.1, 0.14, loc=(0.08, 0.15, 0.62), material=mat("#efe4c8", emit=0.5), verts=14, radius_top=0.07)
+    stem = cyl("LampStem", 0.012, 0.12, loc=(0.08, 0.15, 0.52), material=mat("metal"), verts=6)
+    phone = box("Phone", (0.07, 0.14, 0.01), loc=(-0.12, 0.05, 0.5), material=mat("plastic_black"))
+    ob = join("nightstand_mesh", [body, drawer, knob, base, shade, stem, phone])
+    parent(ob, root)
+    return root
+
+
+def b_wardrobe():
+    """One tile of a wardrobe, tall, doors to -Y."""
+    root = empty("wardrobe")
+    body = box("Body", (0.96, 0.58, 1.9), loc=(0, 0.15, 0), material=mat("#d9cfbf", rough=0.6), bevel=0.02)
+    doors = [box(f"Door{i}", (0.45, 0.01, 1.75), loc=(x, -0.145, 0.08), material=mat("#e6dccb", rough=0.6)) for i, x in enumerate((-0.235, 0.235))]
+    handles = [box(f"Handle{i}", (0.02, 0.02, 0.25), loc=(x, -0.16, 0.95), material=mat("metal_light", metal=0.8, rough=0.3)) for i, x in enumerate((-0.04, 0.04))]
+    box_top = box("TopBox", (0.5, 0.4, 0.2), loc=(0.1, 0.15, 1.9), material=mat("cardboard"))
+    ob = join("wardrobe_mesh", [body, box_top] + doors + handles)
+    parent(ob, root)
+    return root
+
+
+def b_laundry_basket():
+    root = empty("laundry_basket")
+    basket = cyl("Basket", 0.26, 0.42, loc=(0, 0, 0), material=mat("#cdb88f", rough=0.9), verts=14, radius_top=0.3)
+    clothes = [ball(f"Cloth{i}", 0.13, loc=(x, y, 0.42), material=mat(c), subdiv=1, scale=(1.2, 1, 0.5)) for i, (x, y, c) in enumerate(((-0.08, 0.05, "blue"), (0.1, -0.05, "red"), (0.0, 0.1, "plastic_white")))]
+    sock = box("Sock", (0.08, 0.25, 0.04), loc=(0.32, -0.1, 0.0), material=mat("yellow"), rot_z=0.6)
+    ob = join("laundry_basket_mesh", [basket, sock] + clothes)
+    parent(ob, root)
+    return root
+
+
+def b_armchair():
+    root = empty("armchair")
+    ob = join("armchair_mesh", _armchair("Arm", 0, 0, 0, "#8f5e4a"))
+    parent(ob, root)
+    return root
+
+
+def b_coffee_table():
+    root = empty("coffee_table")
+    ob = join("coffee_table_mesh", _coffee_table(0.4))
+    parent(ob, root)
+    return root
+
+
+def b_file_boxes():
+    """Archive boxes, stacked: the paperwork you took home and never opened."""
+    root = empty("file_boxes")
+    parts = []
+    for i, (x, y, z, r) in enumerate(((-0.18, 0.0, 0.0, 0.0), (0.2, 0.05, 0.0, 0.1), (-0.15, 0.02, 0.3, -0.12), (0.18, 0.0, 0.3, 0.05))):
+        parts.append(box(f"Box{i}", (0.38, 0.5, 0.3), loc=(x, y, z), material=mat("cardboard", rough=0.9), bevel=0.01, rot_z=r))
+        parts.append(box(f"Label{i}", (0.16, 0.01, 0.08), loc=(x, y - 0.255, z + 0.12), material=mat("paper"), rot_z=r))
+    ob = join("file_boxes_mesh", parts)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2601,6 +2665,12 @@ BUILDERS = {
     "serving_counter": b_serving_counter,
     "floor_lamp": b_floor_lamp,
     "trophy_cabinet": b_trophy_cabinet,
+    "nightstand": b_nightstand,
+    "wardrobe": b_wardrobe,
+    "laundry_basket": b_laundry_basket,
+    "armchair": b_armchair,
+    "coffee_table": b_coffee_table,
+    "file_boxes": b_file_boxes,
 }
 
 

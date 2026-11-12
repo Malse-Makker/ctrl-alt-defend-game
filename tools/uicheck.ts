@@ -592,7 +592,7 @@ async function level5Flow(browser: import('puppeteer-core').Browser, errors: str
     const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
     g.coffee = 5000;
     const want: [string, number, number, number][] = [
-      ['keyboardsmash', 5, 3, 1],
+      ['keyboardsmash', 4, 3, 1],
       ['autoreply', 5, 7, 0],
       ['autoreply', 16, 3, 0],
       ['quickreply', 12, 8, 0],

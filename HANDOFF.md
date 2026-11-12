@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.20.0 (2026-11-12)
+## Stand: v0.21.0 (2026-11-13)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,19 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 5 Boardroom (v0.21.0)
+- Kaart uit het ontwerp (basis voor L10 en L15). Afwijking: het bureau staat op (10, 10) in plaats
+  van tegen de onderrand, anders past je stoel er niet achter (regel maker). Nieuwe modellen
+  `floor_lamp` (hoog, in de binnenhoeken van de lus) en `trophy_cabinet`; de wandkast rechtsboven
+  staat met de boeken naar de camera.
+- **Botfix:** `rankSpots(g, range, sighted)`: alleen torens die richten tellen gezien pad; zones,
+  pulsen, punaises en de stoel tellen gewoon bereik. Daardoor kwam de stoel weer op zijn baan.
+- Botscripts: L5 neemt een tweede Coffee Machine na de Artillery en Artillery eerder naar tier 4
+  (die houdt de Line Manager tegen); L2 zet de Headphones bij het bureau.
+- Balans (seeds 1 en 2, oude kaart -> nieuwe): L5 goed spelen 97 -> 100 Focus, 3 sterren, verste
+  88%; eerst koffie 92 (3 sterren) -> 85 (2 sterren). L2 goed spelen blijft foutloos (marge 1,4
+  tegel). L6 eerst koffie 48 -> 40 (1 ster, wint). Rest gelijk.
 
 ### Level 4 Canteen (v0.20.0)
 - Kaart uit het ontwerp; pad gelijk aan het oude L4. Nieuwe modellen `canteen_long` (tafelstuk met

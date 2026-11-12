@@ -131,6 +131,8 @@ export const MODEL_NAMES = [
   'canteen_long',
   'salad_bar',
   'serving_counter',
+  'floor_lamp',
+  'trophy_cabinet',
 ] as const;
 
 export class Assets {

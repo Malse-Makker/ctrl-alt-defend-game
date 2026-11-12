@@ -4,7 +4,7 @@
 
 import type { LevelDef } from './data/levels';
 import { TOWERS, pathBlock } from './data/towers';
-import { Game, type Tower } from './game';
+import { Game, needsSight, type Tower } from './game';
 
 export interface BotResult {
   bot: string;
@@ -49,14 +49,15 @@ function seenCoverage(g: Game, c: { x: number; y: number }, range: number): numb
   return n * 0.25;
 }
 
-export function rankSpots(g: Game, range: number): Spot[] {
+export function rankSpots(g: Game, range: number, sighted = true): Spot[] {
   const spots: Spot[] = [];
   for (let ty = 0; ty < g.level.size.h; ty++) {
     for (let tx = 0; tx < g.level.size.w; tx++) {
       if (g.isPathTile(tx, ty) || g.isBlockedTile(tx, ty)) continue;
       const c = { x: tx + 0.5, y: ty + 0.5 };
-      // Only walkway the tower can actually see counts: walls and furniture are in the way.
-      const cover = seenCoverage(g, c, range);
+      // For towers that aim, only walkway they can actually see counts: walls and furniture are
+      // in the way. Zones, pulses, piles and the chair do not care.
+      const cover = sighted ? seenCoverage(g, c, range) : g.paths.reduce((s, p) => s + p.coverage(c, range, 0.25), 0);
       if (cover > 0) spots.push({ tx, ty, cover });
     }
   }
@@ -166,7 +167,7 @@ const SCRIPTS: Record<number, Step[]> = {
     { place: 'coffee', spot: 'far' },
     { place: 'artillery', spot: 'far' },
     { up: 'autoreply', path: 0, all: true },
-    { place: 'headphones', spot: 'cover' },
+    { place: 'headphones', spot: 'desk' },
     { up: 'headphones', path: 0 },
     { up: 'headphones', path: 0 },
     { up: 'artillery', path: 0 },
@@ -269,6 +270,7 @@ SCRIPTS[5] = [
   { place: 'selfservice', spot: 'cover' },
   { up: 'thumbtacks', path: 0 },
   { place: 'artillery', spot: 'far' },
+  { place: 'coffee', spot: 'far' },
   { place: 'keyboardsmash', spot: 'cover' },
   { up: 'autoreply', path: 0, all: true },
   { place: 'shredder', spot: 'zone' },
@@ -284,13 +286,13 @@ SCRIPTS[5] = [
   { up: 'quickreply', path: 0 },
   { up: 'quickreply', path: 2 },
   { up: 'quickreply', path: 0 },
+  { up: 'artillery', path: 0 },
   { up: 'chair', path: 2 },
   { up: 'autoreply', path: 1, all: true },
   { up: 'thumbtacks', path: 0 },
   { up: 'selfservice', path: 0 },
   { up: 'quickreply', path: 0 },
   { up: 'chair', path: 2 },
-  { up: 'artillery', path: 0 },
   { up: 'artillery', path: 1 },
   { up: 'autoreply', path: 0, all: true },
 ];
@@ -384,7 +386,7 @@ function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'):
     const path = g.paths[0];
     const end = path.points[path.points.length - 1];
     const r = TOWERS[def].base.range;
-    return rankSpots(g, Math.min(r, 4))
+    return rankSpots(g, Math.min(r, 4), needsSight(TOWERS[def]))
       .filter((p) => Math.hypot(p.tx + 0.5 - end.x, p.ty + 0.5 - end.y) <= r * 0.9)
       .find((p) => placeable(g, def, p.tx, p.ty));
   }
@@ -404,7 +406,7 @@ function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'):
       if (best) return best;
     }
   }
-  return rankSpots(g, Math.min(TOWERS[def].base.range, 4)).find((p) => placeable(g, def, p.tx, p.ty));
+  return rankSpots(g, Math.min(TOWERS[def].base.range, 4), needsSight(TOWERS[def])).find((p) => placeable(g, def, p.tx, p.ty));
 }
 
 /** Runs a script; once it is done, keeps buying Auto-Replies and their upgrades. */

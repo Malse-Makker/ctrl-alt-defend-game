@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.21.0] - 2026-11-13
+
+### New
+- The Boardroom is furnished like a real one: the long dark table, standing lamps in the corners of the loop, a trophy cabinet for awards nobody remembers, a wall of files and a waiting bench by the door. The lamps stand exactly where you wanted to put something.
+
 ## [0.20.0] - 2026-11-12
 
 ### New
