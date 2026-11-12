@@ -797,14 +797,14 @@ async function level7Flow(browser: import('puppeteer-core').Browser, errors: str
     const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
     g.coffee = 5000;
     const want: [string, number, number][] = [
-      ['autoreply', 4, 2],
-      ['delegation', 10, 4],
-      ['delegation', 5, 8],
-      ['replyall', 12, 6],
-      ['thumbtacks', 1, 6],
-      ['artillery', 0, 0],
-      ['autoreply', 16, 10],
-      ['autoreply', 7, 11],
+      ['autoreply', 5, 5],
+      ['delegation', 14, 5],
+      ['delegation', 7, 9],
+      ['replyall', 12, 11],
+      ['thumbtacks', 18, 14],
+      ['artillery', 21, 10],
+      ['autoreply', 3, 14],
+      ['autoreply', 17, 14],
     ];
     const out = want.map(([d, x, y]) => {
       const r = g.place(d, x, y);
@@ -812,6 +812,7 @@ async function level7Flow(browser: import('puppeteer-core').Browser, errors: str
       return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
     });
     out.push(`on a car: ${g.place('autoreply', 4, 3).reason}`);
+    out.push(`outside a bay: ${g.place('autoreply', 2, 4).reason}`);
     return out.join(' ');
   });
   console.log(`  placed: ${placed}`);

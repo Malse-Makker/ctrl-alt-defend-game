@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.23.0] - 2026-11-13
+
+### New
+- The Car Park is to scale now: a car takes two tiles by three, the garage is bigger, and there are a stairwell and the lifts. You can only build in an empty bay, and the bay lines are painted on the floor.
+- Clicking bare floor where you may not build now says so, instead of claiming something is standing there.
+
+### Changed
+- The Car Park sends about 15% fewer colleagues per wave, because the bays sit two tiles off the walkway.
+
 ## [0.22.0] - 2026-11-13
 
 ### New

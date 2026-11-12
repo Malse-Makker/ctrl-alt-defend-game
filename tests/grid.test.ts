@@ -142,6 +142,16 @@ describe('Canteen', () => {
   });
 });
 
+describe('The Car Park', () => {
+  it('you only build in an empty bay; bare floor says so, a car says something is there', () => {
+    const g = new Game(LEVELS[7]);
+    g.coffee = 5000;
+    expect(g.canPlace('autoreply', 5, 5).ok).toBe(true);
+    expect(g.canPlace('autoreply', 2, 4).reason).toMatch(/floor/);
+    expect(g.canPlace('autoreply', 4, 4).reason).toMatch(/standing/);
+  });
+});
+
 describe('your desk', () => {
   // The chair side of the desk model points along +z: (sin a, cos a) for a turn of a.
   const chairSide = (a: number) => ({ x: Math.round(Math.sin(a)), y: Math.round(Math.cos(a)) });

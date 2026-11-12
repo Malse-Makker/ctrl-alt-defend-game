@@ -601,6 +601,8 @@ export class Game {
   private tiles: Uint8Array;
   /** Per tile: the only tower role allowed there, or '' (the Canteen's soup queue). */
   private only: string[] = [];
+  /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
+  private bare: Uint8Array | null = null;
   /** 1 where the wifi is bad (Work From Home, the bedroom). */
   private wifi: Uint8Array | null = null;
   private walls: Uint8Array | null = null;
@@ -652,6 +654,7 @@ export class Game {
       });
       sight.set(g.sight);
       this.only = g.only;
+      this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.gates = this.gatesOnPaths(g.gates);
     } else {
@@ -893,6 +896,7 @@ export class Game {
     const cost = this.placeCostFor(defId, player);
     if (!this.inBounds(tx, ty)) return { ok: false, reason: 'That is outside the office.', cost };
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
+    if (this.bare?.[ty * this.level.size.w + tx]) return { ok: false, reason: 'Not on this bit of floor. Look for the green tiles.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
     if (!this.tileAllows(defId, tx, ty)) return { ok: false, reason: 'That is the queue for the soup. Only Thumbtacks go there.', cost };

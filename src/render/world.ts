@@ -137,6 +137,27 @@ export class World {
     this.shared.add(desk);
     g.add(desk);
 
+    // Empty parking bays (P): white lines round each bay, the only place you may build.
+    if (level.grid) {
+      const bay = (x: number, y: number) => level.grid![y]?.[x] === 'P';
+      const lineMat = new THREE.MeshBasicMaterial({ color: '#e8e6e0' });
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!bay(x, y)) continue;
+          for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            if (bay(x + dx, y + dy)) continue;
+            const line = new THREE.Mesh(new THREE.BoxGeometry(dx ? 0.06 : 1, 0.01, dx ? 1 : 0.06), lineMat);
+            line.position.set(x + 0.5 + dx * 0.47, 0.006, y + 0.5 + dy * 0.47);
+            g.add(line);
+          }
+        }
+      }
+    }
     // Bad wifi (the bedroom): a soft carpet, so you can see where the signal gives up.
     const wifi: { x: number; y: number }[] = [];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isBadWifi(x, y)) wifi.push({ x, y });

@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.22.0 (2026-11-13)
+## Stand: v0.23.0 (2026-11-13)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,21 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 7 The Car Park (v0.23.0)
+- Kaart uit het ontwerp (26x17, auto 2x3). Bureau op (24, 13) in plaats van tegen de rand (stoel),
+  naast de liften. Alleen bouwen in een leeg vak `P` (9 vakken, 54 tegels); witte vaklijnen in
+  `World` (randen van `P`-tegels). **Auto's blokkeren zicht** (regel maker: alle meubels/spullen),
+  anders dan het ontwerp. Thumbtacks en Shredder reiken alleen vanuit de onderste rij vakken.
+- Nieuwe modellen `car_long_blue/red/white`, `van_long`, `stairwell`, `garage_lift`.
+- Melding op kale vloer (`-`): "Not on this bit of floor. Look for the green tiles." in plaats van
+  "Something is already standing there." (`bare` in game.ts, test).
+- Balans: op de nieuwe kaart verloor iedereen (goed spelen golf 15, oude kaart 95 Focus).
+  Gemeten: ook met doorzichtige auto's verloor goed spelen 52 Focus: de vakken liggen 2 tegels van
+  het pad. Twee ingrepen: (1) L7-botscript draait om Office Artillery in de vakken met het meeste
+  uitzicht, plus een tweede Auto-Reply voor de Board Members (alleen DIGITAL); (2) alle aantallen
+  in de golven x0,85 (boss blijft). Resultaat (seeds 1 en 2): goed spelen 92 Focus, 3 sterren; eerst
+  koffie 92, 3 sterren; beginner, spam, idle verliezen.
 
 ### Level 6 Work From Home (v0.22.0)
 - Kaart uit het ontwerp: vier kamers, muren uit het raster als `walls` (een losse muurtegel kan

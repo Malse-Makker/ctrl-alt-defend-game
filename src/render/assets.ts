@@ -139,6 +139,12 @@ export const MODEL_NAMES = [
   'armchair',
   'coffee_table',
   'file_boxes',
+  'car_long_blue',
+  'car_long_red',
+  'car_long_white',
+  'van_long',
+  'stairwell',
+  'garage_lift',
 ] as const;
 
 export class Assets {
