@@ -2433,10 +2433,41 @@ def b_serving_counter():
     food = box("Food", (0.72, 0.34, 0.03), loc=(0, 0.15, 0.94), material=mat("orange", rough=0.9))
     guard = box("Guard", (1.0, 0.02, 0.36), loc=(0, -0.05, 1.12), material=mat("window", rough=0.05, alpha=0.5))
     kit.tilt([guard], rx=0.35, pivot=(0, -0.05, 1.12))
-    hood = box("HeatHood", (1.0, 0.3, 0.06), loc=(0, 0.3, 1.55), material=mat("metal", metal=0.6, rough=0.3))
-    glow = box("HeatGlow", (0.8, 0.2, 0.02), loc=(0, 0.3, 1.53), material=mat("red", emit=1.6))
-    back = box("Back", (1.0, 0.05, 1.6), loc=(0, 0.45, 0), material=mat("metal_light", metal=0.4, rough=0.5))
-    ob = join("serving_counter_mesh", [counter, top, rail, pan, food, guard, hood, glow, back])
+    # Heat lamps on a thin rail: no back wall, you look over it from the front of the floor.
+    posts = [box(f"HPost{i}", (0.03, 0.03, 0.42), loc=(x, 0.38, 0.92), material=mat("metal")) for i, x in enumerate((-0.46, 0.46))]
+    hood = box("HeatHood", (1.0, 0.24, 0.05), loc=(0, 0.28, 1.34), material=mat("metal", metal=0.6, rough=0.3))
+    glow = box("HeatGlow", (0.8, 0.16, 0.02), loc=(0, 0.28, 1.32), material=mat("red", emit=1.6))
+    ob = join("serving_counter_mesh", [counter, top, rail, pan, food, guard, hood, glow] + posts)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- level 5: the boardroom (new design)
+
+def b_floor_lamp():
+    """A tall standing lamp with a drum shade. Tall enough to block sight."""
+    root = empty("floor_lamp")
+    foot = cyl("Foot", 0.2, 0.04, loc=(0, 0, 0), material=mat("#2f2a26", metal=0.4, rough=0.4), verts=18)
+    pole = cyl("Pole", 0.025, 1.45, loc=(0, 0, 0.04), material=mat("#b08d57", metal=0.8, rough=0.3), verts=8)
+    shade = cyl("Shade", 0.26, 0.34, loc=(0, 0, 1.38), material=mat("#efe4c8", emit=0.6), verts=20, radius_top=0.2)
+    bulb = ball("Bulb", 0.07, loc=(0, 0, 1.45), material=mat("yellow", emit=2.0), subdiv=1)
+    ob = join("floor_lamp_mesh", [foot, pole, shade, bulb])
+    parent(ob, root)
+    return root
+
+
+def b_trophy_cabinet():
+    """One tile of the trophy cabinet: glass doors, cups for things nobody remembers. Front -Y."""
+    root = empty("trophy_cabinet")
+    body = box("Body", (0.95, 0.45, 1.7), loc=(0, 0.15, 0), material=mat("#4a3628", rough=0.4), bevel=0.02)
+    inner = box("Inner", (0.85, 0.02, 1.5), loc=(0, -0.08, 0.1), material=mat("#2f241b"))
+    shelves = [box(f"Shelf{i}", (0.85, 0.3, 0.02), loc=(0, 0.05, 0.45 + 0.42 * i), material=mat("#5d4533")) for i in range(3)]
+    cups = []
+    for i, (x, z, col) in enumerate(((-0.2, 0.47, "yellow"), (0.22, 0.47, "metal_light"), (0.0, 0.89, "yellow"), (-0.25, 1.31, "#b87333"), (0.2, 1.31, "yellow"))):
+        cups.append(cyl(f"CupBase{i}", 0.05, 0.04, loc=(x, 0.0, z), material=mat("plastic_black"), verts=8))
+        cups.append(cyl(f"Cup{i}", 0.05, 0.14, loc=(x, 0.0, z + 0.04), material=mat(col, metal=0.8, rough=0.25), verts=10, radius_top=0.08))
+    glass = box("Glass", (0.88, 0.02, 1.52), loc=(0, -0.09, 0.09), material=mat("window", rough=0.05, alpha=0.35))
+    ob = join("trophy_cabinet_mesh", [body, inner, glass] + shelves + cups)
     parent(ob, root)
     return root
 
@@ -2568,6 +2599,8 @@ BUILDERS = {
     "canteen_long": b_canteen_long,
     "salad_bar": b_salad_bar,
     "serving_counter": b_serving_counter,
+    "floor_lamp": b_floor_lamp,
+    "trophy_cabinet": b_trophy_cabinet,
 }
 
 

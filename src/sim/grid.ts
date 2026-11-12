@@ -6,6 +6,11 @@
 const BUILD = new Set(['.', 'o', 'L', 'b', 'P', '^', '*', 'k', 'f', 'a', 'p']);
 /** Letters that block sight: walls and all furniture, tall or low (the maker, v0.18.0). Glass does not. */
 const SIGHT = new Set(['#', 'H', 'R', 't', 'w', 'x']);
+/**
+ * Letters you may build on with only some towers: the soup queue in the Canteen (n) takes
+ * Thumbtacks only, you scatter those on the floor anyway. The value is the tower role allowed.
+ */
+export const ONLY: Record<string, string> = { n: 'trap' };
 /** Letters on the walkway: entrance, walkway, gate, door, your desk. */
 const WALKWAY = new Set(['=', 'S', 'G', 'd', 'D']);
 /** Every letter the grid may use. Anything else is a typo in a level. */
@@ -18,6 +23,8 @@ export interface GridInfo {
   sight: Uint8Array;
   /** Tiles with a gate: colleagues stop there to scan their pass. */
   gates: { x: number; y: number }[];
+  /** Per tile: the only tower role allowed there (see ONLY), or '' for any. */
+  only: string[];
 }
 
 export function parseGrid(grid: readonly string[], w: number, h: number): GridInfo {
@@ -25,17 +32,19 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
   const build = new Uint8Array(w * h);
   const sight = new Uint8Array(w * h);
   const gates: { x: number; y: number }[] = [];
+  const only: string[] = new Array(w * h).fill('');
   grid.forEach((row, y) => {
     if (row.length !== w) throw new Error(`Grid row ${y} has ${row.length} tiles, the floor is ${w} wide`);
     for (let x = 0; x < w; x++) {
       const c = row[x];
       if (!KNOWN.has(c)) throw new Error(`Unknown tile '${c}' at ${x},${y}`);
-      if (BUILD.has(c)) build[y * w + x] = 1;
+      if (BUILD.has(c) || ONLY[c]) build[y * w + x] = 1;
+      if (ONLY[c]) only[y * w + x] = ONLY[c];
       if (SIGHT.has(c)) sight[y * w + x] = 1;
       if (c === 'G') gates.push({ x, y });
     }
   });
-  return { build, sight, gates };
+  return { build, sight, gates, only };
 }
 
 /** Is this letter part of the walkway? (Used to check a grid against its path.) */

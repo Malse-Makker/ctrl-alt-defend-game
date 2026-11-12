@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.19.0 (2026-11-12)
+## Stand: v0.20.0 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,17 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 4 Canteen (v0.20.0)
+- Kaart uit het ontwerp; pad gelijk aan het oude L4. Nieuwe modellen `canteen_long` (tafelstuk met
+  banken), `salad_bar` (hoog, glazen kap), `serving_counter` (warmhoudlampen, geen achterwand: die
+  stond als muur naar de camera).
+- Soeprij `n`: `ONLY` in `grid.ts` (letter -> toegestane torenrol), `game.tileAllows(def, x, y)` in
+  `canPlace`, `isRestrictedTile`. Geen meubel, zicht vrij. Getekend als gele strepen
+  (`stripes()` in world.ts). `World.showBuildGrid(defId)` bouwt het raster per toren (de rij is
+  alleen groen voor Thumbtacks). uicheck: `l4-queue-grid.png`.
+- Balans L4 gelijk aan de oude kaart: goed spelen en eerst koffie foutloos (verste 91%), beginner
+  en spam verliezen (Impersonators), idle verliest in golf 7.
 
 ### Level 3 Presentation Room (v0.19.0)
 - Kaart uit het ontwerp, maar **zonder laptopregel** (keuze maker): de `L`-tegels zijn tafels met

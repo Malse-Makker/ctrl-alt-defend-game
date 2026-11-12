@@ -137,7 +137,37 @@ export class World {
     this.shared.add(desk);
     g.add(desk);
 
+    // Tiles only some towers may use (the soup queue): painted stripes on the floor.
+    const lane: { x: number; y: number }[] = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isRestrictedTile(x, y)) lane.push({ x, y });
+    if (lane.length) {
+      const mat = new THREE.MeshBasicMaterial({ map: stripes(), transparent: true, opacity: 0.55, depthWrite: false });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, lane.length);
+      const m = new THREE.Matrix4();
+      lane.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, 0.004, c.y + 0.5)));
+      g.add(mesh);
+    }
     // Build grid (hidden until a tower is picked).
+    this.buildGrid.visible = false;
+    g.add(this.buildGrid);
+    this.gridFor = { game, me };
+    this.showBuildGrid(null);
+  }
+
+  private gridFor: { game: Game; me: number };
+  private gridKey: string | null = '';
+
+  /**
+   * The build grid for the tower you are placing: green where it may stand (at the height of the
+   * worktop, if there is one), a dark tint on bare floor it may not use. Null hides it.
+   */
+  showBuildGrid(defId: string | null): void {
+    this.buildGrid.visible = defId !== null;
+    if (defId === null || defId === this.gridKey) return;
+    this.gridKey = defId;
+    const { game, me } = this.gridFor;
+    const level = game.level;
+    const { w, h } = level.size;
     const furnished = new Uint8Array(w * h);
     const chair = chairTile(level);
     for (const r of [...level.decor.map((d) => d.rect), ...(level.walls ?? []), { ...chair, w: 1, h: 1 }]) {
@@ -149,9 +179,15 @@ export class World {
       for (let x = 0; x < w; x++) {
         if (game.isPathTile(x, y)) continue;
         // Only the tiles this player may build on (multiplayer zones), so the grid shows your patch.
-        if (!game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y)) free.push({ x, y, top: surfaceAt(level, x, y) ?? 0 });
+        if (!game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y) && game.tileAllows(defId, x, y)) free.push({ x, y, top: surfaceAt(level, x, y) ?? 0 });
         else if (!furnished[y * w + x]) banned.push({ x, y, top: 0 });
       }
+    }
+    for (const c of [...this.buildGrid.children]) {
+      this.buildGrid.remove(c);
+      const mesh = c as THREE.InstancedMesh;
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
     }
     const tiles = (list: { x: number; y: number; top: number }[], size: number, color: THREE.ColorRepresentation, opacity: number) => {
       const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
@@ -164,8 +200,6 @@ export class World {
     };
     tiles(free, 0.86, PAL.ok, 0.22);
     tiles(banned, 1, 0x1b2230, 0.28);
-    this.buildGrid.visible = false;
-    g.add(this.buildGrid);
   }
 
   /** Speed gates swing open for whoever is walking through, once they have scanned their pass. */
@@ -332,4 +366,24 @@ export class World {
       this.group.add(win);
     }
   }
+}
+
+/** Yellow and grey diagonal stripes: floor paint for the queue. */
+function stripes(): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d')!;
+  x.fillStyle = '#6b6f78';
+  x.fillRect(0, 0, 64, 64);
+  x.strokeStyle = '#f2c641';
+  x.lineWidth = 10;
+  for (let i = -64; i <= 128; i += 32) {
+    x.beginPath();
+    x.moveTo(i, 64);
+    x.lineTo(i + 64, 0);
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
