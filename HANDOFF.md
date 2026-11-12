@@ -52,6 +52,18 @@ L1 en L2, daarna de rest.** Art-stijl blijft, alleen de inrichting is nieuw.
 - Jouw bureau: collega's lopen tegen de voorkant, je stoel staat erachter (`deskTurn` in
   `world.ts`, besluit maker). Geen ruimte achter het bureau (rand van de kaart): een kwartslag
   gedraaid, nooit met de stoel naar de collega's (test voor alle levels).
+- **OPEN: review L2 Coffee Corner door de maker (2026-11-12), nog niet opgelost.** Feedback:
+  het is niet duidelijk of je wel of niet op de grond kunt bouwen, en het voelt raar dat torens
+  die zelf een kastje/bureau hebben op een tafel komen. Voorstel van de maker: alleen op de grond
+  bouwen, "of misschien heb jij een beter idee". Vraag de maker met keuzeknoppen voor je bouwt.
+  Wat ik zag: de groene bouwvakjes bij het plaatsen (`World.buildGrid`, `world.ts`) worden op
+  vloerhoogte getekend, dus op de werkbladen verdwijnen ze onder aanrecht en tafels: daardoor zie
+  je nergens waar het wel mag. Mogelijke richtingen: (a) alleen vloer, werkbladen worden weer
+  gewoon meubels, en L2 krijgt een andere eigen kaartregel; (b) werkbladen houden, maar de
+  bouwvakjes op bladhoogte tekenen, de vloer duidelijk "verboden" maken en in de shop/ghost laten
+  zien dat het ding zonder kastje op het blad komt; (c) vloer bouwbaar en werkbladen als extra
+  plek met een voordeel. Na de keuze: balans meten (`npm run balance -- --level 2`), uicheck
+  `--l2-only` en daarna volledig, release als 0.17.2 of 0.18.0.
 - Paden eindigen op x.0 van je bureau (zoals altijd), niet in het midden van de tegel.
 - Balans L1 (33,5 tegels, oude kaart 30,5): goed spelen foutloos, The Head of Comms blijft 9,5 tegels
   van je bureau (oude kaart: 17). Beginner 77 Focus (oud 73), alleen Auto-Replies 79 (oud 80). De
