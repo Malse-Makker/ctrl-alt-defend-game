@@ -386,6 +386,17 @@ interface PendingSpawn {
   pathIndex: number;
 }
 
+/**
+ * The tile your chair stands on: right behind your desk, seen from the colleagues walking up to
+ * it. Path, desk, chair, in one line (the maker's rule), so they always arrive at the front.
+ */
+export function chairTile(level: LevelDef): { x: number; y: number } {
+  const pts = level.paths[0];
+  const a = pts[pts.length - 2];
+  const b = pts[pts.length - 1];
+  return { x: level.desk.x + Math.sign(b.x - a.x), y: level.desk.y + Math.sign(b.y - a.y) };
+}
+
 const TILE_BLOCKED = 1;
 /** Seconds a colleague stands at a gate to scan their pass. */
 export const GATE_HOLD = 0.4;
@@ -627,6 +638,9 @@ export class Game {
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (this.inBounds(x, y)) this.walls![y * level.size.w + x] = 1;
     }
     this.markRect(level.desk.x, level.desk.y, 1, 1, TILE_BLOCKED);
+    // Your chair stands behind the desk, in line with the walkway: nobody builds on it.
+    const chair = chairTile(level);
+    this.markRect(chair.x, chair.y, 1, 1, TILE_BLOCKED);
     for (let ty = 0; ty < level.size.h; ty++) {
       for (let tx = 0; tx < level.size.w; tx++) {
         const c = { x: tx + 0.5, y: ty + 0.5 };

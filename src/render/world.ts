@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import type { LevelDef } from '../sim/data/levels';
-import type { Game } from '../sim/game';
+import { chairTile, type Game } from '../sim/game';
 import type { Assets } from './assets';
 import { PAL } from './palette';
 
@@ -19,25 +19,10 @@ export function surfaceAt(level: LevelDef, tx: number, ty: number): number | und
   return undefined;
 }
 
-/**
- * Which way your desk faces. Colleagues walk up to the front of it, with your chair on the far
- * side (the model's chair side is +z). At the edge of the floor there is no room for the chair
- * there, so the desk turns a quarter and they walk up to its end; never to the back of your chair.
- */
-export function deskTurn(level: LevelDef, game: Game): number {
-  const pts = level.paths[0];
-  const dx = Math.sign(pts[pts.length - 1].x - pts[pts.length - 2].x);
-  const dy = Math.sign(pts[pts.length - 1].y - pts[pts.length - 2].y);
-  const { x, y } = level.desk;
-  const room = (cx: number, cy: number) => game.inBounds(x + cx, y + cy) && !game.isPathTile(x + cx, y + cy);
-  for (const [cx, cy] of [
-    [dx, dy],
-    [-dy, dx],
-    [dy, -dx],
-  ]) {
-    if (room(cx, cy)) return Math.atan2(cx, cy);
-  }
-  return Math.atan2(-dx, -dy);
+/** Which way your desk faces: its front to the walkway, your chair behind it (chair side is +z). */
+export function deskTurn(level: LevelDef): number {
+  const c = chairTile(level);
+  return Math.atan2(c.x - level.desk.x, c.y - level.desk.y);
 }
 
 interface GateView {
@@ -51,8 +36,12 @@ interface GateView {
 
 export class World {
   readonly group = new THREE.Group();
-  /** Tiles you could build on, drawn while placing a tower. */
-  readonly buildGrid: THREE.InstancedMesh;
+  /**
+   * Drawn while placing a tower: green on the tiles you may build on (at the height of the
+   * worktop, if there is one), and a dark tint on bare floor you may not use, so you can tell
+   * the two apart at a glance.
+   */
+  readonly buildGrid = new THREE.Group();
   readonly deskPos: THREE.Vector3;
   /** Asset clones share geometry with the loaded models and must survive a retry. */
   private readonly shared = new Set<THREE.Object3D>();
@@ -140,22 +129,37 @@ export class World {
     const desk = assets.clone('player_desk');
     this.deskPos = new THREE.Vector3(level.desk.x + 0.5, 0, level.desk.y + 0.5);
     desk.position.copy(this.deskPos);
-    desk.rotation.y = deskTurn(level, game);
+    desk.rotation.y = deskTurn(level);
     this.shared.add(desk);
     g.add(desk);
 
     // Build grid (hidden until a tower is picked).
-    const gridMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false });
-    const gridGeo = new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2);
-    const free: { x: number; y: number }[] = [];
-    // Only the tiles this player may build on (multiplayer zones), so the grid shows your patch.
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!game.isPathTile(x, y) && !game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y)) free.push({ x, y });
-    this.buildGrid = new THREE.InstancedMesh(gridGeo, gridMat, free.length);
-    const m = new THREE.Matrix4();
-    free.forEach((c, i) => {
-      m.makeTranslation(c.x + 0.5, 0.006, c.y + 0.5);
-      this.buildGrid.setMatrixAt(i, m);
-    });
+    const furnished = new Uint8Array(w * h);
+    const chair = chairTile(level);
+    for (const r of [...level.decor.map((d) => d.rect), ...(level.walls ?? []), { ...chair, w: 1, h: 1 }]) {
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (game.inBounds(x, y)) furnished[y * w + x] = 1;
+    }
+    const free: { x: number; y: number; top: number }[] = [];
+    const banned: { x: number; y: number; top: number }[] = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (game.isPathTile(x, y)) continue;
+        // Only the tiles this player may build on (multiplayer zones), so the grid shows your patch.
+        if (!game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y)) free.push({ x, y, top: surfaceAt(level, x, y) ?? 0 });
+        else if (!furnished[y * w + x]) banned.push({ x, y, top: 0 });
+      }
+    }
+    const tiles = (list: { x: number; y: number; top: number }[], size: number, color: THREE.ColorRepresentation, opacity: number) => {
+      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(size, size).rotateX(-Math.PI / 2), mat, Math.max(1, list.length));
+      mesh.count = list.length;
+      const m = new THREE.Matrix4();
+      list.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, c.top + 0.008, c.y + 0.5)));
+      mesh.renderOrder = 2;
+      this.buildGrid.add(mesh);
+    };
+    tiles(free, 0.86, PAL.ok, 0.22);
+    tiles(banned, 1, 0x1b2230, 0.28);
     this.buildGrid.visible = false;
     g.add(this.buildGrid);
   }

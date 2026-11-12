@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
-import { GATE_HOLD, Game, TICK } from '../src/sim/game';
+import { chairTile, GATE_HOLD, Game, TICK } from '../src/sim/game';
 import { isWalkwayLetter, parseGrid } from '../src/sim/grid';
 import { deskTurn } from '../src/render/world';
 
@@ -39,6 +39,16 @@ describe('the tile grid', () => {
       }
     }
     expect(wrong).toEqual([]);
+  });
+  it.each(gridLevels.map((l) => [l.id, l] as const))('level %i: a tile you cannot build on for furniture has furniture on it', (_, level) => {
+    const covered = (x: number, y: number) =>
+      level.decor.some((d) => x >= d.rect.x && x < d.rect.x + d.rect.w && y >= d.rect.y && y < d.rect.y + d.rect.h) ||
+      (level.walls ?? []).some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+    const bare: string[] = [];
+    level.grid!.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) if ('tHRw'.includes(row[x]) && !covered(x, y)) bare.push(`${x},${y} '${row[x]}'`);
+    });
+    expect(bare).toEqual([]);
   });
 });
 
@@ -98,17 +108,22 @@ describe('Reception', () => {
 describe('Coffee Corner', () => {
   const level = LEVELS[2];
 
-  it('you only build on the worktops: counters, tables and the bar', () => {
+  it('you build on the kitchen floor, never on the furniture', () => {
     const g = new Game(level);
     g.coffee = 5000;
-    expect(g.canPlace('autoreply', 6, 4).ok).toBe(true); // a standing table
-    expect(g.canPlace('autoreply', 6, 8).ok).toBe(true); // the dining table
-    expect(g.canPlace('coffee', 4, 13).ok).toBe(true); // the bar by the window
-    expect(g.canPlace('autoreply', 5, 4).ok).toBe(false); // the kitchen floor
-    expect(g.canPlace('autoreply', 5, 7).ok).toBe(false); // a chair
-    let worktops = 0;
-    level.grid!.forEach((row) => (worktops += [...row].filter((c) => c === 'o').length));
-    expect(worktops).toBe(33);
+    expect(g.canPlace('autoreply', 4, 3).ok).toBe(true); // floor inside the first bend
+    expect(g.canPlace('autoreply', 9, 7).ok).toBe(true); // floor by the dining table
+    expect(g.canPlace('autoreply', 6, 4).ok).toBe(false); // a standing table
+    expect(g.canPlace('autoreply', 6, 8).ok).toBe(false); // the dining table
+    expect(g.canPlace('autoreply', 3, 0).ok).toBe(false); // the counter
+    expect(g.canPlace('autoreply', 5, 1).ok).toBe(false); // the spill by the coffee machine
+    expect(level.decor.some((d) => d.surface !== undefined)).toBe(false);
+  });
+
+  it('a full kitchen: the floor you can build on is scarce', () => {
+    let free = 0;
+    level.grid!.forEach((row) => (free += [...row].filter((c) => c === '.').length));
+    expect(free).toBe(65);
   });
 });
 
@@ -116,18 +131,18 @@ describe('your desk', () => {
   // The chair side of the desk model points along +z: (sin a, cos a) for a turn of a.
   const chairSide = (a: number) => ({ x: Math.round(Math.sin(a)), y: Math.round(Math.cos(a)) });
 
-  it('colleagues walk up to the front of it, with your chair on the far side', () => {
-    const level = LEVELS[1];
-    // They arrive moving +x; the chair goes on the tile beyond the desk.
-    expect(chairSide(deskTurn(level, new Game(level)))).toEqual({ x: 1, y: 0 });
-  });
-
-  it.each(Object.values(LEVELS).map((l) => [l.id, l] as const))('level %i: never with the chair towards them', (_, level) => {
+  it.each(Object.values(LEVELS).map((l) => [l.id, l] as const))('level %i: walkway, desk, chair in one line', (_, level) => {
     const g = new Game(level);
     const pts = level.paths[0];
     const arrive = { x: Math.sign(pts[pts.length - 1].x - pts[pts.length - 2].x), y: Math.sign(pts[pts.length - 1].y - pts[pts.length - 2].y) };
-    const c = chairSide(deskTurn(level, g));
-    expect(c.x === -arrive.x && c.y === -arrive.y).toBe(false);
-    expect(g.inBounds(level.desk.x + c.x, level.desk.y + c.y)).toBe(true);
+    expect(chairSide(deskTurn(level))).toEqual(arrive);
+    const chair = chairTile(level);
+    expect(chair).toEqual({ x: level.desk.x + arrive.x, y: level.desk.y + arrive.y });
+    // Room for the chair: on the floor, off the walkway, no furniture in the way, nobody builds there.
+    expect(g.inBounds(chair.x, chair.y)).toBe(true);
+    expect(g.isPathTile(chair.x, chair.y)).toBe(false);
+    expect(level.decor.some((d) => chair.x >= d.rect.x && chair.x < d.rect.x + d.rect.w && chair.y >= d.rect.y && chair.y < d.rect.y + d.rect.h)).toBe(false);
+    g.coffee = 5000;
+    expect(g.canPlace('coffee', chair.x, chair.y).ok).toBe(false);
   });
 });

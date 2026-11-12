@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.17.1 (2026-11-12)
+## Stand: v0.17.2 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -49,21 +49,28 @@ L1 en L2, daarna de rest.** Art-stijl blijft, alleen de inrichting is nieuw.
   receptiebalie (4 lang, receptioniste erachter, postvakken tegen de muur), dan door de poortjes
   naar de kantoorkant met jouw bureau, bureaus, printer en de liften. De garderobe midden in de
   kamer is een ronde kapstok bij de deur geworden.
-- Jouw bureau: collega's lopen tegen de voorkant, je stoel staat erachter (`deskTurn` in
-  `world.ts`, besluit maker). Geen ruimte achter het bureau (rand van de kaart): een kwartslag
-  gedraaid, nooit met de stoel naar de collega's (test voor alle levels).
-- **OPEN: review L2 Coffee Corner door de maker (2026-11-12), nog niet opgelost.** Feedback:
-  het is niet duidelijk of je wel of niet op de grond kunt bouwen, en het voelt raar dat torens
-  die zelf een kastje/bureau hebben op een tafel komen. Voorstel van de maker: alleen op de grond
-  bouwen, "of misschien heb jij een beter idee". Vraag de maker met keuzeknoppen voor je bouwt.
-  Wat ik zag: de groene bouwvakjes bij het plaatsen (`World.buildGrid`, `world.ts`) worden op
-  vloerhoogte getekend, dus op de werkbladen verdwijnen ze onder aanrecht en tafels: daardoor zie
-  je nergens waar het wel mag. Mogelijke richtingen: (a) alleen vloer, werkbladen worden weer
-  gewoon meubels, en L2 krijgt een andere eigen kaartregel; (b) werkbladen houden, maar de
-  bouwvakjes op bladhoogte tekenen, de vloer duidelijk "verboden" maken en in de shop/ghost laten
-  zien dat het ding zonder kastje op het blad komt; (c) vloer bouwbaar en werkbladen als extra
-  plek met een voordeel. Na de keuze: balans meten (`npm run balance -- --level 2`), uicheck
-  `--l2-only` en daarna volledig, release als 0.17.2 of 0.18.0.
+- Jouw bureau (besluit maker, v0.17.2): overal looppad, bureau, stoel in een lijn; collega's
+  komen altijd recht op de voorkant af. `chairTile(level)` in `game.ts` is de tegel achter het
+  bureau (in de looprichting), daar mag je niet bouwen; `deskTurn(level)` draait het model.
+  Geen uitzondering meer aan de rand: dan gaat het bureau een tegel naar binnen (L2, L3, L5 in
+  v0.17.2). Test voor alle levels in `tests/grid.test.ts`. Gevolg: L3 goed spelen 7,9 tegels marge
+  (was 8,9; de L3-test meet nu in tegels, > 5), L5 goed spelen 97 Focus (was 99), eerst koffie 92
+  (was 100), allebei 3 sterren. L2 goed spelen 9,2 tegels marge.
+- **Review L2 door de maker (v0.17.2), keuze met knoppen:** alleen op de vloer bouwen, de
+  keuken krap ingericht. Werkbladen zijn weer gewone meubels (geen `surface` meer in L2; de code
+  voor werkbladen blijft voor latere levels: laptopplekken L3, flexbureaus L8). 65 bouwtegels
+  (ontwerp: 33 op werkbladen, L1 heeft 135); de maker koos "~45-55", ik kwam op 65 zonder de
+  keuken vol te proppen, en de balans bleef goed. Extra meubels: bank + picknicktafel links,
+  statafels met krukken in de bovenste lus, waterkoeler en prullenbakken bij je bureau, twee
+  natte-vloerbordjes bij de koffiemachines, de bar loopt tot de hoek. Nieuwe test: elke tegel
+  `t`/`H`/`R`/`w` in een raster heeft echt een meubel (anders zie je vloer waar je niet mag bouwen).
+- Bouwraster (keuze maker: overal): bij het plaatsen zijn bouwtegels groen (op bladhoogte als er
+  een werkblad is) en kale vloer waar je niet mag bouwen (`-`, of buiten je vak in multiplayer)
+  donkerder. `World.buildGrid` is nu een groep met twee InstancedMeshes. uicheck maakt
+  `l2-build-grid.png`.
+- Balans L2 na de nieuwe keuken (bots, seeds 1 en 2): goed spelen foutloos, verste collega 73%
+  (was 68%); eerst koffie 100 Focus en 3 sterren (was 96); beginner en spam verliezen nog op de
+  Old Guard; idle verliest op golf 7.
 - Paden eindigen op x.0 van je bureau (zoals altijd), niet in het midden van de tegel.
 - Balans L1 (33,5 tegels, oude kaart 30,5): goed spelen foutloos, The Head of Comms blijft 9,5 tegels
   van je bureau (oude kaart: 17). Beginner 77 Focus (oud 73), alleen Auto-Replies 79 (oud 80). De

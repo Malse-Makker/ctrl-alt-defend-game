@@ -252,6 +252,12 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
     drainEvents(): { t: string }[];
     towers: { id: number; defId: string }[];
   };
+  // The build grid while placing: green where you may build, a dark tint on floor you may not.
+  await page.keyboard.press('2');
+  await page.mouse.move(800, 450);
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l2-build-grid', size);
+  await page.keyboard.press('Escape');
   const placed = await page.evaluate(() => {
     const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
     const g = s.game;
@@ -262,15 +268,15 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
       out.push(`${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`);
       return r.tower;
     };
-    // The Coffee Corner kitchen (14 x 14): only the worktops.
-    tryPlace('coffee', 2, 0);
-    tryPlace('autoreply', 6, 4);
-    tryPlace('autoreply', 9, 4);
-    tryPlace('autoreply', 7, 9);
-    const sh = tryPlace('shredder', 12, 0);
-    const hp = tryPlace('headphones', 6, 8);
-    const art = tryPlace('artillery', 3, 13);
-    out.push(`on the floor: ${g.place('autoreply', 5, 4).reason}`);
+    // The Coffee Corner kitchen (14 x 14): the floor between the furniture.
+    tryPlace('coffee', 1, 1);
+    tryPlace('autoreply', 4, 3);
+    tryPlace('autoreply', 9, 5);
+    tryPlace('autoreply', 9, 7);
+    const sh = tryPlace('shredder', 11, 3);
+    const hp = tryPlace('headphones', 4, 7);
+    const art = tryPlace('artillery', 0, 12);
+    out.push(`on a table: ${g.place('autoreply', 6, 8).reason}`);
     if (sh) for (let i = 0; i < 3; i++) g.upgrade(sh.id, 0);
     if (hp) for (let i = 0; i < 2; i++) g.upgrade(hp.id, 0);
     if (art) for (let i = 0; i < 3; i++) g.upgrade(art.id, 0);

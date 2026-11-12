@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.17.2] - 2026-11-12
+
+### Changed
+- Coffee Corner: your things go on the floor again, cabinet and all. Nobody wants a shredder on the dining table. The kitchen got fuller instead: a sofa, a picnic table, more standing tables, a water cooler and a spill by the coffee machines that nobody has mopped. The good spots by the bends are scarce.
+- When you pick something to place, every tile you may build on lights up green, and bare floor you may not use is darker. On every floor.
+- Your desk always faces the walkway now, with your chair behind it. Nobody walks up to the side of your desk any more. In Coffee Corner, the Meeting Room and the Boardroom the desk moved one tile in to make room for the chair.
+
 ## [0.17.1] - 2026-11-12
 
 ### Changed
