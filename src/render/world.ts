@@ -19,6 +19,27 @@ export function surfaceAt(level: LevelDef, tx: number, ty: number): number | und
   return undefined;
 }
 
+/**
+ * Which way your desk faces. Colleagues walk up to the front of it, with your chair on the far
+ * side (the model's chair side is +z). At the edge of the floor there is no room for the chair
+ * there, so the desk turns a quarter and they walk up to its end; never to the back of your chair.
+ */
+export function deskTurn(level: LevelDef, game: Game): number {
+  const pts = level.paths[0];
+  const dx = Math.sign(pts[pts.length - 1].x - pts[pts.length - 2].x);
+  const dy = Math.sign(pts[pts.length - 1].y - pts[pts.length - 2].y);
+  const { x, y } = level.desk;
+  const room = (cx: number, cy: number) => game.inBounds(x + cx, y + cy) && !game.isPathTile(x + cx, y + cy);
+  for (const [cx, cy] of [
+    [dx, dy],
+    [-dy, dx],
+    [dy, -dx],
+  ]) {
+    if (room(cx, cy)) return Math.atan2(cx, cy);
+  }
+  return Math.atan2(-dx, -dy);
+}
+
 interface GateView {
   flap: THREE.Object3D;
   x: number;
@@ -119,10 +140,7 @@ export class World {
     const desk = assets.clone('player_desk');
     this.deskPos = new THREE.Vector3(level.desk.x + 0.5, 0, level.desk.y + 0.5);
     desk.position.copy(this.deskPos);
-    const last = level.paths[0][level.paths[0].length - 1];
-    const prev = level.paths[0][level.paths[0].length - 2];
-    // The chair faces the arriving colleagues: they walk up behind you while you work.
-    desk.rotation.y = Math.atan2(-(last.x - prev.x), -(last.y - prev.y));
+    desk.rotation.y = deskTurn(level, game);
     this.shared.add(desk);
     g.add(desk);
 

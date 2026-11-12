@@ -70,10 +70,10 @@ def hex_rgb(h):
     return tuple(((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in srgb) + (1.0,)
 
 
-def mat(key, rough=0.85, metal=0.0, emit=0.0):
-    """Material from the palette (or a raw hex). Cached by name."""
+def mat(key, rough=0.85, metal=0.0, emit=0.0, alpha=1.0):
+    """Material from the palette (or a raw hex). Cached by name. alpha < 1: see-through (glass)."""
     hexv = PALETTE.get(key, key)
-    name = f"{key}_r{rough}_m{metal}_e{emit}"
+    name = f"{key}_r{rough}_m{metal}_e{emit}" + (f"_a{alpha}" if alpha < 1 else "")
     if name in _mats:
         return _mats[name]
     m = bpy.data.materials.new(name)
@@ -93,6 +93,13 @@ def mat(key, rough=0.85, metal=0.0, emit=0.0):
                 break
         if "Emission Strength" in bsdf.inputs:
             bsdf.inputs["Emission Strength"].default_value = emit
+    if alpha < 1:
+        bsdf.inputs["Alpha"].default_value = alpha
+        # Blender 4.2+ calls it the surface render method; older versions the blend method.
+        if hasattr(m, "surface_render_method"):
+            m.surface_render_method = "BLENDED"
+        else:
+            m.blend_method = "BLEND"
     m.diffuse_color = col
     _mats[name] = m
     return m

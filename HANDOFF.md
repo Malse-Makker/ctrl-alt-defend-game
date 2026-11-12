@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.17.0 (2026-11-12)
+## Stand: v0.17.1 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -42,13 +42,21 @@ L1 en L2, daarna de rest.** Art-stijl blijft, alleen de inrichting is nieuw.
   blad (`View.groundAt(px, py, height)`), anders klik je op de tegel erachter.
 - Glazen gevel: `look.glassFront` laat de muur langs x = 0 weg; `glass_front` en `glass_doors`
   zijn decor.
-- Kleine afwijkingen van het ontwerp: tegel (0, 8) in L1 is glas (`g`) in plaats van vloer, anders
-  zat er een gat in de gevel naast de deur. Paden eindigen op x.0 van je bureau (zoals altijd), niet
-  in het midden van de tegel. Alles verder volgens het ontwerp.
-- Balans L1 (Reception is langer: 34,5 tegels, was 30,5): goed spelen blijft foutloos, maar The Head
-  of Comms komt tot 6,3 tegels van je bureau (oude kaart: 17). Beginner 80 Focus (was 73), alleen
-  Auto-Replies 76 (was 80). De test meet de marge nu in tegels (> 5). Golven en boss volgens het
-  ontwerp ongewijzigd. L2: goed spelen 12 tegels marge (was 10,2), beginner en spam verliezen.
+- **Review L1 door de maker (v0.17.1), en dus afwijkend van het ontwerp:** een poortje waar je
+  omheen kunt lopen is niet logisch. Nu loopt een lage glazen wand (`glass_partition`, echt
+  doorzichtig: `mat(..., alpha=)` in `kit.py`) over de hele hoogte op x = 13, met de logowand en
+  de poortjes erin; de enige weg is door het poortje (test). Iedereen loopt eerst langs de
+  receptiebalie (4 lang, receptioniste erachter, postvakken tegen de muur), dan door de poortjes
+  naar de kantoorkant met jouw bureau, bureaus, printer en de liften. De garderobe midden in de
+  kamer is een ronde kapstok bij de deur geworden.
+- Jouw bureau: collega's lopen tegen de voorkant, je stoel staat erachter (`deskTurn` in
+  `world.ts`, besluit maker). Geen ruimte achter het bureau (rand van de kaart): een kwartslag
+  gedraaid, nooit met de stoel naar de collega's (test voor alle levels).
+- Paden eindigen op x.0 van je bureau (zoals altijd), niet in het midden van de tegel.
+- Balans L1 (33,5 tegels, oude kaart 30,5): goed spelen foutloos, The Head of Comms blijft 9,5 tegels
+  van je bureau (oude kaart: 17). Beginner 77 Focus (oud 73), alleen Auto-Replies 79 (oud 80). De
+  test meet de marge in tegels (> 5). Golven en boss ongewijzigd. L2: goed spelen 12 tegels marge
+  (was 10,2), beginner en spam verliezen.
 - Nog niet gedaan uit het ontwerp: het hernoemen naar DIGITAL/PHYSICAL (`damageClass`) met een
   label in het torenmenu. Dat komt bij level 3 (laptopplekken), waar het voor het eerst telt.
 

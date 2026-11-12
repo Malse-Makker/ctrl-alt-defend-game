@@ -17,10 +17,10 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.17.0)
+## What is in it now (v0.17.1)
 
-- **Level 1, Reception**: 21 waves through the hall, speed gates where everyone stops to scan
-  their pass, and The Head of Comms.
+- **Level 1, Reception**: 21 waves past the reception desk and through the speed gates in a
+  glass wall, where everyone stops to scan their pass, and The Head of Comms.
 - **Level 2, Coffee Corner**: a small office kitchen where you build on the worktops only, 22
   waves and The Repair Guy (no Coffee while he is around). Opens once you finish level 1.
 - **Level 3, Meeting Room**: 21 waves, The Presenter (beams Chasers next to your desk) and the

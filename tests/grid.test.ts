@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
 import { GATE_HOLD, Game, TICK } from '../src/sim/game';
 import { isWalkwayLetter, parseGrid } from '../src/sim/grid';
+import { deskTurn } from '../src/render/world';
 
 const gridLevels = Object.values(LEVELS).filter((l) => l.grid);
 
@@ -46,12 +47,32 @@ describe('Reception', () => {
 
   it('tall furniture blocks sight, low furniture does not', () => {
     const g = new Game(level);
-    // The logo wall (13, 4..5) stands between (14, 5) and the walkway at x = 11.5.
-    expect(g.lineOfSight(14.5, 5, 11.5, 5)).toBe(false);
-    // The lounge chairs (6..8, 5..6) are low: you can shoot over them.
+    // The logo wall (13, 3..4) in the glass wall: from the offices you cannot see past it.
+    expect(g.lineOfSight(14.5, 3.6, 11.5, 3.6)).toBe(false);
+    // The glass itself is see-through, and so are the low lounge chairs (6..8, 5..6).
+    expect(g.lineOfSight(14.5, 9.5, 11.5, 9.5)).toBe(true);
     expect(g.lineOfSight(9.5, 6, 5.5, 6)).toBe(true);
     expect(g.canPlace('autoreply', 13, 4).ok).toBe(false);
     expect(g.canPlace('autoreply', 7, 5).ok).toBe(false);
+  });
+
+  it('the glass wall runs the whole floor: the only way through is the gate', () => {
+    const g = new Game(level);
+    const wall = level.grid!.map((row) => row[13]);
+    expect(wall.join('')).toMatch(/^[gHtG]+$/);
+    const through = wall.flatMap((_, y) => (g.isPathTile(13, y) ? [y] : []));
+    expect(through).toEqual([g.gates[0].y - 0.5]);
+  });
+
+  it('everyone walks past the reception desk before the gates', () => {
+    const g = new Game(level);
+    const desk = level.decor.find((d) => d.model === 'reception_desk')!;
+    const path = g.paths[0];
+    const passDesk = Math.min(...Array.from({ length: 400 }, (_, i) => i * (path.length / 400)).filter((d) => {
+      const p = path.pointAt(d);
+      return p.x >= desk.rect.x && p.x <= desk.rect.x + desk.rect.w && Math.abs(p.y - (desk.rect.y + 1.5)) < 0.01;
+    }));
+    expect(passDesk).toBeLessThan(g.gates[0].dist);
   });
 
   it('everyone stops at the gate to scan their pass, then walks on', () => {
@@ -88,5 +109,25 @@ describe('Coffee Corner', () => {
     let worktops = 0;
     level.grid!.forEach((row) => (worktops += [...row].filter((c) => c === 'o').length));
     expect(worktops).toBe(33);
+  });
+});
+
+describe('your desk', () => {
+  // The chair side of the desk model points along +z: (sin a, cos a) for a turn of a.
+  const chairSide = (a: number) => ({ x: Math.round(Math.sin(a)), y: Math.round(Math.cos(a)) });
+
+  it('colleagues walk up to the front of it, with your chair on the far side', () => {
+    const level = LEVELS[1];
+    // They arrive moving +x; the chair goes on the tile beyond the desk.
+    expect(chairSide(deskTurn(level, new Game(level)))).toEqual({ x: 1, y: 0 });
+  });
+
+  it.each(Object.values(LEVELS).map((l) => [l.id, l] as const))('level %i: never with the chair towards them', (_, level) => {
+    const g = new Game(level);
+    const pts = level.paths[0];
+    const arrive = { x: Math.sign(pts[pts.length - 1].x - pts[pts.length - 2].x), y: Math.sign(pts[pts.length - 1].y - pts[pts.length - 2].y) };
+    const c = chairSide(deskTurn(level, g));
+    expect(c.x === -arrive.x && c.y === -arrive.y).toBe(false);
+    expect(g.inBounds(level.desk.x + c.x, level.desk.y + c.y)).toBe(true);
   });
 });

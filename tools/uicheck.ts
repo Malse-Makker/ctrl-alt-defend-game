@@ -208,8 +208,8 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
   }
   await new Promise((r) => setTimeout(r, 500));
   type Remote = { cad: { session: { run(c: unknown): void } } };
-  await host.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 4, ty: 7 }));
-  await guest.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 13, ty: 6 }));
+  await host.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 3, ty: 7 }));
+  await guest.evaluate(() => (window as unknown as Remote).cad.session.run({ c: 'place', def: 'autoreply', tx: 14, ty: 6 }));
   await host.keyboard.press('Space');
   await new Promise((r) => setTimeout(r, 2500));
   const towers = await guest.evaluate(() => (window as unknown as { cad: { session: { game: { towers: { owner: number }[] } } } }).cad.session.game.towers.map((t) => t.owner));
@@ -913,10 +913,10 @@ async function run(): Promise<void> {
       await page.evaluate(() => {
         const g = (window as unknown as { cad: Cad }).cad.session.game;
         g.coffee = 600;
-        g.place('autoreply', 6, 2);
+        g.place('autoreply', 5, 4);
         g.place('autoreply', 9, 5);
-        g.place('autoreply', 13, 6);
-        g.place('coffee', 4, 6);
+        g.place('autoreply', 14, 6);
+        g.place('coffee', 2, 6);
         const t = g.towers[0];
         g.upgrade(t.id, 0);
         g.upgrade(t.id, 0);

@@ -1890,23 +1890,42 @@ def b_mail_slots():
     return root
 
 
-def b_coat_rack():
-    """A rail of coats, an umbrella stand and a shoe bench."""
-    root = empty("coat_rack")
-    parts = [box(f"Upright{i}", (0.05, 0.05, 1.5), loc=(x, 0.45, 0), material=_metal()) for i, x in enumerate((-0.8, 0.8))]
-    parts += [box(f"Foot{i}", (0.06, 0.6, 0.04), loc=(x, 0.45, 0), material=_metal()) for i, x in enumerate((-0.8, 0.8))]
-    parts.append(box("Rail", (1.66, 0.04, 0.04), loc=(0, 0.45, 1.44), material=_metal()))
-    for i, (x, col) in enumerate(((-0.55, "navy"), (-0.25, "khaki"), (0.05, "charcoal"), (0.35, "red"), (0.6, "denim"))):
-        parts.append(box(f"Coat{i}", (0.26, 0.16, 0.8), loc=(x, 0.45, 0.58), material=mat(col), bevel=0.03, taper=0.85))
-        parts.append(box(f"Shoulder{i}", (0.3, 0.17, 0.08), loc=(x, 0.45, 1.33), material=mat(col), bevel=0.03))
-    parts.append(box("Bench", (1.2, 0.36, 0.38), loc=(-0.3, -0.45, 0), material=mat("wood", rough=0.6), bevel=0.02))
-    parts += [box(f"Shoe{i}", (0.1, 0.24, 0.07), loc=(-0.6 + i * 0.13, -0.45, 0.38), material=mat("plastic_black"), bevel=0.02) for i in range(2)]
-    parts.append(cyl("UmbrellaStand", 0.13, 0.48, loc=(0.6, -0.45, 0), material=mat("charcoal"), verts=12))
-    for i, (dx, dy, col) in enumerate(((0.03, 0.02, "blue"), (-0.04, -0.03, "yellow"))):
-        u = cyl(f"Umbrella{i}", 0.035, 0.75, loc=(0.6 + dx, -0.45 + dy, 0.1), material=mat(col), verts=8)
-        kit.tilt([u], rx=dy * 3, ry=dx * 3, pivot=(0.6, -0.45, 0.1))
-        parts.append(u)
-    ob = join("coat_rack_mesh", parts)
+def b_coat_stand():
+    """A round coat stand by the door, with whatever people left on it."""
+    root = empty("coat_stand")
+    wood = mat("wood_dark", rough=0.5)
+    base = cyl("Base", 0.24, 0.04, loc=(0, 0, 0), material=mat("charcoal"), verts=20)
+    pole = cyl("Pole", 0.035, 1.55, loc=(0, 0, 0.04), material=wood, verts=10)
+    knob = ball("Knob", 0.05, loc=(0, 0, 1.6), material=wood, subdiv=1)
+    parts = [base, pole, knob]
+    for i in range(6):
+        a = i * TAU / 6
+        hook = box(f"Hook{i}", (0.16, 0.025, 0.025), loc=(math.cos(a) * 0.08, math.sin(a) * 0.08, 1.45), material=wood, rot_z=a)
+        parts.append(hook)
+    # Coats hang on three of the hooks, around the pole.
+    for i, (a, col) in enumerate(((0.3, "navy"), (2.4, "khaki"), (4.3, "red"))):
+        x, y = math.cos(a) * 0.17, math.sin(a) * 0.17
+        coat = box(f"Coat{i}", (0.26, 0.12, 0.75), loc=(x, y, 0.62), material=mat(col), bevel=0.03, taper=0.8)
+        kit.tilt([coat], rz=a + math.pi / 2, pivot=(x, y, 0.62))
+        parts.append(coat)
+    hat = cyl("Hat", 0.13, 0.03, loc=(0.0, 0.0, 1.64), material=mat("charcoal"), verts=16)
+    crown = cyl("HatCrown", 0.08, 0.1, loc=(0.0, 0.0, 1.66), material=mat("charcoal"), verts=14)
+    scarf = box("Scarf", (0.05, 0.05, 0.5), loc=(-0.12, 0.08, 0.95), material=mat("yellow"))
+    umbrella = cyl("Umbrella", 0.035, 0.8, loc=(0.2, -0.18, 0.0), material=mat("blue"), verts=8)
+    kit.tilt([umbrella], rx=0.25, pivot=(0.2, -0.18, 0.0))
+    ob = join("coat_stand_mesh", parts + [hat, crown, scarf, umbrella])
+    parent(ob, root)
+    return root
+
+
+def b_glass_partition():
+    """One tile of the glass wall between the hall and the offices: low enough to look over."""
+    root = empty("glass_partition")
+    pane = box("Pane", (1.0, 0.03, 0.95), loc=(0, 0, 0.06), material=mat("window", rough=0.05, alpha=0.35))
+    foot = box("Foot", (1.0, 0.08, 0.06), loc=(0, 0, 0), material=_metal())
+    rail = box("Rail", (1.0, 0.06, 0.05), loc=(0, 0, 1.01), material=_metal())
+    post = box("Post", (0.05, 0.08, 1.06), loc=(0.475, 0, 0), material=_metal())
+    ob = join("glass_partition_mesh", [pane, foot, rail, post])
     parent(ob, root)
     return root
 
@@ -1994,7 +2013,7 @@ def b_speed_gate():
     stripe = box("Stripe", (0.205, 0.5, 0.04), loc=(0.4, 0.12, 0.8), material=mat("red", emit=0.6))
     ob = join("speed_gate_mesh", [cab, top, reader, light, stripe])
     parent(ob, root)
-    flap = box("GateFlap", (0.46, 0.03, 0.55), loc=(0.73, 0, 0.32), material=_glass(0.25), bevel=0.01)
+    flap = box("GateFlap", (0.46, 0.03, 0.55), loc=(0.73, 0, 0.32), material=mat("window", rough=0.05, emit=0.2, alpha=0.55), bevel=0.01)
     set_origin(flap, (0.5, 0, 0.32))
     parent(flap, root)
     return root
@@ -2028,23 +2047,28 @@ def b_lifts():
 
 
 def b_reception_desk():
-    """The reception counter: five tiles long, high at the front, a bell nobody may ring twice."""
+    """The reception counter: four tiles long, high at the front where you sign in, a bell nobody
+    may ring twice. The receptionist works behind it (+Y)."""
     root = empty("reception_desk")
     wood = mat("wood", rough=0.55)
-    front = box("Front", (4.9, 0.18, 1.05), loc=(0, -0.25, 0), material=wood, bevel=0.02)
-    ledge = box("Ledge", (4.9, 0.3, 0.04), loc=(0, -0.24, 1.05), material=mat("#ece8e0", rough=0.3))
-    strip = box("Strip", (4.7, 0.01, 0.05), loc=(0, -0.345, 0.85), material=mat("screen_glow", emit=1.5))
-    work = box("Work", (4.9, 0.55, 0.04), loc=(0, 0.15, 0.7), material=mat("wood_dark", rough=0.5))
-    body = box("Body", (4.9, 0.5, 0.7), loc=(0, 0.15, 0), material=mat("wood_dark", rough=0.6))
+    front = box("Front", (3.9, 0.18, 1.05), loc=(0, -0.25, 0), material=wood, bevel=0.02)
+    ledge = box("Ledge", (3.9, 0.3, 0.04), loc=(0, -0.24, 1.05), material=mat("#ece8e0", rough=0.3))
+    strip = box("Strip", (3.7, 0.01, 0.05), loc=(0, -0.345, 0.85), material=mat("screen_glow", emit=1.5))
+    work = box("Work", (3.9, 0.55, 0.04), loc=(0, 0.15, 0.7), material=mat("wood_dark", rough=0.5))
+    body = box("Body", (3.9, 0.5, 0.7), loc=(0, 0.15, 0), material=mat("wood_dark", rough=0.6))
     parts = [front, ledge, strip, work, body]
-    parts += _monitor(-1.3, 0.22, 0.74, w=0.46, hgt=0.28)
-    parts += _monitor(1.2, 0.22, 0.74, w=0.46, hgt=0.28)
+    parts += _monitor(-1.0, 0.22, 0.74, w=0.46, hgt=0.28)
+    parts += _monitor(0.9, 0.22, 0.74, w=0.46, hgt=0.28)
     parts.append(cyl("BellBase", 0.07, 0.02, loc=(0.3, -0.25, 1.09), material=_metal(), verts=14))
     parts.append(ball("Bell", 0.06, loc=(0.3, -0.25, 1.11), material=mat("yellow", metal=0.8, rough=0.25), subdiv=2, scale=(1, 1, 0.7)))
     parts.append(box("Book", (0.32, 0.22, 0.03), loc=(-0.4, -0.24, 1.09), material=mat("navy"), bevel=0.01))
-    parts.append(cyl("Vase", 0.06, 0.2, loc=(1.9, -0.25, 1.09), material=_glass(0.05), verts=12))
-    parts += [ball(f"Flower{i}", 0.05, loc=(1.9 + dx, -0.25 + dy, 1.32), material=mat(c), subdiv=1) for i, (dx, dy, c) in enumerate(((0.0, 0.0, "pink"), (0.05, 0.03, "yellow"), (-0.04, 0.02, "red")))]
-    parts.append(box("Phone", (0.2, 0.16, 0.06), loc=(-1.9, 0.1, 0.74), material=mat("plastic_black"), bevel=0.02))
+    parts.append(cyl("Vase", 0.06, 0.2, loc=(1.6, -0.25, 1.09), material=_glass(0.05), verts=12))
+    parts += [ball(f"Flower{i}", 0.05, loc=(1.6 + dx, -0.25 + dy, 1.32), material=mat(c), subdiv=1) for i, (dx, dy, c) in enumerate(((0.0, 0.0, "pink"), (0.05, 0.03, "yellow"), (-0.04, 0.02, "red")))]
+    parts.append(box("Phone", (0.2, 0.16, 0.06), loc=(-1.6, 0.1, 0.74), material=mat("plastic_black"), bevel=0.02))
+    # The receptionist's chair behind the counter.
+    parts.append(box("ChairSeat", (0.44, 0.42, 0.06), loc=(0.0, 0.75, 0.44), material=mat("charcoal"), bevel=0.02))
+    parts.append(box("ChairBack", (0.44, 0.06, 0.48), loc=(0.0, 0.97, 0.48), material=mat("charcoal"), bevel=0.02))
+    parts.append(cyl("ChairPost", 0.03, 0.44, loc=(0.0, 0.75, 0), material=mat("metal"), verts=6))
     ob = join("reception_desk_mesh", parts)
     parent(ob, root)
     return root
@@ -2333,7 +2357,8 @@ BUILDERS = {
     "waiting_bench": b_waiting_bench,
     "brochure_rack": b_brochure_rack,
     "mail_slots": b_mail_slots,
-    "coat_rack": b_coat_rack,
+    "coat_stand": b_coat_stand,
+    "glass_partition": b_glass_partition,
     "lounge_wide": b_lounge_wide,
     "lounge_square": b_lounge_square,
     "pillar": b_pillar,

@@ -32,7 +32,7 @@ describe('Level 1 difficulty', () => {
     expect(r.won).toBe(true);
     expect(r.focus).toBe(100);
     // In tiles, not as a share of the route: Reception is longer than the old Open-Plan Office.
-    // Measured: The Head of Comms gets within 6.3 tiles of your desk (the old floor: 17).
+    // Measured: The Head of Comms gets within 9.5 tiles of your desk (the old floor: 17).
     const length = new Path(level.paths[0]).length;
     expect((1 - r.deepest) * length).toBeGreaterThan(5);
   });

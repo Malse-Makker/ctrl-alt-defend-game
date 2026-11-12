@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.17.1] - 2026-11-12
+
+### Changed
+- Reception reworked: a glass wall now runs across the whole hall, and the speed gates are the only way through. Everyone walks past the reception desk to sign in first, then through the gates to your desk on the office side. The lifts are behind the gates, where they belong.
+- The coat rack in the middle of the hall is gone. A round coat stand waits by the door.
+- Your desk faces the people coming for you: they walk up to the front of it, not to the back of your chair. At the edge of a floor it stands sideways.
+
 ## [0.17.0] - 2026-11-12
 
 ### New
