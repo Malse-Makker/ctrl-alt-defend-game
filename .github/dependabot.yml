@@ -1,0 +1,52 @@
+# Dependabot opent elke dag PR's voor nieuwe versies. De workflow
+# dependabot-samenvoegen.yml merget ze vanzelf als de tests groen zijn en
+# start de uitrol; gaat er iets mis, dan komt dat in #git-updates.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "06:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    groups:
+      # Kleine updates samen in één PR; een major apart, want die breekt eerder.
+      minor-en-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: "/server/relay"
+    schedule:
+      interval: daily
+      time: "06:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    groups:
+      # Kleine updates samen in één PR; een major apart, want die breekt eerder.
+      minor-en-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: "/deploy"
+    schedule:
+      interval: daily
+      time: "06:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: "/server/relay"
+    schedule:
+      interval: daily
+      time: "06:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "06:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
