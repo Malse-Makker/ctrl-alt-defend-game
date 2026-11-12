@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
-import { Game, needsSight, TICK, type Enemy } from '../src/sim/game';
+import { BAD_WIFI, Game, needsSight, TICK, type Enemy } from '../src/sim/game';
 import { TOWERS as DEFS } from '../src/sim/data/towers';
 import { corridor } from './helpers';
 
@@ -185,5 +185,22 @@ describe('Work From Home', () => {
     expect(l.waves[l.waves.length - 1]).toMatch(/^baby:1/);
     const g = new Game(l);
     for (const r of l.walls!) expect(g.canPlace('autoreply', r.x, r.y).ok).toBe(false);
+  });
+});
+
+describe('bad wifi in the bedroom', () => {
+  const level = LEVELS[6];
+
+  it('DIGITAL towers fire 40% slower there; PHYSICAL ones do not care', () => {
+    const g = new Game(level);
+    g.coffee = 5000;
+    expect(level.grid![5][7]).toBe('f');
+    expect(BAD_WIFI).toBe(0.6);
+    const bad = g.place('autoreply', 7, 5).tower!;
+    const good = g.place('autoreply', 7, 7).tower!;
+    expect(g.liveStats(bad).interval).toBeCloseTo(g.liveStats(good).interval / 0.6);
+    const art = g.place('artillery', 8, 5).tower!;
+    const art2 = g.place('artillery', 1, 8).tower!;
+    expect(g.liveStats(art).interval).toBeCloseTo(g.liveStats(art2).interval);
   });
 });

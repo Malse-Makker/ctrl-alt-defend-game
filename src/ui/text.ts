@@ -211,6 +211,7 @@ export const UI_TEXT = {
   projExtendNo: 'Now your slides are on a screen nobody is looking at.',
   projDuplicate: 'Duplicate desktop to the projector',
   projClose: "You can't escape a meeting like that.",
+  wifiNote: 'Bad wifi in here: DIGITAL towers fire 40% slower.',
   projWarn: 'The projector fan spins up. Three seconds: place what you want to place.',
   projStarts: 'The projector is not working. Nobody can build until someone fixes it.',
   projFixed: 'The projector works. +{n} Coffee for not calling IT.',

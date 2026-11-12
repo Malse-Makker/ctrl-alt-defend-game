@@ -408,6 +408,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
   return { x: level.desk.x + Math.sign(b.x - a.x), y: level.desk.y + Math.sign(b.y - a.y) };
 }
 
+/** On bad wifi (Work From Home) DIGITAL towers fire at this share of their rate: 40% slower. */
+export const BAD_WIFI = 0.6;
+
 /** Seconds of warning before the projector mini-game starts (level 3, Boardroom III). */
 export const HAZARD_WARN = 3;
 
@@ -598,6 +601,8 @@ export class Game {
   private tiles: Uint8Array;
   /** Per tile: the only tower role allowed there, or '' (the Canteen's soup queue). */
   private only: string[] = [];
+  /** 1 where the wifi is bad (Work From Home, the bedroom). */
+  private wifi: Uint8Array | null = null;
   private walls: Uint8Array | null = null;
 
   constructor(level: LevelDef, opts: GameOptions = {}) {
@@ -647,6 +652,7 @@ export class Game {
       });
       sight.set(g.sight);
       this.only = g.only;
+      this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.gates = this.gatesOnPaths(g.gates);
     } else {
       for (const d of level.decor) {
@@ -853,7 +859,18 @@ export class Game {
     const s = computeStats(t.def, t.tiers);
     const f = this.rangeFactor(t);
     if (f < 1) s.range *= f;
+    if (this.slowWifi(t)) s.interval /= BAD_WIFI;
     return s;
+  }
+
+  /** Is this a tile with bad wifi? */
+  isBadWifi(tx: number, ty: number): boolean {
+    return this.wifi !== null && this.inBounds(tx, ty) && this.wifi[ty * this.level.size.w + tx] === 1;
+  }
+
+  /** A DIGITAL tower on bad wifi fires slower (BAD_WIFI of its normal rate). */
+  slowWifi(t: Tower): boolean {
+    return t.def.damageClass === 'digital' && this.isBadWifi(t.tx, t.ty);
   }
 
   /** Smoke (clouds, or a smoker standing close): towers reach this much of their range. */

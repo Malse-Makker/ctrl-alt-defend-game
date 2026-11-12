@@ -133,6 +133,12 @@ export const MODEL_NAMES = [
   'serving_counter',
   'floor_lamp',
   'trophy_cabinet',
+  'nightstand',
+  'wardrobe',
+  'laundry_basket',
+  'armchair',
+  'coffee_table',
+  'file_boxes',
 ] as const;
 
 export class Assets {

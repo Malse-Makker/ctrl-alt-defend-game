@@ -707,19 +707,19 @@ async function level6Flow(browser: import('puppeteer-core').Browser, errors: str
     const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
     g.coffee = 5000;
     const want: [string, number, number][] = [
-      ['autoreply', 7, 10],
-      ['replyall', 9, 6],
-      ['thumbtacks', 3, 8],
-      ['artillery', 0, 13],
-      ['autoreply', 14, 11],
-      ['keyboardsmash', 11, 3],
+      ['autoreply', 6, 10],
+      ['replyall', 11, 10],
+      ['thumbtacks', 4, 11],
+      ['artillery', 2, 8],
+      ['autoreply', 7, 5],
+      ['keyboardsmash', 15, 3],
     ];
     const out = want.map(([d, x, y]) => {
       const r = g.place(d, x, y);
       if (r.tower) for (let i = 0; i < 2; i++) g.upgrade(r.tower.id, 0);
       return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
     });
-    out.push(`on a wall: ${g.place('autoreply', 5, 11).reason}`);
+    out.push(`on a wall: ${g.place('autoreply', 9, 9).reason}`);
     return out.join(' ');
   });
   console.log(`  placed: ${placed}`);

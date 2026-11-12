@@ -3,6 +3,12 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.22.0] - 2026-11-13
+
+### New
+- Work From Home is a real house now: in at the front door, round the sofa in the living room, through the kitchen, into your home office. The bedroom has no walkway, just a door to the living room and one to your office.
+- Bad wifi in the bedroom: DIGITAL towers fire 40% slower in there. The tower panel says so. PHYSICAL towers do not care.
+
 ## [0.21.0] - 2026-11-13
 
 ### New

@@ -25,6 +25,8 @@ export interface GridInfo {
   gates: { x: number; y: number }[];
   /** Per tile: the only tower role allowed there (see ONLY), or '' for any. */
   only: string[];
+  /** 1 where the wifi is bad (f): DIGITAL towers fire slower there. */
+  wifi: Uint8Array;
 }
 
 export function parseGrid(grid: readonly string[], w: number, h: number): GridInfo {
@@ -33,6 +35,7 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
   const sight = new Uint8Array(w * h);
   const gates: { x: number; y: number }[] = [];
   const only: string[] = new Array(w * h).fill('');
+  const wifi = new Uint8Array(w * h);
   grid.forEach((row, y) => {
     if (row.length !== w) throw new Error(`Grid row ${y} has ${row.length} tiles, the floor is ${w} wide`);
     for (let x = 0; x < w; x++) {
@@ -40,11 +43,12 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
       if (!KNOWN.has(c)) throw new Error(`Unknown tile '${c}' at ${x},${y}`);
       if (BUILD.has(c) || ONLY[c]) build[y * w + x] = 1;
       if (ONLY[c]) only[y * w + x] = ONLY[c];
+      if (c === 'f') wifi[y * w + x] = 1;
       if (SIGHT.has(c)) sight[y * w + x] = 1;
       if (c === 'G') gates.push({ x, y });
     }
   });
-  return { build, sight, gates, only };
+  return { build, sight, gates, only, wifi };
 }
 
 /** Is this letter part of the walkway? (Used to check a grid against its path.) */

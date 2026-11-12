@@ -108,7 +108,7 @@ export class World {
     // over them, and with a light cap so the line reads from above.
     const capMat = new THREE.MeshStandardMaterial({ color: PAL.wallTrim, roughness: 0.8 });
     for (const r of level.walls ?? []) {
-      const alongX = r.w >= r.h;
+      const alongX = r.along ? r.along === 'x' : r.w >= r.h;
       const len = alongX ? r.w : r.h;
       const wall = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.2, 1.1, alongX ? 0.2 : len), wallMat);
       wall.position.set(r.x + r.w / 2, 0.55, r.y + r.h / 2);
@@ -137,6 +137,17 @@ export class World {
     this.shared.add(desk);
     g.add(desk);
 
+    // Bad wifi (the bedroom): a soft carpet, so you can see where the signal gives up.
+    const wifi: { x: number; y: number }[] = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isBadWifi(x, y)) wifi.push({ x, y });
+    if (wifi.length) {
+      const mat = new THREE.MeshStandardMaterial({ color: '#8d93b8', roughness: 1, transparent: true, opacity: 0.55, depthWrite: false });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, wifi.length);
+      const m = new THREE.Matrix4();
+      wifi.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, 0.003, c.y + 0.5)));
+      mesh.receiveShadow = true;
+      g.add(mesh);
+    }
     // Tiles only some towers may use (the soup queue): painted stripes on the floor.
     const lane: { x: number; y: number }[] = [];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isRestrictedTile(x, y)) lane.push({ x, y });

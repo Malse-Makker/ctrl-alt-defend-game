@@ -10,6 +10,11 @@ export interface TileRect {
   h: number;
 }
 
+/** A wall: a rect of tiles. A single tile is drawn along x unless `along` says otherwise. */
+export interface WallRect extends TileRect {
+  along?: 'x' | 'y';
+}
+
 export interface Decor {
   model: string;
   /** Tile rect it occupies (blocks building, unless the floor has a grid: then the grid decides). */
@@ -100,7 +105,7 @@ export interface LevelDef {
   /** Leave out for the grey office carpet. */
   look?: LevelLook;
   /** Walls inside the floor: nothing is built on them, and towers cannot shoot through them. */
-  walls?: TileRect[];
+  walls?: WallRect[];
   /**
    * One letter per tile (see src/sim/grid.ts). When a floor has one, it alone decides where you
    * may build and what blocks sight; `decor` is then only the furniture you see.
@@ -617,38 +622,82 @@ const L6: LevelDef = {
   name: 'Work From Home',
   block: 'medior',
   intro: 'You thought working from home would be quiet. Your colleagues found the address.',
-  gimmick: 'A spiral through your house, with walls your towers cannot see through. The internet keeps dropping out. Reply All arrives, and so does The Cold Caller.',
+  gimmick: 'Your colleagues walk through your house: in at the front door, through the living room and the kitchen, to your home office. Walls block sight. The wifi in the bedroom is bad, and the internet keeps dropping out. Reply All arrives, and so does The Cold Caller.',
   size: { w: 18, h: 14 },
   paths: [
     [
       { x: -1.5, y: 12.5 },
-      { x: 16.5, y: 12.5 },
+      { x: 3.5, y: 12.5 },
+      { x: 3.5, y: 8.5 },
+      { x: 7.5, y: 8.5 },
+      { x: 7.5, y: 12.5 },
+      { x: 12.5, y: 12.5 },
+      { x: 12.5, y: 8.5 },
+      { x: 16.5, y: 8.5 },
       { x: 16.5, y: 1.5 },
-      { x: 1.5, y: 1.5 },
-      { x: 1.5, y: 9.5 },
-      { x: 13.5, y: 9.5 },
-      { x: 13.5, y: 4.5 },
-      { x: 5.5, y: 4.5 },
-      { x: 5.5, y: 7.0 },
+      { x: 11.5, y: 1.5 },
+      { x: 11.5, y: 3.0 },
     ],
   ],
-  desk: { x: 5, y: 7 },
+  desk: { x: 11, y: 3 },
+  // The level design (docs/leveldesign, level 6): four rooms. Bedroom top left (f: bad wifi),
+  // home office top right, living room bottom left, kitchen bottom right.
+  grid: [
+    'ffffffHHH#t.HHH..t',
+    'ttttfffff#.======.',
+    'fttffffff..=....=.',
+    'fttffffff#.D.tt.=.',
+    'ffffffftf#t.t...=.',
+    'fffffffff#......=.',
+    '####.###########=#',
+    't........#H.....=t',
+    '...=====.#H.=====.',
+    '.t.=ttt=H#..=.....',
+    'H..=.t.=H#..=ttt.t',
+    'H..=...=.#t.=ttt.t',
+    'S===...======....t',
+    '....ttt..#...ttttH',
+  ],
   walls: [
-    { x: 3, y: 11, w: 10, h: 1 },
-    { x: 15, y: 3, w: 1, h: 7 },
-    { x: 4, y: 2, w: 9, h: 1 },
+    { x: 0, y: 6, w: 4, h: 1 },
+    { x: 5, y: 6, w: 11, h: 1 },
+    { x: 17, y: 6, w: 1, h: 1 },
+    { x: 9, y: 0, w: 1, h: 2 },
+    { x: 9, y: 3, w: 1, h: 3 },
+    { x: 9, y: 7, w: 1, h: 5 },
+    { x: 9, y: 13, w: 1, h: 1, along: 'y' },
   ],
   decor: [
-    { model: 'sofa', rect: { x: 4, y: 10, w: 2, h: 1 } },
-    { model: 'tv_stand', rect: { x: 8, y: 10, w: 2, h: 1 } },
-    { model: 'plant', rect: { x: 11, y: 10, w: 1, h: 1 } },
-    { model: 'fridge', rect: { x: 14, y: 2, w: 1, h: 1 } },
-    { model: 'kitchen_counter', rect: { x: 14, y: 4, w: 1, h: 4 }, turn: 1 },
-    { model: 'bed', rect: { x: 2, y: 5, w: 2, h: 2 } },
-    { model: 'bookshelf', rect: { x: 12, y: 8, w: 1, h: 1 } },
-    { model: 'cat', rect: { x: 8, y: 6, w: 1, h: 1 } },
-    { model: 'plant', rect: { x: 17, y: 13, w: 1, h: 1 } },
-    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    // Bedroom.
+    { model: 'nightstand', rect: { x: 0, y: 1, w: 1, h: 1 } },
+    { model: 'bed', rect: { x: 1, y: 1, w: 2, h: 2 } },
+    { model: 'nightstand', rect: { x: 3, y: 1, w: 1, h: 1 } },
+    { model: 'sideboard', rect: { x: 1, y: 3, w: 2, h: 1 } },
+    ...run('wardrobe', 6, 0, 3, 'x'),
+    { model: 'laundry_basket', rect: { x: 7, y: 4, w: 1, h: 1 } },
+    // Home office.
+    { model: 'printer', rect: { x: 10, y: 0, w: 1, h: 1 } },
+    ...run('bookshelf', 12, 0, 3, 'x'),
+    { model: 'plant', rect: { x: 17, y: 0, w: 1, h: 1 } },
+    ...run('file_boxes', 13, 3, 2, 'x'),
+    { model: 'file_boxes', rect: { x: 10, y: 4, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 12, y: 4, w: 1, h: 1 } },
+    // Living room.
+    { model: 'plant', rect: { x: 0, y: 7, w: 1, h: 1 } },
+    { model: 'armchair', rect: { x: 1, y: 9, w: 1, h: 1 } },
+    { model: 'sofa', rect: { x: 4, y: 9, w: 3, h: 1 } },
+    { model: 'coffee_table', rect: { x: 5, y: 10, w: 1, h: 1 } },
+    ...run('bookshelf', 8, 9, 2, 'y', { turn: 3 }),
+    ...run('bookshelf', 0, 10, 2, 'y', { turn: 1 }),
+    { model: 'tv_stand', rect: { x: 4, y: 13, w: 3, h: 1 }, turn: 2 },
+    // Kitchen.
+    { model: 'tall_cabinet', rect: { x: 10, y: 7, w: 1, h: 2 }, turn: 1 },
+    { model: 'plant', rect: { x: 17, y: 7, w: 1, h: 1 } },
+    { model: 'dining_table', rect: { x: 13, y: 10, w: 3, h: 2 } },
+    { model: 'recycle_bins', rect: { x: 10, y: 11, w: 1, h: 1 }, turn: 1 },
+    ...run('counter', 17, 10, 3, 'y', { turn: 3 }),
+    ...run('counter', 13, 13, 4, 'x', { turn: 2 }),
+    { model: 'fridge', rect: { x: 17, y: 13, w: 1, h: 1 }, turn: 3 },
   ],
   towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall'],
   startFocus: 100,

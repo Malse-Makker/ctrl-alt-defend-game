@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.21.0 (2026-11-13)
+## Stand: v0.22.0 (2026-11-13)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,20 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 6 Work From Home (v0.22.0)
+- Kaart uit het ontwerp: vier kamers, muren uit het raster als `walls` (een losse muurtegel kan
+  verticaal met `along: 'y'`). Bureau (11, 3) in het thuiskantoor, collega's komen van boven, de
+  stoel staat erachter op (11, 4) (in het ontwerp stond daar een meubel). Geen router-model en
+  geen kat meer (geen plek in het raster).
+- Slechte wifi `f`: `BAD_WIFI` = 0,6, `game.slowWifi(t)` deelt de herlaadtijd in `liveStats` (alleen
+  DIGITAL), notitie `wifiNote` in het torenpaneel, de slaapkamervloer heeft een blauwgrijze tint.
+- Nieuwe modellen: `nightstand`, `wardrobe`, `laundry_basket`, `armchair`, `coffee_table`,
+  `file_boxes`.
+- Balans L6 (oude kaart -> nieuwe): goed spelen 92 -> 100 Focus, 3 sterren, verste 90%. Eerst
+  koffie 40 -> 34 Focus, 1 ster (wint; test eist alleen winnen). Beginner, spam en idle verliezen.
+- Live-uicheck van 0.21.0 gaf een keer "claim all button missing at 1024x700" (lokaal niet);
+  opnieuw gedraaid: 0 UI problem(s), 0 browser error(s). Een hapering.
 
 ### Level 5 Boardroom (v0.21.0)
 - Kaart uit het ontwerp (basis voor L10 en L15). Afwijking: het bureau staat op (10, 10) in plaats

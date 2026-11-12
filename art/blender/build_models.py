@@ -2536,6 +2536,57 @@ def b_file_boxes():
     return root
 
 
+# ---------------------------------------------------------------- level 7: the car park at scale
+
+def b_car_long_blue():
+    """A car in a 2x3 bay: lengthwise along X here, the level turns it."""
+    return _car("car_long_blue", "#3e7cc9", w=2.6, d=1.5, cab_h=0.45)
+
+
+def b_car_long_red():
+    return _car("car_long_red", "#c8423b", w=2.5, d=1.45, cab_h=0.45)
+
+
+def b_car_long_white():
+    return _car("car_long_white", "#e8e6e0", w=2.6, d=1.5, cab_h=0.45)
+
+
+def b_van_long():
+    """A delivery van in a 2x3 bay. Tall: it blocks sight."""
+    return _car("van_long", "#eeeeea", w=2.8, d=1.6, van=True)
+
+
+def b_stairwell():
+    """The stairwell in the corner, 2x3: concrete, a fire door, a green running man."""
+    root = empty("stairwell")
+    body = box("Body", (1.9, 2.9, 1.9), loc=(0, 0, 0), material=mat("#a9a59d", rough=0.9), bevel=0.02)
+    cap = box("Cap", (1.95, 2.95, 0.06), loc=(0, 0, 1.9), material=mat("charcoal"))
+    door = box("Door", (0.02, 0.8, 1.3), loc=(0.955, 0.6, 0.0), material=mat("#c8423b", rough=0.5))
+    bar = box("Bar", (0.04, 0.6, 0.04), loc=(0.975, 0.6, 0.6), material=mat("metal_light", metal=0.8, rough=0.3))
+    sign = box("Exit", (0.02, 0.45, 0.2), loc=(0.96, 0.6, 1.45), material=mat("plant", emit=2.0))
+    man = box("ExitMan", (0.025, 0.12, 0.14), loc=(0.965, 0.55, 1.48), material=mat("plastic_white", emit=1.5))
+    stripes = [box(f"Stripe{i}", (0.02, 0.3, 0.06), loc=(0.96, -0.9 + 0.4 * i, 0.15), material=mat("yellow")) for i in range(3)]
+    ob = join("stairwell_mesh", [body, cap, door, bar, sign, man] + stripes)
+    parent(ob, root)
+    return root
+
+
+def b_garage_lift():
+    """Two lift doors along a 3 tile stretch of wall, front to -Y."""
+    root = empty("garage_lift")
+    wall = box("Wall", (2.9, 0.8, 1.9), loc=(0, 0.1, 0), material=mat("#bdb8ae", rough=0.8), bevel=0.02)
+    parts = [wall]
+    for i, x in enumerate((-0.7, 0.7)):
+        parts.append(box(f"Frame{i}", (1.0, 0.04, 1.45), loc=(x, -0.31, 0.0), material=mat("metal", metal=0.6, rough=0.3)))
+        for j, dx in enumerate((-0.22, 0.22)):
+            parts.append(box(f"Door{i}{j}", (0.42, 0.03, 1.35), loc=(x + dx, -0.33, 0.02), material=mat("metal_light", metal=0.8, rough=0.25)))
+        parts.append(box(f"Button{i}", (0.06, 0.03, 0.1), loc=(x + 0.6, -0.31, 0.75), material=mat("yellow", emit=1.2)))
+        parts.append(box(f"Display{i}", (0.3, 0.03, 0.1), loc=(x, -0.31, 1.55), material=mat("red", emit=1.4)))
+    ob = join("garage_lift_mesh", parts)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2671,6 +2722,12 @@ BUILDERS = {
     "armchair": b_armchair,
     "coffee_table": b_coffee_table,
     "file_boxes": b_file_boxes,
+    "car_long_blue": b_car_long_blue,
+    "car_long_red": b_car_long_red,
+    "car_long_white": b_car_long_white,
+    "van_long": b_van_long,
+    "stairwell": b_stairwell,
+    "garage_lift": b_garage_lift,
 }
 
 
