@@ -88,7 +88,7 @@ describe('Reply All', () => {
 });
 
 describe('The Cold Caller', () => {
-  it('ignores everything WRITTEN', () => {
+  it('ignores everything DIGITAL', () => {
     const g = game();
     g.place('autoreply', 8, 1);
     g.place('replyall', 10, 1);
@@ -136,7 +136,7 @@ describe('The Baby', () => {
 describe('No Internet', () => {
   const hz = { type: 'nointernet' as const, first: 1, every: 30, window: 10, reward: 6 };
 
-  it('takes every WRITTEN tower offline until you reconnect; IN PERSON towers keep going', () => {
+  it('takes every DIGITAL tower offline until you reconnect; PHYSICAL towers keep going', () => {
     const g = game(['intern:30@1'], { hazard: hz });
     const mail = g.place('autoreply', 8, 1).tower!;
     const tacks = g.place('thumbtacks', 12, 1).tower!;

@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.18.0 (2026-11-12)
+## Stand: v0.19.0 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,27 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 3 Presentation Room (v0.19.0)
+- Kaart uit het ontwerp, maar **zonder laptopregel** (keuze maker): de `L`-tegels zijn tafels met
+  een laptop (`conference_table`), je bouwt op de vloer. Pad 61,5 tegels (oude Meeting Room 41,5).
+  Bureau = lessenaar op (16, 2), collega's komen van onderen; je laptop staat ernaast.
+- Nieuwe modellen: `beamer` (losse delen `BeamerLamp` en `BeamerBeam`), `speaker`, `whiteboard`,
+  `conference_table`, `conference_chair`, `chair_stack`. `projector_screen` heeft nu losse delen
+  `ScreenSlide` en `ScreenNoSignal` (tekst via `_text()` in build_models.py).
+- Aankondiging projector: `HAZARD_WARN` = 3 s, `game.hazardWarning`, event `hazardWarn` (geluid
+  `projector.wav`, toast `projWarn`), `hazardNext` zit in de snapshot (`hz.next`) zodat een kopie
+  online ook waarschuwt. `World.updateBeamer`: lamp rood knipperend, bundel flikkert, NO SIGNAL;
+  tijdens de mini-game geen bundel. uicheck: `l3-warning.png`.
+- DIGITAL/PHYSICAL: `DamageClass = 'digital' | 'physical'` (was written/in_person), teksten van The
+  Board Member en The Cold Caller mee. Label in de winkel (laptop of hand rechtsboven) en voluit in
+  het torenpaneel (`classTag` in hud.ts). Test: elke toren de juiste soort (content.test.ts).
+- **Botfout opgelost:** wilde de bot bouwen terwijl de projector kapot was, dan sloeg hij die stap
+  over (L3: nooit Coffee Machine of Artillery). Nu wacht hij (`hazardBlocks` in `runScript`).
+- Balans L3 (seeds 1 en 2): goed spelen foutloos, 3 sterren, nieuw script (Artillery vroeg op de
+  plek met het meeste uitzicht, Quick Replies bij het bureau). **De Presenter komt tot 2,3 tegels**
+  van je bureau (oude kaart 7,9); test nu > 2. Eerst koffie 98 Focus, 3 sterren (was 80, 2).
+  Beginner en spam verliezen. Andere levels gelijk.
 
 ### Zicht (v0.18.0, besluit maker 2026-11-12)
 - Alle meubels blokkeren zicht, hoog of laag (`grid.ts` SIGHT: `# H R t w x`; zonder raster: elke

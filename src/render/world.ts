@@ -46,6 +46,9 @@ export class World {
   /** Asset clones share geometry with the loaded models and must survive a retry. */
   private readonly shared = new Set<THREE.Object3D>();
   private readonly gates: GateView[] = [];
+  /** The projector and its screen (Presentation Room): they act up before the mini-game. */
+  private readonly beamer: { lamp: THREE.Mesh[]; beam: THREE.Object3D[]; slide: THREE.Object3D[]; noSignal: THREE.Object3D[] } = { lamp: [], beam: [], slide: [], noSignal: [] };
+  private clock = 0;
 
   constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
@@ -122,6 +125,7 @@ export class World {
       obj.rotation.y = ((d.turn ?? 0) * Math.PI) / 2;
       this.shared.add(obj);
       g.add(obj);
+      this.collectBeamer(obj);
       const flap = obj.getObjectByName('GateFlap');
       if (flap) this.addGate(flap, obj, game);
     }
@@ -166,11 +170,57 @@ export class World {
 
   /** Speed gates swing open for whoever is walking through, once they have scanned their pass. */
   update(dt: number, game: Game): void {
+    this.clock += dt;
+    this.updateBeamer(game);
     for (const gv of this.gates) {
       const through = game.enemies.some((e) => e.alive && !(e.gateHold && e.gateHold > 0) && Math.hypot(e.x - gv.x, e.y - gv.y) < 0.75);
       gv.open += ((through ? 1 : 0) - gv.open) * Math.min(1, dt * 10);
       gv.flap.rotation.y = gv.sign * gv.open * (Math.PI / 2);
     }
+  }
+
+  private collectBeamer(obj: THREE.Object3D): void {
+    const b = this.beamer;
+    obj.traverse((o) => {
+      if (o.name.startsWith('BeamerLamp')) {
+        // Its own material: the lamp changes colour.
+        o.traverse((c) => {
+          const m = c as THREE.Mesh;
+          if (!m.isMesh || b.lamp.includes(m)) return;
+          m.material = (m.material as THREE.MeshStandardMaterial).clone();
+          b.lamp.push(m);
+        });
+      } else if (o.name.startsWith('BeamerBeam')) b.beam.push(o);
+      else if (o.name.startsWith('ScreenSlide')) b.slide.push(o);
+      else if (o.name.startsWith('ScreenNoSignal')) {
+        o.visible = false;
+        b.noSignal.push(o);
+      }
+    });
+  }
+
+  /**
+   * Normal: a green lamp, a steady beam, the slides. Three seconds before the mini-game: the lamp
+   * blinks red, the beam flickers and the screen says NO SIGNAL. During it: no beam at all.
+   */
+  private updateBeamer(game: Game): void {
+    const b = this.beamer;
+    if (b.lamp.length + b.slide.length === 0) return;
+    const projector = game.level.hazard?.type === 'projector';
+    const warn = projector && game.hazardWarning;
+    const down = projector && game.hazardOn;
+    const t = this.clock;
+    const blink = Math.sin(t * 22) > 0;
+    for (const m of b.lamp) {
+      const mat = m.material as THREE.MeshStandardMaterial;
+      const red = down || (warn && blink);
+      mat.color.set(red ? PAL.bad : PAL.ok);
+      mat.emissive.set(red ? PAL.bad : PAL.ok);
+    }
+    const flicker = Math.sin(t * 37) + Math.sin(t * 13) > 0.4;
+    for (const o of b.beam) o.visible = !down && (!warn || flicker);
+    for (const o of b.slide) o.visible = !(warn || down);
+    for (const o of b.noSignal) o.visible = warn || down;
   }
 
   private addGate(flap: THREE.Object3D, obj: THREE.Object3D, game: Game): void {

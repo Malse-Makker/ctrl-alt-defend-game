@@ -9,7 +9,7 @@
 // buying a second copy. Range barely grows, so a second tower is still needed to cover a second
 // stretch of the floor. tests/economy.test.ts checks this.
 
-export type DamageClass = 'written' | 'in_person';
+export type DamageClass = 'digital' | 'physical';
 /**
  * damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on
  * everyone standing in it. trap: drops piles on the walkway that hit whoever walks over them.
@@ -304,7 +304,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: "I'll get back to you.",
     verb: 'Fires a reply at one colleague at a time. Cheap and steady: the benchmark for everything else.',
     role: 'damage',
-    damageClass: 'written',
+    damageClass: 'digital',
     unlockLevel: 1,
     accent: '#3e7cc9',
     models: ['autoreply_1', 'autoreply_2', 'autoreply_3'],
@@ -407,7 +407,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Ow. That actually stung.',
     verb: 'Reaches the ENTIRE floor: it does not matter where you put it. Slow to reload, one enormous hit. Breaks through shields.',
     role: 'damage',
-    damageClass: 'in_person',
+    damageClass: 'physical',
     unlockLevel: 2,
     accent: '#e5534b',
     models: ['artillery_1', 'artillery_2', 'artillery_3'],
@@ -454,7 +454,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Round filing.',
     verb: 'A zone that grinds down everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside, so it shines against a few big ones. It does not slow anyone until you jam it. It may not touch the Old Guard archive.',
     role: 'zone',
-    damageClass: 'in_person',
+    damageClass: 'physical',
     unlockLevel: 2,
     accent: '#3fa7a0',
     models: ['shredder_1', 'shredder_2', 'shredder_3'],
@@ -506,7 +506,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Two words. Efficient.',
     verb: 'Every reply on the SAME colleague hits harder than the last, up to double. Switch target and it starts over. Hopeless against a swarm, relentless against one big problem.',
     role: 'damage',
-    damageClass: 'written',
+    damageClass: 'digital',
     unlockLevel: 3,
     accent: '#8fa0b4',
     models: ['quickreply_1', 'quickreply_2', 'quickreply_3'],
@@ -553,7 +553,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Somebody dropped the box.',
     verb: 'Drops piles of tacks on the walkway. Every tack hits one colleague, the pile stays until it runs out or gets old. Tacks do not care whether they can see you.',
     role: 'trap',
-    damageClass: 'in_person',
+    damageClass: 'physical',
     unlockLevel: 4,
     accent: '#d24b4b',
     models: ['thumbtacks_1', 'thumbtacks_2', 'thumbtacks_3'],
@@ -600,7 +600,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Have you tried the portal?',
     verb: 'Answers EVERYONE in a small circle around it at once, as many as there are. Weak against one colleague, great when they bunch up.',
     role: 'damage',
-    damageClass: 'written',
+    damageClass: 'digital',
     unlockLevel: 4,
     accent: '#3fa7a0',
     models: ['selfservice_1', 'selfservice_2', 'selfservice_3'],
@@ -647,7 +647,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'ASDFGHJKL.',
     verb: 'Special, one each. Every few seconds it slams the walkway in front of the first colleague, hitting everyone around, and leaves the keyboard lying across the walkway. Nobody gets past until they have kicked it out of the way.',
     role: 'smash',
-    damageClass: 'in_person',
+    damageClass: 'physical',
     unlockLevel: 5,
     special: true,
     accent: '#e5534b',
@@ -695,7 +695,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Wheee.',
     verb: 'Special, one each. Rolls in a straight line you choose, knocking into every colleague on the way. Every knock costs it as much as it deals; empty, or at the end of its lane, it rolls back and goes again.',
     role: 'chair',
-    damageClass: 'in_person',
+    damageClass: 'physical',
     unlockLevel: 5,
     special: true,
     accent: '#3e7cc9',
@@ -743,7 +743,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Adding a few more people.',
     verb: 'Slow, but every email lands on everyone standing near the colleague it was meant for. The bigger the crowd, the better.',
     role: 'damage',
-    damageClass: 'written',
+    damageClass: 'digital',
     unlockLevel: 6,
     accent: '#e2557a',
     models: ['replyall_1', 'replyall_2', 'replyall_3'],
@@ -791,7 +791,7 @@ export const TOWERS: Record<string, TowerDef> = {
     flavour: 'Can you pick this up?',
     verb: 'Passes the problem on: every email jumps to the next colleague, and every jump hits harder than the one before. Escalating only makes it worse.',
     role: 'damage',
-    damageClass: 'written',
+    damageClass: 'digital',
     unlockLevel: 7,
     accent: '#f2c641',
     models: ['delegation_1', 'delegation_2', 'delegation_3'],

@@ -1,4 +1,4 @@
-// The projector mini-game (Meeting Room, and later Boardroom III). The game keeps running behind
+// The projector mini-game (Presentation Room, and later Boardroom III). The game keeps running behind
 // it; until you fix it you cannot build. Step 1: plug both cables into the right port of a real
 // (rendered) projector, by dragging or by clicking a plug and then a port. Step 2: pick the right
 // display mode. Closes by itself after a while, so nobody gets stuck.

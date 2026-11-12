@@ -1717,13 +1717,34 @@ select {
   border-color: rgba(217, 160, 91, 0.6);
 }
 
-.shop-item .special {
+.shop-item .tags {
   position: absolute;
   top: 4px;
   right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-item .special {
   font-size: 10px;
   font-family: var(--mono);
   color: var(--warn);
+}
+
+/* DIGITAL or PHYSICAL: a laptop or a hand. */
+.dmg-class {
+  font-size: 10px;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.dmg-class.digital {
+  color: #4aa3ff;
+}
+
+.dmg-class.physical {
+  color: #d9a05b;
 }
 
 .chair-dirs {

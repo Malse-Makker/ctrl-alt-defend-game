@@ -33,6 +33,7 @@ export const SOUNDS = [
   'keyspace',
   'cry',
   'gate',
+  'projector',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 

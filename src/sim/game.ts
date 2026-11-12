@@ -274,6 +274,7 @@ export type GameEvent =
   | { t: 'gift'; from: number; to: number; amount: number }
   | { t: 'hazard'; kind: string; on: boolean; until: number }
   | { t: 'hazardSolved'; player: number; bonus: number }
+  | { t: 'hazardWarn'; kind: string; at: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
   | { t: 'mopped'; towerId: number; enemyId: number }
@@ -371,7 +372,8 @@ export interface Snapshot {
   /** Smoke clouds: [x, y, radius, range left, seconds left]. */
   smoke?: number[][];
   stats: RoundStats;
-  hz: { on: boolean; until: number; solved: number[] };
+  /** next: when the next mini-game starts (-1: not planned), so a copy can show the warning. */
+  hz: { on: boolean; until: number; solved: number[]; next?: number };
 }
 
 /** Fixed order of colleague types, so a snapshot can send a number instead of a name. */
@@ -405,6 +407,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
   const b = pts[pts.length - 1];
   return { x: level.desk.x + Math.sign(b.x - a.x), y: level.desk.y + Math.sign(b.y - a.y) };
 }
+
+/** Seconds of warning before the projector mini-game starts (level 3, Boardroom III). */
+export const HAZARD_WARN = 3;
 
 const TILE_BLOCKED = 1;
 /** Seconds a colleague stands at a gate to scan their pass. */
@@ -1137,7 +1142,7 @@ export class Game {
       barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
       smoke: this.smoke.map((c) => [r3(c.x), r3(c.y), r3(c.r), c.mult, r3(c.life)]),
       stats: this.stats,
-      hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved] },
+      hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved], next: Number.isFinite(this.hazardNext) ? r3(this.hazardNext) : -1 },
     };
   }
 
@@ -1155,6 +1160,7 @@ export class Game {
     this.hazardOn = s.hz.on;
     this.hazardUntil = s.hz.until;
     this.hazardSolved = [...s.hz.solved];
+    this.hazardNext = s.hz.next === undefined || s.hz.next < 0 ? Infinity : s.hz.next;
     const old = new Map(this.towers.map((t) => [t.id, t]));
     this.towers = s.towers.map((ts) => {
       const def = TOWERS[ts.def];
@@ -1257,6 +1263,15 @@ export class Game {
   hazardUntil = 0;
   hazardSolved: number[] = [];
   private hazardNext = Infinity;
+  private hazardWarned = false;
+
+  /**
+   * The projector announces itself HAZARD_WARN seconds before the mini-game: the lamp blinks red,
+   * the fan spins up, NO SIGNAL. Long enough to place one more thing.
+   */
+  get hazardWarning(): boolean {
+    return this.level.hazard?.type === 'projector' && !this.hazardOn && Number.isFinite(this.hazardNext) && this.time >= this.hazardNext - HAZARD_WARN;
+  }
 
   /** Is the mini-game open for this player (and so blocking them)? */
   hazardBlocks(player: number): boolean {
@@ -1299,7 +1314,12 @@ export class Game {
     const hz = this.level.hazard;
     if (!hz) return;
     if (this.hazardNext === Infinity && !this.hazardOn) this.hazardNext = hz.first;
+    if (this.hazardWarning && !this.hazardWarned) {
+      this.hazardWarned = true;
+      this.events.push({ t: 'hazardWarn', kind: hz.type, at: this.hazardNext });
+    }
     if (!this.hazardOn && this.time >= this.hazardNext) {
+      this.hazardWarned = false;
       if (hz.type === 'smoke') {
         // A gust of exhaust: clouds settle on random bits of the walkway.
         for (let i = 0; i < hz.clouds; i++) {
@@ -1487,7 +1507,7 @@ export class Game {
         // Sticky Paper: the shredder's damage keeps going after the zone.
         e.bleedTime -= dt;
         const owner = this.tower(e.bleedTower);
-        const { dealt } = this.damage(e, e.bleedDps * dt, 'in_person', false);
+        const { dealt } = this.damage(e, e.bleedDps * dt, 'physical', false);
         if (owner) owner.stats.damage += dealt;
         if (!e.alive) {
           if (owner) owner.stats.kills++;
@@ -1518,7 +1538,7 @@ export class Game {
           b.hp -= (e.def.boss ? 25 : Math.max(1, e.def.focus)) * dt;
           if (b.thorns > 0) {
             const owner = this.tower(b.tower);
-            const { dealt } = this.damage(e, b.thorns * dt, 'in_person', false);
+            const { dealt } = this.damage(e, b.thorns * dt, 'physical', false);
             if (owner) owner.stats.damage += dealt;
             if (!e.alive) {
               if (owner) owner.stats.kills++;
@@ -1586,7 +1606,7 @@ export class Game {
         const proof = this.liveStats(t).silenceProof;
         if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!)) t.quiet = 'chat';
         else if (!proof && t.hushed > 0) t.quiet = 'cry';
-        else if (offline && t.def.damageClass === 'written' && !this.hazardSolved.includes(t.owner)) t.quiet = 'net';
+        else if (offline && t.def.damageClass === 'digital' && !this.hazardSolved.includes(t.owner)) t.quiet = 'net';
       }
       t.silenced = t.quiet !== null;
     }

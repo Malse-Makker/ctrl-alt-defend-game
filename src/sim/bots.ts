@@ -200,25 +200,24 @@ SCRIPTS[3] = [
   { place: 'shredder', spot: 'zone' },
   { up: 'autoreply', path: 1, all: true },
   { place: 'coffee', spot: 'far' },
-  { up: 'autoreply', path: 0, all: true },
+  // Office Artillery needs a view now: an early one on the best spot carries the middle game.
   { place: 'artillery', spot: 'far' },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
   { up: 'shredder', path: 0 },
-  { up: 'autoreply', path: 0, all: true },
   { up: 'artillery', path: 0 },
-  { place: 'shredder', spot: 'zone' },
-  { up: 'autoreply', path: 1, all: true },
-  { place: 'autoreply', spot: 'cover' },
-  { up: 'artillery', path: 0 },
-  { up: 'shredder', path: 0, all: true },
-  { up: 'autoreply', path: 0, all: true },
   { place: 'autoreply', spot: 'desk' },
-  { place: 'quickreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'quickreply', spot: 'desk' },
   { up: 'quickreply', path: 0 },
   { up: 'quickreply', path: 2 },
   { up: 'quickreply', path: 0 },
-  { up: 'artillery', path: 1 },
+  { up: 'artillery', path: 0 },
   { up: 'autoreply', path: 0, all: true },
-  { place: 'quickreply', spot: 'cover' },
+  { place: 'quickreply', spot: 'desk' },
+  { up: 'quickreply', path: 0, all: true },
+  { up: 'artillery', path: 1 },
+  { place: 'quickreply', spot: 'desk' },
   { up: 'quickreply', path: 0, all: true },
   { up: 'quickreply', path: 2, all: true },
   { up: 'artillery', path: 0 },
@@ -417,6 +416,8 @@ function runScript(g: Game, steps: Step[], state: { i: number }): void {
     const st = steps[state.i];
     if ('place' in st) {
       if (st.from !== undefined && g.waveIndex < st.from) return;
+      // The projector is down: wait for it instead of skipping the step (no spot is free now).
+      if (g.hazardBlocks(0)) return;
       const spot = spotFor(g, st.place, st.spot);
       if (!spot) {
         state.i++;

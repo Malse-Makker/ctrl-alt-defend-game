@@ -122,7 +122,7 @@ describe('the Office Chair', () => {
     expect(parseCommand({ c: 'dir', id: t.id, dir: 7 })).toBeNull();
   });
 
-  it('rolls straight through The Board Member, who is not there in person', () => {
+  it('rolls straight through The Board Member, who is not there in person (it is PHYSICAL)', () => {
     const g = game();
     const t = g.place('chair', 8, 0).tower!;
     g.phase = 'running';

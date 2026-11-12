@@ -97,3 +97,23 @@ describe('levels', () => {
     });
   }
 });
+
+describe('DIGITAL and PHYSICAL', () => {
+  it('every tower that deals damage is one or the other, as in the level design', () => {
+    const cls = Object.fromEntries(Object.values(TOWERS).map((d) => [d.id, d.damageClass ?? 'none']));
+    expect(cls).toEqual({
+      coffee: 'none',
+      headphones: 'none',
+      autoreply: 'digital',
+      quickreply: 'digital',
+      selfservice: 'digital',
+      replyall: 'digital',
+      delegation: 'digital',
+      artillery: 'physical',
+      shredder: 'physical',
+      thumbtacks: 'physical',
+      keyboardsmash: 'physical',
+      chair: 'physical',
+    });
+  });
+});

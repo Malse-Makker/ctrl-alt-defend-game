@@ -84,10 +84,11 @@ describe('Level 3 difficulty', () => {
     const r = runBot(level, solidBot);
     expect(r.won).toBe(true);
     expect(r.focus).toBe(100);
-    // In tiles: your desk moved one tile in to make room for your chair (v0.17.2).
-    // Measured: The Presenter stops 7.9 tiles from your desk (before: 8.9, at 79% of the route).
+    // In tiles. The Presentation Room (v0.19.0) winds through the rows: 61.5 tiles instead of
+    // 41.5, and The Presenter is tough at the end of it. Measured: he gets within 2.3 tiles of
+    // your desk (the old Meeting Room: 7.9). Nobody gets through.
     const length = new Path(level.paths[0]).length;
-    expect((1 - r.deepest) * length).toBeGreaterThan(5);
+    expect((1 - r.deepest) * length).toBeGreaterThan(2);
   });
 
   it('going for Coffee first still wins', () => {

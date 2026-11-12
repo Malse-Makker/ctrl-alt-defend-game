@@ -122,6 +122,12 @@ export const MODEL_NAMES = [
   'bar_table',
   'bar_stool',
   'window_bar',
+  'beamer',
+  'speaker',
+  'whiteboard',
+  'conference_table',
+  'conference_chair',
+  'chair_stack',
 ] as const;
 
 export class Assets {

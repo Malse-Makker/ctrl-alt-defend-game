@@ -482,6 +482,10 @@ export class Session {
         sfx.play('mop');
         this.toastOnce('mopped', T.zoneMopped, 12);
         break;
+      case 'hazardWarn':
+        sfx.play('projector');
+        this.hud?.toast(T.projWarn, 'warn', 3);
+        break;
       case 'hazardSolved':
         {
           const net = g.level.hazard?.type === 'nointernet';

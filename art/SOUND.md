@@ -28,3 +28,4 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | key1-3, keyspace | iemand typt op de achtergrond; sneller en harder bij weinig Focus (`setTyping` in `sfx.ts`) | preset `click`, profiel `mechanical-click`, 1500-2300 Hz; spatie 700 Hz |
 | cry | The Baby krijgt een huilbui | preset `alarm`, profiel `soft-notification`, 620 Hz met trillende toonhoogte |
 | gate | een collega scant zijn pasje bij het poortje (Reception) | preset `blip`, profiel `bright-ui-tick`, 1650 Hz sinus, toon omhoog, 0,16 s |
+| projector | de beamer slaat aan, 3 s voor de projector-mini-game (Presentation Room) | preset `engine`, profiel `mechanical-click`, 180 Hz blok omhoog met tremolo, plus een fluittoon van 900 Hz, 1,4 s |

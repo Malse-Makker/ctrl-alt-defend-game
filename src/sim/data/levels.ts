@@ -49,7 +49,7 @@ export interface LunchHazard {
   haste: number;
 }
 
-/** No Internet (Work From Home): your WRITTEN towers send nothing until you reconnect. */
+/** No Internet (Work From Home): your DIGITAL towers send nothing until you reconnect. */
 export interface NoInternetHazard {
   type: 'nointernet';
   first: number;
@@ -335,31 +335,68 @@ const L2: LevelDef = {
 
 const L3: LevelDef = {
   id: 3,
-  name: 'Meeting Room',
+  name: 'Presentation Room',
   block: 'junior',
-  intro: 'A meeting that could have been an email, and everyone is invited. They come in waves.',
-  gimmick: 'A comb: swarms against area damage. Quick Reply arrives, and someone has to connect the projector.',
+  intro: 'You are giving the presentation. Everyone has a laptop open, and nobody is looking at you.',
+  gimmick: 'They wind through the rows of tables towards you. The projector acts up, but it warns you three seconds early. Quick Reply arrives.',
   size: { w: 21, h: 12 },
   paths: [
     [
       { x: -1.5, y: 10.5 },
-      { x: 4.5, y: 10.5 },
-      { x: 4.5, y: 3.5 },
-      { x: 10.5, y: 3.5 },
-      { x: 10.5, y: 10.5 },
-      { x: 16.5, y: 10.5 },
-      { x: 16.5, y: 3.5 },
-      { x: 19.0, y: 3.5 },
+      { x: 19.5, y: 10.5 },
+      { x: 19.5, y: 7.5 },
+      { x: 1.5, y: 7.5 },
+      { x: 1.5, y: 4.5 },
+      { x: 16.5, y: 4.5 },
+      { x: 16.5, y: 3.0 },
     ],
   ],
-  desk: { x: 19, y: 3 },
+  desk: { x: 16, y: 2 },
+  // The level design (docs/leveldesign, level 3). The maker's call: no laptop spots, you build
+  // on the floor like everywhere else.
+  grid: [
+    't..HHHHHHHHHHHH...HHt',
+    't....................',
+    '................Dt...',
+    '.........t......=...t',
+    '.================....',
+    '.=.tttttt..tttttt....',
+    '.=.tttttt..tttttt....',
+    '.===================.',
+    '..ttttttt..ttttttt.=.',
+    '..ttttttt..ttttttt.=.',
+    'S===================.',
+    't.ttt...tt....HHH...t',
+  ],
   decor: [
-    { model: 'projector_screen', rect: { x: 5, y: 0, w: 3, h: 1 } },
-    { model: 'meeting_table', rect: { x: 12, y: 0, w: 3, h: 2 } },
     { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 0, y: 1, w: 1, h: 1 }, turn: 1 },
+    { model: 'whiteboard', rect: { x: 3, y: 0, w: 3, h: 1 } },
+    { model: 'bookshelf', rect: { x: 6, y: 0, w: 1, h: 1 } },
+    { model: 'speaker', rect: { x: 7, y: 0, w: 1, h: 1 } },
+    { model: 'projector_screen', rect: { x: 8, y: 0, w: 3, h: 1 } },
+    { model: 'speaker', rect: { x: 11, y: 0, w: 1, h: 1 } },
+    { model: 'bookshelf', rect: { x: 12, y: 0, w: 1, h: 1 } },
+    { model: 'tall_cabinet', rect: { x: 13, y: 0, w: 2, h: 1 } },
+    ...run('bookshelf', 18, 0, 2, 'x'),
+    { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
+    // Your laptop, next to the lectern, facing you.
+    { model: 'conference_table', rect: { x: 17, y: 2, w: 1, h: 1 }, turn: 3 },
+    { model: 'beamer', rect: { x: 9, y: 3, w: 1, h: 1 }, turn: 2 },
+    { model: 'plant', rect: { x: 20, y: 3, w: 1, h: 1 } },
+    ...run('conference_table', 3, 5, 6, 'x'),
+    ...run('conference_table', 11, 5, 6, 'x'),
+    ...run('conference_chair', 3, 6, 6, 'x', { turn: 2 }),
+    ...run('conference_chair', 11, 6, 6, 'x', { turn: 2 }),
+    ...run('conference_table', 2, 8, 7, 'x'),
+    ...run('conference_table', 11, 8, 7, 'x'),
+    ...run('conference_chair', 2, 9, 7, 'x', { turn: 2 }),
+    ...run('conference_chair', 11, 9, 7, 'x', { turn: 2 }),
+    { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
+    { model: 'coffee_bar', rect: { x: 2, y: 11, w: 3, h: 1 }, turn: 2 },
+    ...run('chair_stack', 8, 11, 2, 'x'),
+    ...run('bookshelf', 14, 11, 3, 'x', { turn: 2 }),
     { model: 'plant', rect: { x: 20, y: 11, w: 1, h: 1 } },
-    { model: 'cooler', rect: { x: 18, y: 0, w: 1, h: 1 } },
-    { model: 'printer', rect: { x: 0, y: 6, w: 1, h: 1 } },
   ],
   towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'],
   startFocus: 100,
@@ -435,7 +472,7 @@ const L4: LevelDef = {
   look: { floorA: '#c9d3d6', floorB: '#bcc7cb', walkway: '#e0cfa9', edge: '#bba67c', wall: '#ece8de' },
   hazard: { type: 'lunch', first: 70, every: 70, window: 8, swarm: 'intern:12@0.15', haste: 1.3 },
   // No Godot table to translate (the old Canteen used colleagues that are gone); built on the
-  // Meeting Room curve with The Impersonator from wave 4. Tuned with tools/balance.ts.
+  // Presentation Room curve with The Impersonator from wave 4. Tuned with tools/balance.ts.
   waves: [
     'intern:12@0.65 + newhire:3@1.10',
     'intern:12@0.60 + newhire:3@1.00 + chaser:4@0.25',
@@ -495,7 +532,7 @@ const L5: LevelDef = {
   startFocus: 100,
   // Dark wood, and a burgundy runner where everyone walks.
   look: { floorA: '#6b5644', floorB: '#634f3e', walkway: '#8f3b33', edge: '#6d2b25', wall: '#e7e1d5' },
-  // A smooth curve of about 10% per wave, with Board Members (only WRITTEN hurts them) from wave 7.
+  // A smooth curve of about 10% per wave, with Board Members (only DIGITAL hurts them) from wave 7.
   waves: [
     'intern:14@0.65 + newhire:3@1.10',
     'intern:12@0.60 + newhire:3@1.00 + chaser:6@0.25',
@@ -566,7 +603,7 @@ const L6: LevelDef = {
   look: { floorA: '#b98d5f', floorB: '#ad8256', walkway: '#6f8f7a', edge: '#56705f', wall: '#ece6da' },
   hazard: { type: 'nointernet', first: 60, every: 55, window: 12, reward: 6 },
   // Medior: 15 waves that start where the junior floors left off and climb about 15% a wave.
-  // The Cold Caller (only IN PERSON hurts him) from wave 3.
+  // The Cold Caller (only PHYSICAL hurts him) from wave 3.
   waves: [
     'intern:16@0.50 + newhire:3@0.95 + chaser:4@0.20',
     'intern:14@0.48 + newhire:4@0.90 + chaser:4@0.20',
@@ -654,7 +691,7 @@ export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5:
 export const LEVEL_NAMES: readonly string[] = [
   'Reception',
   'Coffee Corner',
-  'Meeting Room',
+  'Presentation Room',
   'Canteen',
   'Boardroom',
   'Work From Home',

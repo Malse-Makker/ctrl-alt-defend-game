@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { applyCommand, parseCommand } from '../src/sim/commands';
-import { Game, TICK } from '../src/sim/game';
+import { Game, HAZARD_WARN, TICK } from '../src/sim/game';
 import { corridor } from './helpers';
 
 const TOWERS = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'];
@@ -90,6 +90,25 @@ describe('the projector', () => {
     expect(g.coffee - before).toBe(15);
     expect(g.hazardOn).toBe(false);
     expect(g.canPlace('autoreply', 3, 1).ok).toBe(true);
+  });
+
+  it('announces itself three seconds early: one warning, still time to build, and a copy sees it too', () => {
+    const g = new Game(corridor(['intern:40@1'], { towers: TOWERS, hazard: { ...hz, first: 5 } }));
+    g.start();
+    g.runFor(5 - HAZARD_WARN - 0.1);
+    expect(g.hazardWarning).toBe(false);
+    g.drainEvents();
+    g.runFor(0.2);
+    expect(g.hazardWarning).toBe(true);
+    expect(g.drainEvents().filter((e) => e.t === 'hazardWarn')).toEqual([{ t: 'hazardWarn', kind: 'projector', at: 5 }]);
+    expect(g.canPlace('autoreply', 3, 1).ok).toBe(true);
+    const copy = new Game(corridor(['intern:40@1'], { towers: TOWERS, hazard: { ...hz, first: 5 } }));
+    copy.applySnapshot(JSON.parse(JSON.stringify(g.toSnapshot())));
+    expect(copy.hazardWarning).toBe(true);
+    g.runFor(HAZARD_WARN);
+    expect(g.hazardOn).toBe(true);
+    expect(g.hazardWarning).toBe(false);
+    expect(g.drainEvents().some((e) => e.t === 'hazardWarn')).toBe(false);
   });
 
   it('closes by itself after the window, so nobody gets stuck', () => {

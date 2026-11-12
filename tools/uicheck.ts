@@ -334,13 +334,14 @@ async function level3Flow(browser: import('puppeteer-core').Browser, errors: str
   await page.goto(URL_, { waitUntil: 'networkidle0' });
   await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
   await clickText(page, 'Clock in');
-  await clickText(page, 'Meeting Room');
+  await clickText(page, 'Presentation Room');
   await page.waitForFunction(() => document.querySelector('.hud'));
   type G = {
     coffee: number;
     focus: number;
     time: number;
     hazardOn: boolean;
+    hazardWarning: boolean;
     hazardUntil: number;
     hazardSolved: number[];
     level: { size: { w: number; h: number } };
@@ -377,16 +378,21 @@ async function level3Flow(browser: import('puppeteer-core').Browser, errors: str
       for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
         g.step();
         g.focus = Math.max(g.focus, 50);
+        if (what === 'warn' && g.hazardWarning) break;
         if (what === 'hazard' && g.hazardOn) {
           g.hazardUntil = g.time + 600;
           break;
         }
         if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
       }
-      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard' || e.t === 'hazardWarn');
       g.events.push(...keep.slice(-3));
       return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)}`;
     }, stop);
+  // Three seconds before: the beamer blinks red and the screen says NO SIGNAL.
+  console.log(`  ${await ff('warn')}`);
+  await new Promise((r) => setTimeout(r, 600));
+  total += await check(page, 'l3-warning', size);
   console.log(`  ${await ff('hazard')}`);
   await page.waitForSelector('.qte', { timeout: 5000 });
   total += await check(page, 'l3-projector', size);

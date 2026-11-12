@@ -169,7 +169,7 @@ describe('Office Artillery', () => {
     expect(n.stunTime).toBeGreaterThan(0.9);
   });
 
-  it('is in person: the Board Member does not even notice', () => {
+  it('is physical: the Board Member does not even notice', () => {
     const { g } = setup('artillery');
     const b = put(g, 'boardmember', 9);
     g.step(TICK);

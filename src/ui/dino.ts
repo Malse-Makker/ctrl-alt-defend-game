@@ -1,7 +1,7 @@
 // The No Internet mini-game (Work From Home): the browser's dinosaur, running while the router
 // thinks about it. Jump over the cacti (Space, click or tap) and the "Reconnecting..." bar fills;
 // hit one and it drops back. Full bar: back online. It closes by itself after a while, so nobody
-// gets stuck; until then your WRITTEN towers send nothing.
+// gets stuck; until then your DIGITAL towers send nothing.
 
 import { h } from './dom';
 import { UI_TEXT as T } from './text';

@@ -3,6 +3,16 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.19.0] - 2026-11-12
+
+### New
+- Level 3 is now the Presentation Room. You give the presentation from the lectern; everyone else sits behind a laptop in rows of tables facing the big screen, and they wind through the rows towards you. Speakers, a whiteboard with last quarter's ambitions, spare chairs that are never enough.
+- The projector warns you now. Three seconds before it gives up, the fan spins up, the lamp blinks red, the beam flickers and the screen says NO SIGNAL. Just enough time to place one more thing.
+- Every tower that deals damage says what it is: DIGITAL (a laptop icon) or PHYSICAL (a hand). The Board Member only notices DIGITAL, The Cold Caller only PHYSICAL, and No Internet stops everything DIGITAL.
+
+### Changed
+- WRITTEN is now called DIGITAL and IN PERSON is now PHYSICAL. Same towers, same rules.
+
 ## [0.18.0] - 2026-11-12
 
 ### Changed

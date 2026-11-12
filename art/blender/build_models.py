@@ -797,16 +797,42 @@ def b_presenter():
 
 
 def b_projector_screen():
+    """The screen on its stand. The slide (ScreenSlide) and a NO SIGNAL panel (ScreenNoSignal) are
+    parts of their own: the game shows NO SIGNAL when the projector acts up."""
     root = empty("projector_screen")
     legs = [cyl(f"Leg{i}", 0.02, 1.5, loc=(x, 0.1, 0), material=mat("metal"), verts=6) for i, x in enumerate((-1.2, 1.2))]
     bar = box("Bar", (2.6, 0.08, 0.08), loc=(0, 0.1, 1.5), material=mat("metal"))
     cloth = box("Cloth", (2.4, 0.02, 1.0), loc=(0, 0.06, 0.45), material=mat("plastic_white", emit=0.2))
+    ob = join("projector_screen_mesh", legs + [bar, cloth])
+    parent(ob, root)
     slide = box("Slide", (1.9, 0.024, 0.7), loc=(0, 0.04, 0.6), material=mat("blue", emit=0.6))
     title = box("STitle", (1.2, 0.026, 0.1), loc=(-0.2, 0.035, 1.12), material=mat("plastic_white", emit=0.8))
     bars = [box(f"Chart{i}", (0.18, 0.026, 0.12 + 0.12 * i), loc=(-0.6 + i * 0.3, 0.035, 0.68), material=mat(["yellow", "orange", "teal", "pink"][i], emit=0.8)) for i in range(4)]
-    ob = join("projector_screen_mesh", legs + [bar, cloth, slide, title] + bars)
-    parent(ob, root)
+    parent(join("ScreenSlide", [slide, title] + bars), root)
+    panel = box("NoSig", (2.2, 0.024, 0.9), loc=(0, 0.04, 0.5), material=mat("#1d3fb0", emit=0.9))
+    words = _text("NoSigText", "NO SIGNAL", 0.2, (0, 0.025, 0.86), mat("plastic_white", emit=1.4))
+    parent(join("ScreenNoSignal", [panel, words]), root)
     return root
+
+
+def _text(name, body, size, loc, material):
+    """Flat text, as a mesh, readable from -Y."""
+    import bpy
+    bpy.ops.object.text_add(location=loc)
+    t = bpy.context.active_object
+    t.data.body = body
+    t.data.size = size
+    t.data.align_x = "CENTER"
+    t.data.align_y = "CENTER"
+    t.data.extrude = 0.004
+    t.rotation_euler = (math.pi / 2, 0, 0)
+    bpy.ops.object.convert(target="MESH")
+    t = bpy.context.active_object
+    t.name = name
+    t.data.materials.clear()
+    t.data.materials.append(material)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    return t
 
 
 def b_meeting_table():
@@ -2262,6 +2288,159 @@ def b_window_bar():
     return root
 
 
+# ---------------------------------------------------------------- level 3: the presentation room
+
+def b_beamer():
+    """The projector on its stand in the middle aisle, lens to -Y. The status light (BeamerLamp)
+    and the light beam (BeamerBeam) are parts of their own: the game blinks and flickers them."""
+    root = empty("beamer")
+    foot = cyl("Foot", 0.26, 0.03, loc=(0, 0, 0), material=_metal(), verts=18)
+    pole = cyl("Pole", 0.035, 0.86, loc=(0, 0, 0), material=_metal(), verts=8)
+    plate = box("Plate", (0.4, 0.36, 0.03), loc=(0, 0, 0.86), material=mat("plastic_black"))
+    body = box("Body", (0.36, 0.3, 0.13), loc=(0, 0, 0.89), material=mat("plastic_white", rough=0.4), bevel=0.02)
+    lens = cyl("Lens", 0.055, 0.05, loc=(0.08, -0.15, 0.955), material=mat("plastic_black", rough=0.2), verts=14)
+    kit.tilt([lens], rx=math.pi / 2, pivot=(0.08, -0.15, 0.955))
+    glass = cyl("LensGlass", 0.04, 0.01, loc=(0.08, -0.2, 0.955), material=mat("screen_glow", emit=2.0), verts=12)
+    kit.tilt([glass], rx=math.pi / 2, pivot=(0.08, -0.2, 0.955))
+    vent = box("Vent", (0.12, 0.01, 0.07), loc=(-0.1, -0.155, 0.92), material=mat("charcoal"))
+    cable = box("Cable", (0.02, 0.5, 0.02), loc=(0, 0.3, 0.0), material=mat("plastic_black"))
+    ob = join("beamer_mesh", [foot, pole, plate, body, lens, glass, vent, cable])
+    parent(ob, root)
+    lamp = box("BeamerLamp", (0.04, 0.04, 0.012), loc=(-0.1, 0.05, 1.02), material=mat("plant", emit=2.5))
+    parent(lamp, root)
+    # The beam: from the lens to the screen, about three tiles away, widening on the way.
+    beam = cyl("BeamerBeam", 0.05, 2.9, loc=(0.08, -0.2, 0.955), material=mat("screen_glow", emit=1.5, alpha=0.16), verts=4, radius_top=0.5)
+    kit.tilt([beam], rx=math.pi / 2, pivot=(0.08, -0.2, 0.955))
+    parent(beam, root)
+    return root
+
+
+def b_speaker():
+    """A tall floor speaker, front to -Y."""
+    root = empty("speaker")
+    cab = box("Cab", (0.42, 0.4, 1.35), loc=(0, 0, 0), material=mat("plastic_black", rough=0.5), bevel=0.02)
+    cones = [cyl(f"Cone{i}", r, 0.03, loc=(0, -0.2, z), material=mat("charcoal", rough=0.4), verts=16) for i, (r, z) in enumerate(((0.15, 0.35), (0.12, 0.75), (0.06, 1.12)))]
+    for c, z in zip(cones, (0.35, 0.75, 1.12)):
+        kit.tilt([c], rx=math.pi / 2, pivot=(0, -0.2, z))
+    led = box("Led", (0.03, 0.01, 0.03), loc=(0.15, -0.205, 1.25), material=mat("blue", emit=2.0))
+    ob = join("speaker_mesh", [cab, led] + cones)
+    parent(ob, root)
+    return root
+
+
+def b_whiteboard():
+    """A whiteboard on wheels, three tiles wide, with last quarter's ambitions still on it."""
+    root = empty("whiteboard")
+    legs = [box(f"Leg{i}", (0.04, 0.5, 0.04), loc=(x, 0, 0.04), material=_metal()) for i, x in enumerate((-1.25, 1.25))]
+    posts = [box(f"Post{i}", (0.04, 0.04, 1.65), loc=(x, 0, 0.04), material=_metal()) for i, x in enumerate((-1.25, 1.25))]
+    frame = box("Frame", (2.6, 0.05, 1.05), loc=(0, 0, 0.6), material=mat("metal_light", metal=0.5, rough=0.3))
+    board = box("Board", (2.5, 0.055, 0.95), loc=(0, 0, 0.65), material=mat("plastic_white", rough=0.2, emit=0.15))
+    tray = box("Tray", (1.0, 0.1, 0.03), loc=(0, -0.06, 0.6), material=_metal())
+    marks = []
+    for i, (x, z, w, c) in enumerate(((-0.8, 1.35, 0.7, "blue"), (-0.7, 1.2, 0.5, "blue"), (-0.75, 1.05, 0.6, "red"), (0.4, 1.3, 0.9, "teal"), (0.6, 0.95, 0.5, "red"))):
+        marks.append(box(f"Mark{i}", (w, 0.06, 0.025), loc=(x, 0, z), material=mat(c, emit=0.4)))
+    arrow = box("Arrow", (0.04, 0.06, 0.4), loc=(-0.1, 0, 0.9), material=mat("teal", emit=0.4))
+    kit.tilt([arrow], ry=-0.9, pivot=(-0.1, 0, 0.9))
+    pens = [cyl(f"Pen{i}", 0.012, 0.12, loc=(-0.2 + i * 0.1, -0.06, 0.63), material=mat(c), verts=6) for i, c in enumerate(("red", "blue", "plastic_black"))]
+    for pn, x in zip(pens, (-0.2, -0.1, 0.0)):
+        kit.tilt([pn], ry=math.pi / 2, pivot=(x, -0.06, 0.63))
+    ob = join("whiteboard_mesh", legs + posts + [frame, board, tray, arrow] + marks + pens)
+    parent(ob, root)
+    return root
+
+
+def b_conference_table():
+    """One tile of a long table with a laptop whose screen faces -Y, where the chair goes. Top at 0.74."""
+    root = empty("conference_table")
+    top = box("Top", (1.0, 0.72, 0.04), loc=(0, 0.1, 0.7), material=mat("plastic_white", rough=0.4))
+    edge = box("Edge", (1.0, 0.04, 0.05), loc=(0, -0.26, 0.69), material=mat("metal_light", metal=0.5, rough=0.3))
+    legs = [box(f"Leg{i}", (0.04, 0.6, 0.04), loc=(x, 0.1, 0.0), material=_metal()) for i, x in enumerate((-0.46, 0.46))]
+    posts = [box(f"Post{i}", (0.04, 0.04, 0.7), loc=(x, 0.1, 0.0), material=_metal()) for i, x in enumerate((-0.46, 0.46))]
+    parts = [top, edge] + legs + posts + _laptop(0.05, 0.05, 0.74, rot=0.0)
+    cup = cyl("Cup", 0.035, 0.08, loc=(-0.3, 0.2, 0.74), material=mat("plastic_white"), verts=10)
+    ob = join("conference_table_mesh", parts + [cup])
+    parent(ob, root)
+    return root
+
+
+def b_conference_chair():
+    """A black office chair, facing -Y."""
+    root = empty("conference_chair")
+    ob = join("conference_chair_mesh", _chair("charcoal", "plastic_black", arms=True, s=0.95))
+    parent(ob, root)
+    return root
+
+
+def b_chair_stack():
+    """Spare chairs, stacked: there are never enough."""
+    root = empty("chair_stack")
+    parts = []
+    for i in range(6):
+        z = i * 0.11
+        parts.append(box(f"Seat{i}", (0.42, 0.42, 0.04), loc=(0, 0.02 * i, 0.4 + z), material=mat("blue", rough=0.6), bevel=0.01))
+        parts.append(box(f"Back{i}", (0.42, 0.04, 0.38), loc=(0, 0.21 + 0.02 * i, 0.44 + z), material=mat("blue", rough=0.6), bevel=0.01))
+    legs = [box(f"Leg{i}", (0.025, 0.025, 0.42), loc=(x, y, 0), material=_metal()) for i, (x, y) in enumerate(((0.18, -0.16), (-0.18, -0.16), (0.18, 0.2), (-0.18, 0.2)))]
+    ob = join("chair_stack_mesh", parts + legs)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- level 4: the canteen (new design)
+
+def b_canteen_long():
+    """One tile of a long canteen table, a bench on both sides and a tray on it."""
+    root = empty("canteen_long")
+    top = box("Top", (1.0, 0.5, 0.05), loc=(0, 0, 0.72), material=mat("plastic_white", rough=0.4))
+    legs = [box(f"Leg{i}", (0.05, 0.4, 0.72), loc=(x, 0, 0), material=mat("metal")) for i, x in enumerate((-0.46, 0.46))]
+    parts = [top] + legs
+    for side in (-1, 1):
+        parts.append(box(f"Bench{side}", (1.0, 0.18, 0.05), loc=(0, side * 0.38, 0.42), material=mat("teal", rough=0.5)))
+        parts.append(box(f"BLeg{side}", (0.05, 0.14, 0.42), loc=(0, side * 0.38, 0), material=mat("metal")))
+    tray = box("Tray", (0.42, 0.3, 0.02), loc=(-0.15, 0.04, 0.77), material=mat("orange"))
+    plate = cyl("Plate", 0.09, 0.015, loc=(-0.2, 0.04, 0.79), material=mat("plastic_white"), verts=12)
+    food = ball("Food", 0.05, loc=(-0.2, 0.04, 0.8), material=mat("yellow"), subdiv=1, scale=(1, 1, 0.5))
+    cup = cyl("Cup", 0.03, 0.08, loc=(0.25, -0.1, 0.77), material=mat("window", rough=0.1), verts=8)
+    ob = join("canteen_long_mesh", parts + [tray, plate, food, cup])
+    parent(ob, root)
+    return root
+
+
+def b_salad_bar():
+    """One tile of the salad bar: bowls under a glass hood. Tall enough to block sight. Front -Y."""
+    root = empty("salad_bar")
+    body = box("Body", (0.95, 0.8, 0.88), loc=(0, 0, 0), material=mat("#7e9aa8", rough=0.6), bevel=0.02)
+    top = box("Top", (1.0, 0.85, 0.04), loc=(0, 0, 0.88), material=mat("metal", metal=0.6, rough=0.3))
+    bowls = []
+    for i, (x, y, col) in enumerate(((-0.25, -0.15, "plant"), (0.2, -0.15, "red"), (-0.2, 0.2, "yellow"), (0.22, 0.2, "plant_dark"))):
+        bowls.append(cyl(f"Bowl{i}", 0.17, 0.08, loc=(x, y, 0.92), material=mat("metal_light", metal=0.7, rough=0.3), verts=14))
+        bowls.append(ball(f"Salad{i}", 0.15, loc=(x, y, 0.99), material=mat(col), subdiv=1, scale=(1, 1, 0.4)))
+    posts = [box(f"Post{i}", (0.03, 0.03, 0.62), loc=(x, y, 0.92), material=mat("metal")) for i, (x, y) in enumerate(((-0.45, -0.38), (0.45, -0.38), (-0.45, 0.38), (0.45, 0.38)))]
+    hood = box("Hood", (0.95, 0.8, 0.03), loc=(0, 0, 1.54), material=mat("window", rough=0.05, alpha=0.5))
+    lamp = box("Lamp", (0.7, 0.1, 0.05), loc=(0, 0, 1.5), material=mat("yellow", emit=1.2))
+    ob = join("salad_bar_mesh", [body, top, hood, lamp] + bowls + posts)
+    parent(ob, root)
+    return root
+
+
+def b_serving_counter():
+    """One tile of the serving counter along the bottom: pans, a glass guard, heat lamps. Front -Y,
+    where the queue is."""
+    root = empty("serving_counter")
+    counter = box("Counter", (1.0, 0.75, 0.88), loc=(0, 0.1, 0), material=mat("metal_light", metal=0.5, rough=0.4))
+    top = box("CTop", (1.0, 0.8, 0.04), loc=(0, 0.1, 0.88), material=mat("metal", metal=0.6, rough=0.3))
+    rail = box("TrayRail", (1.0, 0.16, 0.03), loc=(0, -0.35, 0.78), material=mat("metal", metal=0.6, rough=0.3))
+    pan = box("Pan", (0.8, 0.4, 0.06), loc=(0, 0.15, 0.9), material=mat("metal_light", metal=0.7, rough=0.3))
+    food = box("Food", (0.72, 0.34, 0.03), loc=(0, 0.15, 0.94), material=mat("orange", rough=0.9))
+    guard = box("Guard", (1.0, 0.02, 0.36), loc=(0, -0.05, 1.12), material=mat("window", rough=0.05, alpha=0.5))
+    kit.tilt([guard], rx=0.35, pivot=(0, -0.05, 1.12))
+    hood = box("HeatHood", (1.0, 0.3, 0.06), loc=(0, 0.3, 1.55), material=mat("metal", metal=0.6, rough=0.3))
+    glow = box("HeatGlow", (0.8, 0.2, 0.02), loc=(0, 0.3, 1.53), material=mat("red", emit=1.6))
+    back = box("Back", (1.0, 0.05, 1.6), loc=(0, 0.45, 0), material=mat("metal_light", metal=0.4, rough=0.5))
+    ob = join("serving_counter_mesh", [counter, top, rail, pan, food, guard, hood, glow, back])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2380,6 +2559,15 @@ BUILDERS = {
     "bar_table": b_bar_table,
     "bar_stool": b_bar_stool,
     "window_bar": b_window_bar,
+    "beamer": b_beamer,
+    "speaker": b_speaker,
+    "whiteboard": b_whiteboard,
+    "conference_table": b_conference_table,
+    "conference_chair": b_conference_chair,
+    "chair_stack": b_chair_stack,
+    "canteen_long": b_canteen_long,
+    "salad_bar": b_salad_bar,
+    "serving_counter": b_serving_counter,
 }
 
 

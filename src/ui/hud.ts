@@ -14,6 +14,7 @@ import {
   UPCOMING_TOWERS,
   modelFor,
   pathBlock,
+  type DamageClass,
   type TargetMode,
 } from '../sim/data/towers';
 import { earlyCallPoints } from '../sim/economy';
@@ -239,7 +240,12 @@ export class Hud {
         img(`icons/${def.models[0]}.png`, def.name),
         h('span', { class: 'name', text: def.name }),
         cost,
-        def.special ? h('span', { class: 'special', text: T.oneEach, title: T.oneEachHelp }) : null,
+        h(
+          'span',
+          { class: 'tags' },
+          def.special ? h('span', { class: 'special', text: T.oneEach, title: T.oneEachHelp }) : null,
+          classTag(def.damageClass, false),
+        ),
       );
       this.shop.push({ defId, el, cost });
       grid.append(el);
@@ -463,7 +469,7 @@ export class Hud {
         'div',
         {},
         h('div', { class: 'tp-name wrap', text: title }),
-        h('div', { class: 'tp-sub' }, h('span', { text: def.name }), h('span', { class: 'mono tiers', text: t.tiers.join('-') })),
+        h('div', { class: 'tp-sub' }, h('span', { text: def.name }), h('span', { class: 'mono tiers', text: t.tiers.join('-') }), classTag(def.damageClass, true)),
         g.players > 1 ? h('div', { class: 'tp-owner', text: t.owner === this.me ? T.mpYourTower : `${T.mpOwnedBy} ${this.ownerName(t.owner)}${g.canControl(t, this.me) ? '' : ` (${T.mpReadOnly})`}` }) : null,
       ),
       h('button', { class: 'icon-btn', title: 'Close (Esc)', on: { click: () => this.act.deselect() } }, icon('xmark')),
@@ -772,4 +778,16 @@ export class Hud {
     ro.observe(this.right);
     return ro;
   }
+}
+
+/** DIGITAL (a laptop) or PHYSICAL (a hand): which colleagues and hazards a tower cares about. */
+function classTag(cls: DamageClass | undefined, words: boolean): HTMLElement | null {
+  if (!cls) return null;
+  const digital = cls === 'digital';
+  return h(
+    'span',
+    { class: `dmg-class ${cls}`, title: digital ? T.digitalHelp : T.physicalHelp },
+    icon(digital ? 'laptop' : 'hand'),
+    words ? ` ${digital ? T.digital : T.physical}` : null,
+  );
 }

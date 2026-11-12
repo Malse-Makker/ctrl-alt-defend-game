@@ -239,8 +239,8 @@ describe('towers in action', () => {
     expect(e.shield).toBe(15);
     expect(g.damage(e, 20).dealt).toBe(15 + 5);
     expect(e.hp).toBe(7);
-    e.def = { ...e.def, immune: 'written' };
-    expect(g.damage(e, 50, 'written').result).toBe('immune');
+    e.def = { ...e.def, immune: 'digital' };
+    expect(g.damage(e, 50, 'digital').result).toBe('immune');
     expect(e.hp).toBe(7);
   });
 });
