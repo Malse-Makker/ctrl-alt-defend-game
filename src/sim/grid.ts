@@ -4,8 +4,8 @@
 
 /** Letters you may build on. Some only for certain towers (worked out per level as they arrive). */
 const BUILD = new Set(['.', 'o', 'L', 'b', 'P', '^', '*', 'k', 'f', 'a', 'p']);
-/** Letters that block sight: walls, tall furniture, server racks. */
-const SIGHT = new Set(['#', 'H', 'R']);
+/** Letters that block sight: walls and all furniture, tall or low (the maker, v0.18.0). Glass does not. */
+const SIGHT = new Set(['#', 'H', 'R', 't', 'w', 'x']);
 /** Letters on the walkway: entrance, walkway, gate, door, your desk. */
 const WALKWAY = new Set(['=', 'S', 'G', 'd', 'D']);
 /** Every letter the grid may use. Anything else is a typo in a level. */

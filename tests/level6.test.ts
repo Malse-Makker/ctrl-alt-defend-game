@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
-import { Game, TICK, type Enemy } from '../src/sim/game';
+import { Game, needsSight, TICK, type Enemy } from '../src/sim/game';
+import { TOWERS as DEFS } from '../src/sim/data/towers';
 import { corridor } from './helpers';
 
 const TOWERS = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall'];
@@ -34,13 +35,35 @@ describe('walls', () => {
     expect(e.hp).toBe(100);
   });
 
-  it('Office Artillery lobs over walls', () => {
+  it('Office Artillery needs to see them too (the maker, v0.18.0)', () => {
     const g = game(['intern:1@1'], { walls: WALL });
     const t = g.place('artillery', 8, 0).tower!;
     g.phase = 'running';
     put(g, 'newhire', 9.5, 100).stunTime = 1e9;
     g.runFor(1);
-    expect(t.stats.shots).toBeGreaterThan(0);
+    expect(t.stats.shots).toBe(0);
+  });
+
+  it('furniture blocks sight like a wall, but not for towers that work in a zone around them', () => {
+    const desk = [{ model: 'plant', rect: { x: 6, y: 1, w: 5, h: 1 } }];
+    const shoot = game(['intern:1@1'], { decor: desk });
+    const auto = shoot.place('autoreply', 8, 0).tower!;
+    shoot.phase = 'running';
+    put(shoot, 'newhire', 9.5, 100).stunTime = 1e9;
+    shoot.runFor(1);
+    expect(auto.stats.shots).toBe(0);
+
+    const zone = game(['intern:1@1'], { decor: desk });
+    zone.place('headphones', 8, 0);
+    zone.phase = 'running';
+    const e = put(zone, 'newhire', 9.5, 100);
+    zone.runFor(0.2);
+    expect(e.stunTime).toBeGreaterThan(0);
+  });
+
+  it('everything that aims at someone needs sight; what works in a zone does not', () => {
+    const sighted = Object.values(DEFS).filter((d) => needsSight(d)).map((d) => d.id).sort();
+    expect(sighted).toEqual(['artillery', 'autoreply', 'delegation', 'keyboardsmash', 'quickreply', 'replyall', 'selfservice']);
   });
 
   it('a chair stops at a wall', () => {

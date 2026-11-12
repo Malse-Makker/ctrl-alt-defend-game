@@ -8,6 +8,9 @@ import { part, type Assets } from './assets';
 import { PAL } from './palette';
 import { surfaceAt, TOWER_CABINET_H } from './world';
 
+/** Red blind-spot cells per tile, each way. */
+const BLIND_CELLS = 4;
+
 interface EnemyView {
   id: number;
   /** Position only. The body inside it turns; the HP bar must not. */
@@ -102,6 +105,8 @@ export class Actors {
   private readonly flapGeo = new THREE.BoxGeometry(0.2, 0.024, 0.04);
   private readonly flapMat = new THREE.MeshStandardMaterial({ color: PAL.envelopeFlap });
   readonly rangeRing: THREE.Mesh;
+  private blind: THREE.InstancedMesh | null = null;
+  private blindKey = '';
   /** The office chair's lane: a strip instead of a circle. */
   private readonly lane: THREE.Mesh;
   private barrierViews = new Map<number, THREE.Object3D>();
@@ -204,6 +209,53 @@ export class Actors {
     this.lane.rotation.y = Math.atan2(dx, dy);
     this.lane.scale.set(1.1, 1, length + 0.5);
     (this.lane.material as THREE.MeshBasicMaterial).color.set(color);
+  }
+
+  /**
+   * Like Bloons: red over the part of its range a tower at (x, y) cannot see, because walls or
+   * furniture are in the way (the whole floor for Office Artillery). Null hides it.
+   */
+  showBlind(game: Game | null, x = 0, y = 0, range = 0): void {
+    const key = game ? `${x},${y},${range}` : '';
+    if (key === this.blindKey) return;
+    this.blindKey = key;
+    if (!game) {
+      if (this.blind) this.blind.visible = false;
+      return;
+    }
+    const { w, h } = game.level.size;
+    const cap = w * h * BLIND_CELLS * BLIND_CELLS;
+    if (!this.blind || this.blind.instanceMatrix.count < cap) {
+      if (this.blind) this.group.remove(this.blind);
+      const cell = 1 / BLIND_CELLS;
+      this.blind = new THREE.InstancedMesh(
+        new THREE.PlaneGeometry(cell, cell).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: PAL.bad, transparent: true, opacity: 0.38, depthWrite: false }),
+        cap,
+      );
+      this.blind.renderOrder = 3;
+      this.blind.frustumCulled = false;
+      this.group.add(this.blind);
+    }
+    const m = new THREE.Matrix4();
+    let n = 0;
+    for (let ty = 0; ty < h; ty++) {
+      for (let tx = 0; tx < w; tx++) {
+        // The furniture itself needs no red: you can see it is in the way.
+        if (game.isWall(tx, ty)) continue;
+        for (let j = 0; j < BLIND_CELLS; j++) {
+          for (let i = 0; i < BLIND_CELLS; i++) {
+            const cx = tx + (i + 0.5) / BLIND_CELLS;
+            const cy = ty + (j + 0.5) / BLIND_CELLS;
+            if (Math.hypot(cx - x, cy - y) > range || game.lineOfSight(x, y, cx, cy)) continue;
+            this.blind.setMatrixAt(n++, m.makeTranslation(cx, 0.03, cy));
+          }
+        }
+      }
+    }
+    this.blind.count = n;
+    this.blind.instanceMatrix.needsUpdate = true;
+    this.blind.visible = n > 0;
   }
 
   showRange(x: number | null, y: number, r: number, color = '#ffffff'): void {

@@ -55,13 +55,13 @@ describe('the tile grid', () => {
 describe('Reception', () => {
   const level = LEVELS[1];
 
-  it('tall furniture blocks sight, low furniture does not', () => {
+  it('all furniture blocks sight, tall or low; glass does not', () => {
     const g = new Game(level);
     // The logo wall (13, 3..4) in the glass wall: from the offices you cannot see past it.
     expect(g.lineOfSight(14.5, 3.6, 11.5, 3.6)).toBe(false);
-    // The glass itself is see-through, and so are the low lounge chairs (6..8, 5..6).
+    // The glass itself is see-through; the low lounge chairs (6..8, 5..6) are not.
     expect(g.lineOfSight(14.5, 9.5, 11.5, 9.5)).toBe(true);
-    expect(g.lineOfSight(9.5, 6, 5.5, 6)).toBe(true);
+    expect(g.lineOfSight(9.5, 6, 5.5, 6)).toBe(false);
     expect(g.canPlace('autoreply', 13, 4).ok).toBe(false);
     expect(g.canPlace('autoreply', 7, 5).ok).toBe(false);
   });

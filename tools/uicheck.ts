@@ -258,6 +258,12 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   await new Promise((r) => setTimeout(r, 400));
   total += await check(page, 'l2-build-grid', size);
   await page.keyboard.press('Escape');
+  // Office Artillery: red where it cannot see past the furniture.
+  await page.keyboard.press('4');
+  await page.mouse.move(700, 330);
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l2-blind-spots', size);
+  await page.keyboard.press('Escape');
   const placed = await page.evaluate(() => {
     const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
     const g = s.game;

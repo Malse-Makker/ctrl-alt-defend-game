@@ -387,6 +387,15 @@ interface PendingSpawn {
 }
 
 /**
+ * Does this tower have to see a colleague to do anything? Everything that aims at someone does
+ * (Office Artillery included); what works in a zone around itself does not: pulses, zones,
+ * piles of thumbtacks, the rolling chair (the maker, v0.18.0).
+ */
+export function needsSight(def: TowerDef): boolean {
+  return def.role === 'damage' || def.role === 'smash';
+}
+
+/**
  * The tile your chair stands on: right behind your desk, seen from the colleagues walking up to
  * it. Path, desk, chair, in one line (the maker's rule), so they always arrive at the front.
  */
@@ -620,22 +629,27 @@ export class Game {
       peakOnFloor: 0,
     };
     this.tiles = new Uint8Array(level.size.w * level.size.h);
+    // Sight: walls and every piece of furniture (glass excepted). Towers that aim at someone
+    // cannot see through them; see needsSight().
+    const sight = new Uint8Array(level.size.w * level.size.h);
     if (level.grid) {
       // The grid decides: what you may build on, and what blocks sight.
       const g = parseGrid(level.grid, level.size.w, level.size.h);
       g.build.forEach((ok, i) => {
         if (!ok) this.tiles[i] |= TILE_BLOCKED;
       });
-      this.walls = g.sight.some((v) => v === 1) ? g.sight : null;
+      sight.set(g.sight);
       this.gates = this.gatesOnPaths(g.gates);
     } else {
-      for (const d of level.decor) this.markRect(d.rect.x, d.rect.y, d.rect.w, d.rect.h, TILE_BLOCKED);
+      for (const d of level.decor) {
+        this.markRect(d.rect.x, d.rect.y, d.rect.w, d.rect.h, TILE_BLOCKED);
+        for (let y = d.rect.y; y < d.rect.y + d.rect.h; y++) for (let x = d.rect.x; x < d.rect.x + d.rect.w; x++) if (this.inBounds(x, y)) sight[y * level.size.w + x] = 1;
+      }
     }
     // Walls block building, and sight.
-    if (level.walls && level.walls.length && !this.walls) this.walls = new Uint8Array(level.size.w * level.size.h);
     for (const r of level.walls ?? []) {
       this.markRect(r.x, r.y, r.w, r.h, TILE_BLOCKED);
-      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (this.inBounds(x, y)) this.walls![y * level.size.w + x] = 1;
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (this.inBounds(x, y)) sight[y * level.size.w + x] = 1;
     }
     this.markRect(level.desk.x, level.desk.y, 1, 1, TILE_BLOCKED);
     // Your chair stands behind the desk, in line with the walkway: nobody builds on it.
@@ -647,6 +661,11 @@ export class Game {
         if (this.paths.some((p) => p.distanceTo(c) < PATH_CLEARANCE)) this.tiles[ty * level.size.w + tx] |= TILE_PATH;
       }
     }
+    // Whatever stands on the walkway (a speed gate) never hides the people walking through it.
+    sight.forEach((v, i) => {
+      if (v && this.tiles[i] & TILE_PATH) sight[i] = 0;
+    });
+    this.walls = sight.some((v) => v === 1) ? sight : null;
   }
 
   /** Gates, as a distance along each path that walks through them. */
@@ -761,7 +780,7 @@ export class Game {
     return this.walls !== null && this.inBounds(tx, ty) && this.walls[ty * this.level.size.w + tx] === 1;
   }
 
-  /** Can a tower at a see a colleague at b, or is there a wall in between? */
+  /** Can a tower at a see a colleague at b, or is there a wall or furniture in between? */
   lineOfSight(ax: number, ay: number, bx: number, by: number): boolean {
     if (!this.walls) return true;
     const d = Math.hypot(bx - ax, by - ay);
@@ -2171,8 +2190,8 @@ export class Game {
       if (!this.visibleTo(e, seesHidden)) continue;
       const d = dist(t, e);
       if (d > range) continue;
-      // Walls: no shooting through them (Office Artillery lobs over).
-      if (this.walls && !t.def.base.global && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
+      // Walls and furniture: nothing that aims at someone sees through them, Office Artillery included.
+      if (this.walls && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
       // All the attention: towers close to a taunting colleague aim at him first.
       const taunt = e.def.taunt !== undefined && d <= e.def.taunt ? 1e6 : 0;
       cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });

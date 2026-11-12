@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.17.2 (2026-11-12)
+## Stand: v0.18.0 (2026-11-12)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,26 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Zicht (v0.18.0, besluit maker 2026-11-12)
+- Alle meubels blokkeren zicht, hoog of laag (`grid.ts` SIGHT: `# H R t w x`; zonder raster: elke
+  `decor`-rect). Glas (`g`) niet. Meubels op het looppad (poortjes) nooit. Alles zit in `walls`
+  van `Game`, dus de stoel stopt nu ook tegen meubels.
+- `needsSight(def)`: wat op iemand richt heeft zicht nodig (role `damage` en `smash`: Auto-Reply,
+  Artillery (keuze maker: ook Artillery), Quick Reply, Self-Service, Reply All, Delegation,
+  Keyboard Smash). Wat in een zone werkt niet: Headphones, Shredder, Thumbtacks, stoel.
+- Rood zoals Bloons: `Actors.showBlind` tekent vakjes van 1/4 tegel binnen het bereik die de toren
+  niet ziet (Artillery: de hele vloer), bij plaatsen en bij een geselecteerde toren. uicheck:
+  `l2-blind-spots.png`.
+- Bots: `rankSpots` telt altijd alleen gezien looppad; `spotFor('far')` zoekt de plek met het
+  meeste uitzicht (eerst > 2,5 tegel van het pad, anders overal). Dat laatste maakte Artillery in
+  L2 weer bruikbaar.
+- Balans (seeds 1 en 2, voor -> na): L1 goed spelen foutloos, verste 72% -> 62%. **L2 goed spelen
+  foutloos, maar de Chatterbox komt tot 1,5 tegel van je bureau (verste 75% -> 96%)**: de krukken
+  langs de bar verbergen het eerste stuk, de verdediging zit laat in de route, en de Chatterbox
+  legt die torens stil. L2-test meet nu in tegels (> 1); eerst koffie 100 -> 96. L3, L4, L5, L7
+  gelijk; L6 eerst koffie 43 -> 48 (1 ster, was al zo). Bij het L2-botscript staat Artillery nu
+  vroeger (na de Coffee Machine). Als de maker L2 te krap vindt: krukken weg bij de bar.
 
 ### Nieuw leveldesign (v0.17.0, besluit maker 2026-11-12)
 De maker heeft met een andere sessie alle 15 levels opnieuw ontworpen:

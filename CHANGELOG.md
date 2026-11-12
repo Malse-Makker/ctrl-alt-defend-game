@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.18.0] - 2026-11-12
+
+### Changed
+- Furniture is in the way now. Desks, tables, chairs, counters, plants, cars: nothing that aims at someone can see through them. Office Artillery included, it no longer lobs over everything. Glass is still glass.
+- What works in a zone around itself does not care: Headphones, The Shredder, Thumbtacks and the rolling chair. The chair does stop when it hits furniture.
+- When you place or select a tower, the part of its range it cannot see is red. Office Artillery shows it for the whole floor, so you can find it a spot with a view.
+
 ## [0.17.2] - 2026-11-12
 
 ### Changed

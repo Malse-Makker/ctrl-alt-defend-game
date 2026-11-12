@@ -55,8 +55,8 @@ export function rankSpots(g: Game, range: number): Spot[] {
     for (let tx = 0; tx < g.level.size.w; tx++) {
       if (g.isPathTile(tx, ty) || g.isBlockedTile(tx, ty)) continue;
       const c = { x: tx + 0.5, y: ty + 0.5 };
-      // With walls on the floor, only walkway the tower can actually see counts.
-      const cover = g.level.walls?.length ? seenCoverage(g, c, range) : g.paths.reduce((s, p) => s + p.coverage(c, range, 0.25), 0);
+      // Only walkway the tower can actually see counts: walls and furniture are in the way.
+      const cover = seenCoverage(g, c, range);
       if (cover > 0) spots.push({ tx, ty, cover });
     }
   }
@@ -164,8 +164,8 @@ const SCRIPTS: Record<number, Step[]> = {
     { place: 'shredder', spot: 'zone' },
     { up: 'autoreply', path: 1, all: true },
     { place: 'coffee', spot: 'far' },
-    { up: 'autoreply', path: 0, all: true },
     { place: 'artillery', spot: 'far' },
+    { up: 'autoreply', path: 0, all: true },
     { place: 'headphones', spot: 'cover' },
     { up: 'headphones', path: 0 },
     { up: 'headphones', path: 0 },
@@ -390,10 +390,19 @@ function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'):
       .find((p) => placeable(g, def, p.tx, p.ty));
   }
   if (kind === 'far') {
-    for (let ty = g.level.size.h - 1; ty >= 0; ty--) {
-      for (let tx = 0; tx < g.level.size.w; tx++) {
-        if (placeable(g, def, tx, ty) && g.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > 2.5) return { tx, ty, cover: 0 };
+    // Out of the way of the good close spots if the floor has any, but with a view: furniture
+    // blocks sight.
+    let best: Spot | undefined;
+    for (const away of [2.5, 0]) {
+      for (let ty = g.level.size.h - 1; ty >= 0; ty--) {
+        for (let tx = 0; tx < g.level.size.w; tx++) {
+          const c = { x: tx + 0.5, y: ty + 0.5 };
+          if (!placeable(g, def, tx, ty) || g.minPathDistance(c) <= away) continue;
+          const cover = seenCoverage(g, c, TOWERS[def].base.range);
+          if (!best || cover > best.cover) best = { tx, ty, cover };
+        }
       }
+      if (best) return best;
     }
   }
   return rankSpots(g, Math.min(TOWERS[def].base.range, 4)).find((p) => placeable(g, def, p.tx, p.ty));

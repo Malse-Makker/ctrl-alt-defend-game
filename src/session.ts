@@ -20,7 +20,7 @@ import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
 import { LEVELS } from './sim/data/levels';
 import { TOWERS, type TargetMode } from './sim/data/towers';
-import { CHAIR_DIRS, Game, TICK, type GameEvent } from './sim/game';
+import { CHAIR_DIRS, Game, needsSight, TICK, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
@@ -862,6 +862,8 @@ export class Session {
       const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
       this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty));
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
+      if (needsSight(def)) this.actors.showBlind(g, this.hover.tx + 0.5, this.hover.ty + 0.5, def.base.global ? Infinity : def.base.range);
+      else this.actors.showBlind(null);
       if (chair) {
         // The lane it would take; turn it afterwards with the arrows.
         const lane = g.chairLaneAt(this.placing, this.hover.tx, this.hover.ty);
@@ -871,6 +873,7 @@ export class Session {
       return;
     }
     this.actors.showGhost(null, 0, 0, false, 0);
+    this.actors.showBlind(null);
     const sel = this.selected !== null ? g.tower(this.selected) : undefined;
     const hov = this.hover ? g.towerAt(this.hover.tx, this.hover.ty) : undefined;
     const t = sel ?? hov;
@@ -882,6 +885,7 @@ export class Session {
       return;
     }
     this.actors.showLane(null, 0, 0, 0, 0);
+    if (t && needsSight(t.def)) this.actors.showBlind(g, t.x, t.y, g.liveStats(t).range);
     if (t && (t.def.role !== 'economy' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
     else this.actors.showRange(null, 0, 0);
   }
