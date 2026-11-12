@@ -857,7 +857,7 @@ export class Session {
 
   private updatePreview(): void {
     const g = this.game;
-    this.world.buildGrid.visible = this.placing !== null;
+    this.world.showBuildGrid(this.placing);
     if (this.placing && this.hover) {
       const def = TOWERS[this.placing];
       const check = g.canPlace(this.placing, this.hover.tx, this.hover.ty, this.me);

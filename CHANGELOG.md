@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.20.0] - 2026-11-12
+
+### New
+- The Canteen is refurnished: long tables with benches inside the spiral, a salad bar under a glass hood, and a serving counter with heat lamps along the bottom.
+- The queue for the soup is painted on the floor. Nothing stands in it, except Thumbtacks: you scatter those on the floor anyway.
+- Picking a tower to place shows the tiles that tower may use. Pick Thumbtacks in the Canteen and the queue lights up too.
+
 ## [0.19.0] - 2026-11-12
 
 ### New

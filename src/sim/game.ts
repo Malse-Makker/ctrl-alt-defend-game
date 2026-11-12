@@ -596,6 +596,8 @@ export class Game {
   private nextId = 1;
   private rng: Rng;
   private tiles: Uint8Array;
+  /** Per tile: the only tower role allowed there, or '' (the Canteen's soup queue). */
+  private only: string[] = [];
   private walls: Uint8Array | null = null;
 
   constructor(level: LevelDef, opts: GameOptions = {}) {
@@ -644,6 +646,7 @@ export class Game {
         if (!ok) this.tiles[i] |= TILE_BLOCKED;
       });
       sight.set(g.sight);
+      this.only = g.only;
       this.gates = this.gatesOnPaths(g.gates);
     } else {
       for (const d of level.decor) {
@@ -797,6 +800,17 @@ export class Game {
     return true;
   }
 
+  /** May this tower stand on this tile at all? Some tiles take only one kind (the soup queue). */
+  tileAllows(defId: string, tx: number, ty: number): boolean {
+    const role = this.only[ty * this.level.size.w + tx];
+    return !role || TOWERS[defId]?.role === role;
+  }
+
+  /** Is this tile only for some towers? */
+  isRestrictedTile(tx: number, ty: number): boolean {
+    return this.inBounds(tx, ty) && !!this.only[ty * this.level.size.w + tx];
+  }
+
   isBlockedTile(tx: number, ty: number): boolean {
     return this.inBounds(tx, ty) && (this.tiles[ty * this.level.size.w + tx] & TILE_BLOCKED) !== 0;
   }
@@ -864,6 +878,7 @@ export class Game {
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
+    if (!this.tileAllows(defId, tx, ty)) return { ok: false, reason: 'That is the queue for the soup. Only Thumbtacks go there.', cost };
     if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };

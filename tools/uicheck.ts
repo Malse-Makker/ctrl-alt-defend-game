@@ -481,11 +481,12 @@ async function level4Flow(browser: import('puppeteer-core').Browser, errors: str
       ['thumbtacks', 9, 6, 0],
       ['thumbtacks', 17, 6, 1],
       ['selfservice', 13, 5, 0],
-      ['shredder', 4, 8, 0],
-      ['autoreply', 10, 9, 0],
+      ['shredder', 3, 8, 0],
+      ['thumbtacks', 10, 9, 0],
+      ['autoreply', 8, 8, 0],
       ['autoreply', 5, 3, 0],
       ['artillery', 20, 10, 0],
-      ['quickreply', 4, 5, 0],
+      ['quickreply', 3, 5, 0],
     ];
     const out: string[] = [];
     for (const [d, x, y, p] of want) {
@@ -497,6 +498,12 @@ async function level4Flow(browser: import('puppeteer-core').Browser, errors: str
   });
   console.log(`  placed: ${placed}`);
   total += await check(page, 'l4-built', size);
+  // Thumbtacks: the soup queue lights up too; for anything else it stays dark.
+  await page.keyboard.press('7');
+  await page.mouse.move(800, 600);
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l4-queue-grid', size);
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Space');
   const ff = (stop: string) =>
     page.evaluate((what) => {

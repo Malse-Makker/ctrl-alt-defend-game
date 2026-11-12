@@ -127,6 +127,21 @@ describe('Coffee Corner', () => {
   });
 });
 
+describe('Canteen', () => {
+  const level = LEVELS[4];
+
+  it('the queue for the soup takes Thumbtacks only', () => {
+    const g = new Game(level);
+    g.coffee = 5000;
+    expect(level.grid![9][6]).toBe('n');
+    expect(g.canPlace('thumbtacks', 6, 9).ok).toBe(true);
+    expect(g.canPlace('autoreply', 6, 9).reason).toMatch(/soup/);
+    expect(g.canPlace('autoreply', 3, 3).ok).toBe(true);
+    // The queue is floor: you see across it.
+    expect(g.lineOfSight(8.5, 8.5, 8.5, 10.5)).toBe(true);
+  });
+});
+
 describe('your desk', () => {
   // The chair side of the desk model points along +z: (sin a, cos a) for a turn of a.
   const chairSide = (a: number) => ({ x: Math.round(Math.sin(a)), y: Math.round(Math.cos(a)) });
