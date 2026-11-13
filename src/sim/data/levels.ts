@@ -122,7 +122,21 @@ export interface FormHazard {
   reward: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard | FormHazard;
+/**
+ * Overheating (Server Room): the cooling fails. For a while the room is not cold (towers fire at
+ * full speed), but the racks give off smoke: towers in a cloud reach less far.
+ */
+export interface OverheatHazard {
+  type: 'overheat';
+  first: number;
+  every: number;
+  window: number;
+  clouds: number;
+  radius: number;
+  rangeMult: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard | FormHazard | OverheatHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -149,6 +163,11 @@ export interface LevelDef {
   startFocus: number;
   waves: readonly string[];
   hazard?: HazardDef;
+  /**
+   * Server Room: a closed room. Towers inside only reach colleagues inside, towers outside only
+   * those outside; towers that reach the whole floor (Office Artillery, Pomodoro Timer) anywhere.
+   */
+  closedZone?: TileRect;
   /** Town Hall: every wave comes in through all the entrances at once, one colleague each in turn. */
   splitPaths?: boolean;
   /** Hot Desks: this many empty flex desks (b) are reserved at the start of every wave. */
@@ -1305,7 +1324,87 @@ const L12: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11, 12: L12 };
+const L13: LevelDef = {
+  id: 13,
+  name: 'Server Room',
+  block: 'senior',
+  intro: 'The server room. Cold, loud, and the only door into the NOC.',
+  gimmick: 'One long, straight run through the server room. It is cold in there: towers fire at half speed. The room is closed: towers inside only reach colleagues inside, towers outside only those outside; Office Artillery and the Pomodoro Timer reach anywhere. Now and then the cooling fails. The Cleaner is back, heavier, and he is not careful with your cables.',
+  size: { w: 34, h: 9 },
+  paths: [
+    [
+      { x: -1.5, y: 4.5 },
+      { x: 32.0, y: 4.5 },
+    ],
+  ],
+  desk: { x: 32, y: 4 },
+  closedZone: { x: 6, y: 0, w: 23, h: 9 },
+  // The level design (docs/leveldesign, level 13). k: the cold room. ~: cables (you may build
+  // there). Your desk one tile in from the edge so the chair fits behind it.
+  grid: [
+    '##############################tHHH',
+    '######RRRRRRRRRRRtRRRRRRRRRRR#.HHH',
+    '.t...#kkkkkkkkkkkt~~~~kkkkkkk#....',
+    '.....#kkkkkkkkkkkkkkkkkkkkkkk#....',
+    'S====d=======================d==D.',
+    '.....#kkkkkkkkkkkkkkkkkkkkkkk#....',
+    '..tt.#kkkkkkkkkkkkkkkkkkkkkkk#.ttt',
+    '######RRRRRRRRRRRRRRRRRRRRRRR#.ttt',
+    '##############################....',
+  ],
+  walls: [
+    { x: 0, y: 0, w: 30, h: 1 },
+    { x: 0, y: 8, w: 30, h: 1 },
+    { x: 0, y: 1, w: 6, h: 1 },
+    { x: 0, y: 7, w: 6, h: 1 },
+    { x: 5, y: 2, w: 1, h: 2 },
+    { x: 5, y: 5, w: 1, h: 2 },
+    { x: 29, y: 1, w: 1, h: 3 },
+    { x: 29, y: 5, w: 1, h: 3 },
+  ],
+  decor: [
+    // The corridor: a cable reel and boxes of cables.
+    { model: 'cable_reel', rect: { x: 1, y: 2, w: 1, h: 1 } },
+    ...run('file_boxes', 2, 6, 2, 'x'),
+    // The racks, and the empty one with the new server waiting on its cart.
+    ...run('server_rack', 6, 1, 11, 'x'),
+    { model: 'file_boxes', rect: { x: 17, y: 1, w: 1, h: 1 } },
+    { model: 'server_cart', rect: { x: 17, y: 2, w: 1, h: 1 } },
+    ...run('server_rack', 18, 1, 11, 'x'),
+    ...run('server_rack', 6, 7, 23, 'x', { turn: 2 }),
+    // The NOC.
+    { model: 'plant', rect: { x: 30, y: 0, w: 1, h: 1 } },
+    { model: 'noc_wall', rect: { x: 31, y: 0, w: 3, h: 2 } },
+    ...[6, 7].flatMap((y) => run('flex_desk', 31, y, 3, 'x', y === 6 ? { turn: 2 } : {})),
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  // Grey corridor carpet; the cold room gets its white-blue floor drawn over it.
+  look: { floorA: '#6b7079', floorB: '#666b74', walkway: '#3a4a5c', edge: '#2c3846', wall: '#c9ccd1' },
+  hazard: { type: 'overheat', first: 45, every: 45, window: 12, clouds: 3, radius: 2.4, rangeMult: 0.55 },
+  bossHpMult: 1.9,
+  // Senior: the Hot Desks curve with half the Old Guards, one long straight run through the cold,
+  // and The Cleaner at 1.9x his HP (measured, see HANDOFF).
+  waves: [
+    'intern:18@0.48 + newhire:4@0.90 + chaser:6@0.20',
+    'intern:14@0.46 + newhire:5@0.85 + coldcaller:1@1.20 + chaser:6@0.18',
+    'chaser:18@0.15 + phonecaller:1@1.20 + newhire:5@0.85 + intern:8@0.45',
+    'oldguard:1@1.80 + intern:12@0.45 + coldcaller:2@1.00 + chaser:4@0.18',
+    'impersonator:4@0.80 + newhire:8@0.80 + phonecaller:2@1.00 + chaser:10@0.16',
+    'boardmember:2@1.60 + coldcaller:2@0.95 + intern:18@0.42 + chaser:12@0.14',
+    'oldguard:1@1.60 + chatterbox:2@1.60 + phonecaller:2@0.95 + requester:3@1.00 + intern:14@0.42',
+    'chaser:44@0.10 + phonecaller:3@0.90 + newhire:10@0.75',
+    'requester:5@1.00 + boardmember:2@1.50 + coldcaller:3@0.85 + impersonator:5@0.60 + chaser:20@0.12',
+    'oldguard:1@1.40 + phonecaller:3@0.85 + coldcaller:3@0.85 + intern:22@0.38',
+    'chaser:54@0.09 + newhire:12@0.65 + phonecaller:4@0.80 + chatterbox:2@1.50',
+    'oldguard:1@1.30 + requester:5@0.95 + boardmember:2@1.30 + impersonator:6@0.55 + newhire:6@0.70',
+    'boardmember:3@1.30 + phonecaller:5@0.75 + newhire:16@0.60 + chaser:40@0.09 + coldcaller:3@0.80',
+    'oldguard:2@1.20 + phonecaller:5@0.70 + requester:6@0.90 + chaser:44@0.09 + coldcaller:4@0.80',
+    'cleaner:1@2.00 + chaser:20@0.10 + newhire:8@0.70',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11, 12: L12, 13: L13 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

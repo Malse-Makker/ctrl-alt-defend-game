@@ -39,10 +39,14 @@ interface Spot {
 
 /** Buildable tiles sorted by how much walkway an Auto-Reply would cover from there. */
 function seenCoverage(g: Game, c: { x: number; y: number }, range: number): number {
+  // The Server Room is closed: a tower only reaches walkway on its own side of the door.
+  const z = g.level.closedZone;
+  const inside = (p: { x: number; y: number }) => !!z && p.x >= z.x && p.x < z.x + z.w && p.y >= z.y && p.y < z.y + z.h;
   let n = 0;
   for (const path of g.paths) {
     for (let d = 0; d <= path.length; d += 0.25) {
       const p = path.pointAt(d);
+      if (z && range < 30 && inside(p) !== inside(c)) continue;
       if (Math.hypot(p.x - c.x, p.y - c.y) <= range && g.lineOfSight(c.x, c.y, p.x, p.y)) n++;
     }
   }
@@ -524,6 +528,38 @@ SCRIPTS[12] = [
   { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'view' },
+  { up: 'pomodoro', path: 1 },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
+SCRIPTS[13] = [
+  // Server Room: one long, straight run through the cold. Towers in there fire at half speed,
+  // so more of them; Office Artillery and the Pomodoro Timer reach in from anywhere.
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'far' },
   { up: 'pomodoro', path: 1 },
   { place: 'delegation', spot: 'cover' },
   { up: 'artillery', path: 0 },

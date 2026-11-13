@@ -696,6 +696,7 @@ export class Hud {
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
     else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
     else if (g.slowWifi(t)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.wifiNote }));
+    else if (g.isCold(t.tx, t.ty)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.coldNote }));
 
     // Targeting
     if (def.role === 'chair') {

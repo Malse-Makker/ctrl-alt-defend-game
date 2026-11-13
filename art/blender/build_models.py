@@ -2989,6 +2989,83 @@ def b_one_way_mirror():
     return root
 
 
+# ---------------------------------------------------------------- level 13: Server Room
+
+def b_server_rack():
+    """One server rack, tall, front to -Y. The status lights (RackLights) are a part of their own
+    so the game can make them blink."""
+    root = empty("server_rack")
+    body = box("Body", (0.9, 0.8, 2.0), loc=(0, 0.05, 0), material=mat("#22252b", metal=0.4, rough=0.5))
+    parts = [body]
+    for i in range(8):
+        parts.append(box(f"Unit{i}", (0.8, 0.02, 0.18), loc=(0, -0.36, 0.15 + i * 0.22), material=mat("#33373f", metal=0.5, rough=0.4)))
+        parts.append(box(f"Vent{i}", (0.4, 0.025, 0.06), loc=(-0.15, -0.37, 0.2 + i * 0.22), material=mat("charcoal")))
+    ob = join("server_rack_mesh", parts)
+    parent(ob, root)
+    lights = []
+    for i in range(8):
+        for j in range(3):
+            lights.append(box(f"Led{i}{j}", (0.035, 0.02, 0.035), loc=(0.2 + j * 0.07, -0.375, 0.24 + i * 0.22), material=mat(["plant", "plant", "yellow", "blue"][(i + j) % 4], emit=3.0)))
+    parent(join("RackLights", lights), root)
+    return root
+
+
+def b_server_cart():
+    """A cart with the new server on it, waiting in front of its empty rack."""
+    root = empty("server_cart")
+    deck = box("Deck", (0.8, 0.6, 0.04), loc=(0, 0, 0.3), material=_metal())
+    shelf = box("Shelf", (0.8, 0.6, 0.03), loc=(0, 0, 0.08), material=_metal())
+    posts = [box(f"Post{i}", (0.03, 0.03, 0.75), loc=(x, y, 0.05), material=_metal()) for i, (x, y) in enumerate(((-0.38, -0.28), (0.38, -0.28), (-0.38, 0.28), (0.38, 0.28)))]
+    wheels = [cyl(f"Wheel{i}", 0.04, 0.03, loc=(x, y, 0.0), material=mat("plastic_black"), verts=10) for i, (x, y) in enumerate(((-0.35, -0.25), (0.35, -0.25), (-0.35, 0.25), (0.35, 0.25)))]
+    server = box("Server", (0.7, 0.5, 0.18), loc=(0, 0, 0.34), material=mat("#33373f", metal=0.5), bevel=0.01)
+    led = box("ServerLed", (0.04, 0.02, 0.03), loc=(0.25, -0.26, 0.45), material=mat("red", emit=2.0))
+    box2 = box("Box", (0.5, 0.4, 0.3), loc=(0, 0, 0.11), material=mat("cardboard"))
+    ob = join("server_cart_mesh", [deck, shelf, server, led, box2] + posts + wheels)
+    parent(ob, root)
+    return root
+
+
+def b_cable_reel():
+    root = empty("cable_reel")
+    parts = []
+    for i, y in enumerate((-0.2, 0.2)):
+        disc = cyl(f"Disc{i}", 0.35, 0.04, loc=(0, y, 0.35), material=mat("wood"), verts=18)
+        kit.tilt([disc], rx=math.pi / 2, pivot=(0, y, 0.35))
+        parts.append(disc)
+    core = cyl("Core", 0.25, 0.4, loc=(0, -0.2, 0.35), material=mat("orange", rough=0.6), verts=18)
+    kit.tilt([core], rx=-math.pi / 2, pivot=(0, -0.2, 0.35))
+    ob = join("cable_reel_mesh", parts + [core])
+    parent(ob, root)
+    return root
+
+
+def b_floor_cables():
+    """Cables across the floor: you can build over them, they are just in the way of your feet."""
+    root = empty("floor_cables")
+    parts = []
+    for i, (y, c, w) in enumerate(((-0.25, "blue", 0.9), (0.0, "yellow", 1.0), (0.22, "red", 0.85))):
+        parts.append(box(f"Cable{i}", (w, 0.03, 0.02), loc=(0, y, 0.0), material=mat(c, rough=0.6), rot_z=0.15 * (i - 1)))
+    ob = join("floor_cables_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_noc_wall():
+    """The monitor wall in the network operations centre, three tiles wide. Front to -Y."""
+    root = empty("noc_wall")
+    frame = box("Frame", (2.9, 0.3, 1.9), loc=(0, 0.2, 0), material=mat("#22252b"))
+    parts = [frame]
+    for r in range(2):
+        for c in range(3):
+            x = -0.95 + c * 0.95
+            z = 0.4 + r * 0.72
+            parts.append(box(f"Screen{r}{c}", (0.9, 0.04, 0.66), loc=(x, 0.03, z), material=mat(["#2f3d5c", "#1f4d3a", "#3d2f5c"][(r + c) % 3], emit=0.9)))
+            parts.append(box(f"Graph{r}{c}", (0.6, 0.045, 0.05), loc=(x, 0.02, z + 0.3), material=mat(["plant", "yellow", "teal"][(r + c) % 3], emit=1.6)))
+    ob = join("noc_wall_mesh", parts)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -3158,6 +3235,11 @@ BUILDERS = {
     "safe": b_safe,
     "complaint_box": b_complaint_box,
     "one_way_mirror": b_one_way_mirror,
+    "server_rack": b_server_rack,
+    "server_cart": b_server_cart,
+    "cable_reel": b_cable_reel,
+    "floor_cables": b_floor_cables,
+    "noc_wall": b_noc_wall,
 }
 
 

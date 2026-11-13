@@ -3,7 +3,7 @@
 // the walkway itself still comes from the path waypoints, and the furniture models from `decor`.
 
 /** Letters you may build on. Some only for certain towers (worked out per level as they arrive). */
-const BUILD = new Set(['.', 'o', 'L', 'b', 'P', '^', '*', 'k', 'f', 'a', 'p']);
+const BUILD = new Set(['.', 'o', 'L', 'b', 'P', '^', '*', 'k', 'f', 'a', 'p', '~']);
 /** Letters that block sight: walls and all furniture, tall or low (the maker, v0.18.0). Glass does not. */
 const SIGHT = new Set(['#', 'H', 'R', 't', 'w', 'x']);
 /**
@@ -33,6 +33,8 @@ export interface GridInfo {
   blinds: Uint8Array;
   /** 1 on a one-way mirror (m): you see through it from the west only (HR Room). */
   mirror: Uint8Array;
+  /** 1 in the cold (k): towers there fire slower (Server Room). */
+  cold: Uint8Array;
 }
 
 export function parseGrid(grid: readonly string[], w: number, h: number): GridInfo {
@@ -44,6 +46,7 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
   const wifi = new Uint8Array(w * h);
   const blinds = new Uint8Array(w * h);
   const mirror = new Uint8Array(w * h);
+  const cold = new Uint8Array(w * h);
   grid.forEach((row, y) => {
     if (row.length !== w) throw new Error(`Grid row ${y} has ${row.length} tiles, the floor is ${w} wide`);
     for (let x = 0; x < w; x++) {
@@ -54,11 +57,12 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
       if (c === 'f') wifi[y * w + x] = 1;
       if (c === 'B') blinds[y * w + x] = 1;
       if (c === 'm') mirror[y * w + x] = 1;
+      if (c === 'k') cold[y * w + x] = 1;
       if (SIGHT.has(c)) sight[y * w + x] = 1;
       if (c === 'G') gates.push({ x, y });
     }
   });
-  return { build, sight, gates, only, wifi, blinds, mirror };
+  return { build, sight, gates, only, wifi, blinds, mirror, cold };
 }
 
 /** Is this letter part of the walkway? (Used to check a grid against its path.) */

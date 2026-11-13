@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.28.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.29.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,22 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 13 Server Room (v0.29.0)
+- Kaart uit het ontwerp (34x9), bureau op (32, 4) (stoel). `k` koud: `COLD_RATE` 0,5 (herlaad x2)
+  via `isCold` in `liveStats`, notitie in het paneel, wit-blauwe vloer. `~` kabels: bouwbaar,
+  getekend door `World`. `closedZone` (rect): `pickTargets` laat torens binnen alleen binnen
+  richten en buiten alleen buiten, behalve `global` (Artillery, Pomodoro). Alleen voor richtende
+  torens; puls/zone/punaises houden zich niet aan de zone (mijn keuze, de muren doen het meeste).
+- Oververhitting (hazard `overheat`, eerst 45 s, elke 45 s, 12 s): niet koud, maar 3 rookwolken
+  op het pad in de ruimte (zoals L7).
+- Boss: Cleaner x1,9 (bijbel). Bots: `seenCoverage` kent de gesloten zone.
+- Modellen `server_rack` (los deel `RackLights`, knippert; flikkert bij oververhitting),
+  `server_cart`, `cable_reel`, `floor_cables`, `noc_wall`.
+- **OPEN, balans L13 (de zwaarste):** op de Hot Desks-golven verloor iedereen, ook op 55%. Met de
+  helft van de Old Guards wint goed spelen met 19 Focus en 1 ster, eerst koffie met 10 (seeds 1 en
+  2). Boss-HP (x1,0 tot x1,9) maakte geen verschil. Test eist alleen winnen. Opties: kou minder
+  streng (bijv. 30%), of bouwplekken in de gang/NOC die de ruimte wel in mogen.
 
 ### Level 12 HR Room (v0.28.0)
 - Kaart uit het ontwerp, muren uit het raster als `walls`. Bureau (14, 8) aan de gesprekstafel.

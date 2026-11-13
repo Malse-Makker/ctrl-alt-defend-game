@@ -68,6 +68,8 @@ export class World {
   /** Boardroom II: the blinds in the glass room, and how far down they are (0 up, 1 down). */
   private readonly slats: THREE.Object3D[] = [];
   private slatsDown = 0;
+  /** Server Room: the racks' status lights, blinking. */
+  private readonly rackLights: THREE.Object3D[] = [];
 
   constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
@@ -147,6 +149,7 @@ export class World {
       this.collectBeamer(obj);
       obj.traverse((o) => {
         if (o.name.startsWith('BlindSlats') && !this.slats.includes(o)) this.slats.push(o);
+        if (o.name.startsWith('RackLights') && !this.rackLights.includes(o)) this.rackLights.push(o);
       });
       const flap = obj.getObjectByName('GateFlap');
       if (flap) this.addGate(flap, obj, game);
@@ -225,6 +228,28 @@ export class World {
         if (rule === 'trap') lane.push({ x, y });
         else if (rule === 'physical') concrete.push({ x, y });
       }
+    // Server Room: the cold room is white and blue, and cables run across the floor.
+    const coldTiles: { x: number; y: number }[] = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isColdFloor(x, y)) coldTiles.push({ x, y });
+    if (coldTiles.length) {
+      const mat = new THREE.MeshStandardMaterial({ color: '#dfe9f2', roughness: 0.5 });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2), mat, coldTiles.length);
+      const m = new THREE.Matrix4();
+      coldTiles.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, 0.003, c.y + 0.5)));
+      mesh.receiveShadow = true;
+      g.add(mesh);
+    }
+    if (level.grid) {
+      level.grid.forEach((row, y) =>
+        [...row].forEach((c, x) => {
+          if (c !== '~') return;
+          const obj = assets.clone('floor_cables');
+          obj.position.set(x + 0.5, 0.01, y + 0.5);
+          this.shared.add(obj);
+          g.add(obj);
+        }),
+      );
+    }
     // The Merger: the startup's half is polished concrete.
     if (concrete.length) {
       const mat = new THREE.MeshStandardMaterial({ color: '#8f9294', roughness: 0.6 });
@@ -302,6 +327,9 @@ export class World {
     this.updateBeamer(game);
     this.updateDesks(game);
     for (const b of this.boxViews) b.obj.visible = game.isBoxes(b.x, b.y);
+    // Each rack blinks at its own pace; overheating makes them all flicker.
+    const hot = game.hazardOn && game.level.hazard?.type === 'overheat';
+    this.rackLights.forEach((l, i) => (l.visible = Math.sin(this.clock * (hot ? 18 : 3 + (i % 5)) + i * 1.7) > -0.3));
     if (this.slats.length) {
       // A rattle before the meeting (they start coming down), then all the way down.
       const want = game.blindsDown ? 1 : game.hazardWarning ? 0.3 : 0;

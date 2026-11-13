@@ -438,6 +438,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
 /** What it costs to clear a stack of moving boxes (The Merger). */
 export const BOX_COST = 40;
 
+/** In the cold server room towers fire at this share of their rate: 50% slower. */
+export const COLD_RATE = 0.5;
+
 /** On the tribune (Town Hall) towers reach this much further. */
 export const RAISED_RANGE = 1.25;
 
@@ -661,6 +664,8 @@ export class Game {
   stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
+  /** 1 in the cold (Server Room). */
+  private cold: Uint8Array | null = null;
   /** 1 on a one-way mirror (HR Room): see-through looking east, a wall looking west. */
   private mirror: Uint8Array | null = null;
   /** 1 on glass with blinds (Boardroom II). */
@@ -723,6 +728,7 @@ export class Game {
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.blinds = g.blinds.some((v) => v === 1) ? g.blinds : null;
       this.mirror = g.mirror.some((v) => v === 1) ? g.mirror : null;
+      this.cold = g.cold.some((v) => v === 1) ? g.cold : null;
       const raised = Uint8Array.from(level.grid.join(''), (c) => (c === '^' ? 1 : 0));
       this.raised = raised.some((v) => v === 1) ? raised : null;
       this.gates = this.gatesOnPaths(g.gates);
@@ -992,6 +998,8 @@ export class Game {
     const f = this.rangeFactor(t);
     if (f < 1) s.range *= f;
     if (this.slowWifi(t)) s.interval /= BAD_WIFI;
+    // The cold server room: everything in it fires at half speed, unless the cooling has failed.
+    if (this.isCold(t.tx, t.ty)) s.interval /= COLD_RATE;
     // The tribune (Town Hall): whoever sits up high sees further.
     if (this.isRaised(t.tx, t.ty) && Number.isFinite(s.range)) s.range *= RAISED_RANGE;
     // Motivational Posters nearby: the best one of each kind counts.
@@ -1046,6 +1054,23 @@ export class Game {
   /** The tribune steps (Town Hall): towers there reach RAISED_RANGE further. */
   isRaised(tx: number, ty: number): boolean {
     return this.raised !== null && this.inBounds(tx, ty) && this.raised[ty * this.level.size.w + tx] === 1;
+  }
+
+  /** Is it cold on this tile right now? Not while the cooling is down (overheating). */
+  isCold(tx: number, ty: number): boolean {
+    if (!this.cold || !this.inBounds(tx, ty) || this.cold[ty * this.level.size.w + tx] !== 1) return false;
+    return !(this.hazardOn && this.level.hazard?.type === 'overheat');
+  }
+
+  /** The cold tiles, whatever the cooling does (for the floor). */
+  isColdFloor(tx: number, ty: number): boolean {
+    return this.cold !== null && this.inBounds(tx, ty) && this.cold[ty * this.level.size.w + tx] === 1;
+  }
+
+  /** Server Room: is this point inside the closed room? */
+  private inClosedZone(p: { x: number; y: number }): boolean {
+    const z = this.level.closedZone!;
+    return p.x >= z.x && p.x < z.x + z.w && p.y >= z.y && p.y < z.y + z.h;
   }
 
   /** Is this a tile with bad wifi? */
@@ -1604,6 +1629,15 @@ export class Game {
         for (let i = 0; i < hz.clouds; i++) {
           const path = this.paths[i % this.paths.length];
           const p = path.pointAt(this.rng.range(path.length * 0.1, path.length * 0.9));
+          this.smoke.push({ x: p.x, y: p.y, r: hz.radius, mult: hz.rangeMult, life: hz.window });
+        }
+      }
+      if (hz.type === 'overheat') {
+        // The racks give off smoke over the walkway inside the room.
+        for (let i = 0; i < hz.clouds; i++) {
+          const path = this.paths[i % this.paths.length];
+          let p = path.pointAt(this.rng.range(0, path.length));
+          for (let tries = 0; tries < 8 && this.level.closedZone && !this.inClosedZone(p); tries++) p = path.pointAt(this.rng.range(0, path.length));
           this.smoke.push({ x: p.x, y: p.y, r: hz.radius, mult: hz.rangeMult, life: hz.window });
         }
       }
@@ -2648,6 +2682,8 @@ export class Game {
       if (d > range) continue;
       // Walls and furniture: nothing that aims at someone sees through them, Office Artillery included.
       if ((this.walls || this.blindsDown) && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
+      // The Server Room is closed: nothing reaches in or out, except across the whole floor.
+      if (this.level.closedZone && !t.def.base.global && this.inClosedZone(t) !== this.inClosedZone(e)) continue;
       // All the attention: towers close to a taunting colleague aim at him first.
       const taunt = e.def.taunt !== undefined && d <= e.def.taunt && this.seenBy(e, t) ? 1e6 : 0;
       cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });

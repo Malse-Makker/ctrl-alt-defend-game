@@ -173,6 +173,11 @@ export const MODEL_NAMES = [
   'safe',
   'complaint_box',
   'one_way_mirror',
+  'server_rack',
+  'server_cart',
+  'cable_reel',
+  'floor_cables',
+  'noc_wall',
 ] as const;
 
 export class Assets {

@@ -455,6 +455,11 @@ export class Session {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
           }
+        } else if (ev.kind === 'overheat') {
+          if (ev.on) {
+            sfx.play('alarm', { pitch: 1.3, gain: 0.6 });
+            this.hud?.toast(T.overheatStarts, 'warn', 3);
+          } else this.hud?.toast(T.overheatEnds, '', 2);
         } else if (ev.kind === 'form') {
           if (ev.on) {
             sfx.play('upgrade', { pitch: 0.7 });

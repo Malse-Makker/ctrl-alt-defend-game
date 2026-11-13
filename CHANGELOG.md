@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.29.0] - 2026-11-13
+
+### New
+- Level 13, Server Room: one long, straight run through the cold server room to the NOC. In the cold every tower fires at half speed. The room is closed: towers inside only reach colleagues inside, towers outside only those outside; Office Artillery and the Pomodoro Timer reach anywhere. Opens once you finish HR Room.
+- Overheating: now and then the cooling fails. The room is warm for a while, but the racks start smoking.
+- The Cleaner is back for the end of the Server Room, and heavier.
+
 ## [0.28.0] - 2026-11-13
 
 ### New

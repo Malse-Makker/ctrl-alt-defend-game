@@ -287,3 +287,24 @@ describe('Level 12 difficulty (HR Room)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 13 difficulty (Server Room)', () => {
+  const level = LEVELS[13];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.29.0): a five-tile warm corridor, then a closed, cold room (half speed)
+  // with towers that only reach their own side. Measured, seeds 1 and 2: on the Hot Desks waves
+  // everyone lost, even at 55%; with half the Old Guards good play wins with 19 Focus and 1 star,
+  // Coffee first with 10. The Cleaner's HP (x1.0 to x1.9) made no difference: Old Guards and the
+  // boss get through because too little hits them in the cold.
+  it('good play wins', () => {
+    expect(runBot(level, solidBot).won).toBe(true);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});
