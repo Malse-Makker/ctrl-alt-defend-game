@@ -228,6 +228,8 @@ export const UI_TEXT = {
   aimHelp: 'Click any tile on the floor. The tomatoes land there.',
   aimNow: 'Click the tile to lob at. Esc to cancel.',
   alarmStarts: 'Fire alarm. Everyone stops, then makes a run for the front.',
+  blindsWarn: 'The blinds rattle. The board is about to meet: nobody will see through the glass.',
+  blindsUp: 'The blinds are up again.',
   projWarn: 'The projector fan spins up. Three seconds: place what you want to place.',
   projStarts: 'The projector is not working. Nobody can build until someone fixes it.',
   projFixed: 'The projector works. +{n} Coffee for not calling IT.',

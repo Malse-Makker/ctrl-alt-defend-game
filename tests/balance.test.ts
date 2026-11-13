@@ -220,3 +220,25 @@ describe('Level 9 difficulty (Town Hall)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 10 difficulty (Boardroom II)', () => {
+  const level = LEVELS[10];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.26.0): the glass room stands right by the walkway and the blinds cut it
+  // off every half minute. Measured, seeds 1 and 2: on the Boardroom's own waves good play won with
+  // 49 and 83 Focus; at 85% of the count (what it uses now) 70 Focus and 2 stars, and 100 and 3.
+  // With medior-style 15 waves it lost. Coffee first wins with 100.
+  it('good play wins with at least two stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

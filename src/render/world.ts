@@ -63,6 +63,9 @@ export class World {
   private readonly reservedTint: THREE.Mesh[] = [];
   private phoneObj: THREE.Object3D | null = null;
   private assetsRef: Assets;
+  /** Boardroom II: the blinds in the glass room, and how far down they are (0 up, 1 down). */
+  private readonly slats: THREE.Object3D[] = [];
+  private slatsDown = 0;
 
   constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
@@ -140,6 +143,9 @@ export class World {
       this.shared.add(obj);
       g.add(obj);
       this.collectBeamer(obj);
+      obj.traverse((o) => {
+        if (o.name.startsWith('BlindSlats') && !this.slats.includes(o)) this.slats.push(o);
+      });
       const flap = obj.getObjectByName('GateFlap');
       if (flap) this.addGate(flap, obj, game);
     }
@@ -270,6 +276,15 @@ export class World {
     this.clock += dt;
     this.updateBeamer(game);
     this.updateDesks(game);
+    if (this.slats.length) {
+      // A rattle before the meeting (they start coming down), then all the way down.
+      const want = game.blindsDown ? 1 : game.hazardWarning ? 0.3 : 0;
+      this.slatsDown += (want - this.slatsDown) * Math.min(1, dt * 4);
+      for (const s of this.slats) {
+        s.visible = this.slatsDown > 0.02;
+        s.scale.z = Math.max(0.02, this.slatsDown);
+      }
+    }
     for (const gv of this.gates) {
       const through = game.enemies.some((e) => e.alive && !(e.gateHold && e.gateHold > 0) && Math.hypot(e.x - gv.x, e.y - gv.y) < 0.75);
       gv.open += ((through ? 1 : 0) - gv.open) * Math.min(1, dt * 10);

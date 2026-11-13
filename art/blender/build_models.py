@@ -2830,6 +2830,25 @@ def b_stage_screen():
     parent(ob, root)
     return root
 
+# ---------------------------------------------------------------- level 10: Boardroom II
+
+def b_glass_blinds():
+    """One tile of the glass room's wall, along X. The blinds (BlindSlats) are a part of their own,
+    hung from the top: the game lets them down while the board meets."""
+    root = empty("glass_blinds")
+    post = box("Post", (0.05, 0.08, 1.5), loc=(-0.475, 0, 0), material=_metal())
+    rail = box("Rail", (1.0, 0.08, 0.05), loc=(0, 0, 1.5), material=_metal())
+    sill = box("Sill", (1.0, 0.08, 0.04), loc=(0, 0, 0), material=_metal())
+    glass = box("Glass", (0.95, 0.03, 1.46), loc=(0, 0, 0.04), material=_glass(0.15))
+    ob = join("glass_blinds_mesh", [post, rail, sill, glass])
+    parent(ob, root)
+    slats = [box(f"Slat{i}", (0.94, 0.05, 0.05), loc=(0, -0.05, 1.42 - i * 0.07), material=mat("#d9d4ca", rough=0.6)) for i in range(20)]
+    bl = join("BlindSlats", slats)
+    set_origin(bl, (0, -0.05, 1.47))
+    parent(bl, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2988,6 +3007,7 @@ BUILDERS = {
     "control_desk": b_control_desk,
     "tv_camera": b_tv_camera,
     "stage_screen": b_stage_screen,
+    "glass_blinds": b_glass_blinds,
 }
 
 

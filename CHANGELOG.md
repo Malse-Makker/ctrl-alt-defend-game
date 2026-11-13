@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.26.0] - 2026-11-13
+
+### New
+- Level 10, Boardroom II: the same boardroom, but the board had a glass room built round the table. Every half minute the blinds come down for ten seconds, and nobody sees through the glass, either way. You hear them rattle two seconds before. Your Line Manager wants another word, a longer one. Opens once you finish Town Hall.
+
+### Fixed
+- A Motivational Poster can stand anywhere now. It used to say it was too far from the walkway, but it only needs towers near it.
+- On a floor with blinds and no walls, towers no longer shot through closed blinds.
+
 ## [0.25.0] - 2026-11-13
 
 ### New

@@ -653,6 +653,8 @@ export class Game {
   stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
+  /** 1 on glass with blinds (Boardroom II). */
+  private blinds: Uint8Array | null = null;
   /** 1 on a tribune step (Town Hall). */
   private raised: Uint8Array | null = null;
   /** 1 where the wifi is bad (Work From Home, the bedroom). */
@@ -709,6 +711,7 @@ export class Game {
       level.grid.forEach((row, y) => [...row].forEach((c, x) => c === 'b' && this.flex.push({ x, y })));
       this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
+      this.blinds = g.blinds.some((v) => v === 1) ? g.blinds : null;
       const raised = Uint8Array.from(level.grid.join(''), (c) => (c === '^' ? 1 : 0));
       this.raised = raised.some((v) => v === 1) ? raised : null;
       this.gates = this.gatesOnPaths(g.gates);
@@ -854,6 +857,14 @@ export class Game {
 
   /** Can a tower at a see a colleague at b, or is there a wall or furniture in between? */
   lineOfSight(ax: number, ay: number, bx: number, by: number): boolean {
+    if (this.blindsDown) {
+      const d = Math.hypot(bx - ax, by - ay);
+      const steps = Math.ceil(d / 0.2);
+      for (let i = 1; i < steps; i++) {
+        const k = i / steps;
+        if (this.isBlinds(Math.floor(ax + (bx - ax) * k), Math.floor(ay + (by - ay) * k))) return false;
+      }
+    }
     if (!this.walls) return true;
     const d = Math.hypot(bx - ax, by - ay);
     const steps = Math.ceil(d / 0.2);
@@ -954,6 +965,15 @@ export class Game {
     return a;
   }
 
+  /** Boardroom II: the blinds are down, and nobody sees through the glass room. */
+  get blindsDown(): boolean {
+    return this.hazardOn && this.level.hazard?.type === 'blinds';
+  }
+
+  isBlinds(tx: number, ty: number): boolean {
+    return this.blinds !== null && this.inBounds(tx, ty) && this.blinds[ty * this.level.size.w + tx] === 1;
+  }
+
   /** The tribune steps (Town Hall): towers there reach RAISED_RANGE further. */
   isRaised(tx: number, ty: number): boolean {
     return this.raised !== null && this.inBounds(tx, ty) && this.raised[ty * this.level.size.w + tx] === 1;
@@ -998,7 +1018,8 @@ export class Game {
     if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
-    if (def.role !== 'economy' && !def.base.global) {
+    // Coffee Machines and Motivational Posters do not need to reach the walkway.
+    if (def.role !== 'economy' && def.role !== 'support' && !def.base.global) {
       const reach = def.base.range - 0.2;
       if (this.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > reach) {
         return { ok: false, reason: 'Too far from the walkway to reach anyone.', cost };
@@ -1420,7 +1441,9 @@ export class Game {
    * the fan spins up, NO SIGNAL. Long enough to place one more thing.
    */
   get hazardWarning(): boolean {
-    return this.level.hazard?.type === 'projector' && !this.hazardOn && Number.isFinite(this.hazardNext) && this.time >= this.hazardNext - HAZARD_WARN;
+    const hz = this.level.hazard;
+    const warn = hz?.type === 'projector' ? HAZARD_WARN : hz?.type === 'blinds' ? hz.warn : 0;
+    return warn > 0 && !this.hazardOn && Number.isFinite(this.hazardNext) && this.time >= this.hazardNext - warn;
   }
 
   /** Is the mini-game open for this player (and so blocking them)? */
@@ -2527,7 +2550,7 @@ export class Game {
       const d = dist(t, e);
       if (d > range) continue;
       // Walls and furniture: nothing that aims at someone sees through them, Office Artillery included.
-      if (this.walls && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
+      if ((this.walls || this.blindsDown) && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
       // All the attention: towers close to a taunting colleague aim at him first.
       const taunt = e.def.taunt !== undefined && d <= e.def.taunt ? 1e6 : 0;
       cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });

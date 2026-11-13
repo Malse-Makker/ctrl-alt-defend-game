@@ -453,6 +453,8 @@ export class Session {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
           }
+        } else if (ev.kind === 'blinds') {
+          if (!ev.on) this.hud?.toast(T.blindsUp, '', 2);
         } else if (ev.kind === 'firealarm') {
           if (ev.on) {
             sfx.play('alarm');
@@ -520,8 +522,13 @@ export class Session {
         sfx.play('splat', { gain: 0.7 });
         break;
       case 'hazardWarn':
-        sfx.play('projector');
-        this.hud?.toast(T.projWarn, 'warn', 3);
+        if (ev.kind === 'blinds') {
+          sfx.play('blinds');
+          this.hud?.toast(T.blindsWarn, 'warn', 3);
+        } else {
+          sfx.play('projector');
+          this.hud?.toast(T.projWarn, 'warn', 3);
+        }
         break;
       case 'hazardSolved':
         {

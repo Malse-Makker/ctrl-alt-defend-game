@@ -33,3 +33,4 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | tick | een Pomodoro Timer lanceert een tomaat | preset `click`, profiel `mechanical-click`, 1900 Hz, herhaling 70 ms (tikken) |
 | splat | een tomaat landt | preset `hit`, profiel `punchy-impact`, 220 Hz omlaag, veel ruis, crackle |
 | alarm | het brandalarm gaat af (Town Hall) | preset `alarm`, profiel `punchy-impact`, 880 Hz blokgolf, herhaling 120 ms, toon omlaag, 1,4 s |
+| blinds | de jaloezieën ratelen, 2 s voor ze dichtgaan (Boardroom II) | preset `reload`, profiel `mechanical-click`, 700 Hz omlaag, veel ruis, herhaling 35 ms (lamellen) |

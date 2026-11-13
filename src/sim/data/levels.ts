@@ -103,7 +103,17 @@ export interface FireAlarmHazard {
   haste: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard;
+/** The blinds (Boardroom II): the glass room around the table goes dark while the board meets. */
+export interface BlindsHazard {
+  type: 'blinds';
+  first: number;
+  every: number;
+  /** Seconds the blinds stay down, and the seconds of warning (the rattle) before they come down. */
+  window: number;
+  warn: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -1010,7 +1020,106 @@ const L9: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9 };
+const L10: LevelDef = {
+  id: 10,
+  name: 'Boardroom II',
+  block: 'medior',
+  intro: 'The same boardroom. The board had a glass room built round the table, with blinds for when it gets serious.',
+  gimmick: 'The loop from the Boardroom, with a glass room round the table. Every half minute the blinds come down for ten seconds: nobody sees through the glass, either way. Your Line Manager wants another word, a longer one.',
+  size: { w: 21, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 9.5 },
+      { x: 3.5, y: 9.5 },
+      { x: 3.5, y: 1.5 },
+      { x: 17.5, y: 1.5 },
+      { x: 17.5, y: 9.5 },
+      { x: 10.5, y: 9.5 },
+      { x: 10.5, y: 10.0 },
+    ],
+  ],
+  desk: { x: 10, y: 10 },
+  // The level design (docs/leveldesign, level 10): level 5 plus the glass room (B), with a door
+  // at the bottom. Your desk one tile up from the edge, as in level 5.
+  grid: [
+    't.......HHHHH.ttt..HH',
+    '...===============.HH',
+    '...=BBBBBBBBBBBBB=.HH',
+    't..=BH.........HB=...',
+    't..=B.ttttttttt.B=H..',
+    't..=B.ttttttttt.B=.tt',
+    't..=B.ttttttttt.B=.tt',
+    'H..=B...........B=...',
+    '...=BBBBBB.BBBBBB=...',
+    'S===......========...',
+    '..........D.......H..',
+    't...tttt.....HHHH...t',
+  ],
+  decor: [
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'speaker', rect: { x: 8, y: 0, w: 1, h: 1 } },
+    { model: 'projector_screen', rect: { x: 9, y: 0, w: 3, h: 1 } },
+    { model: 'speaker', rect: { x: 12, y: 0, w: 1, h: 1 } },
+    { model: 'sideboard', rect: { x: 14, y: 0, w: 2, h: 1 } },
+    { model: 'plant', rect: { x: 16, y: 0, w: 1, h: 1 } },
+    ...run('bookshelf', 19, 0, 3, 'y', { turn: 1 }),
+    ...run('bookshelf', 20, 0, 3, 'y', { turn: 1 }),
+    { model: 'sideboard', rect: { x: 0, y: 3, w: 1, h: 2 }, turn: 1 },
+    { model: 'sideboard', rect: { x: 0, y: 5, w: 1, h: 2 }, turn: 1 },
+    { model: 'trophy_cabinet', rect: { x: 0, y: 7, w: 1, h: 1 }, turn: 1 },
+    { model: 'floor_lamp', rect: { x: 5, y: 3, w: 1, h: 1 } },
+    { model: 'floor_lamp', rect: { x: 15, y: 3, w: 1, h: 1 } },
+    { model: 'boardroom_table', rect: { x: 6, y: 4, w: 9, h: 3 } },
+    // The glass room, blinds and all.
+    ...run('glass_blinds', 4, 2, 13, 'x'),
+    ...run('glass_blinds', 4, 8, 6, 'x'),
+    ...run('glass_blinds', 11, 8, 6, 'x'),
+    ...run('glass_blinds', 4, 3, 5, 'y', { turn: 1 }),
+    ...run('glass_blinds', 16, 3, 5, 'y', { turn: 1 }),
+    { model: 'sculpture', rect: { x: 18, y: 4, w: 1, h: 1 } },
+    ...run('window_bar', 19, 5, 2, 'y', { turn: 1 }),
+    ...run('bar_stool', 20, 5, 2, 'y'),
+    { model: 'floor_lamp', rect: { x: 18, y: 10, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
+    { model: 'waiting_bench', rect: { x: 4, y: 11, w: 3, h: 1 } },
+    { model: 'plant', rect: { x: 7, y: 11, w: 1, h: 1 } },
+    ...run('trophy_cabinet', 13, 11, 4, 'x'),
+    { model: 'plant', rect: { x: 20, y: 11, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  look: { floorA: '#6b5644', floorB: '#634f3e', walkway: '#8f3b33', edge: '#6d2b25', wall: '#e7e1d5' },
+  hazard: { type: 'blinds', first: 30, every: 20, window: 10, warn: 2 },
+  bossHpMult: 1.4,
+  // The medior finale: the Boardroom's own 22 waves at 85% of the count, its boss 1.4x heavier. The glass room
+  // right by the walkway and the blinds make the same room a lot harder (measured, see HANDOFF).
+  waves: [
+    'intern:12@0.65 + newhire:3@1.10',
+    'intern:10@0.60 + newhire:3@1.00 + chaser:5@0.25',
+    'chaser:13@0.20 + intern:9@0.55 + newhire:2@1.00',
+    'impersonator:3@1.40 + intern:9@0.60 + newhire:3@1.00 + chaser:2@0.25',
+    'oldguard:1@2.00 + intern:9@0.60 + chaser:5@0.20',
+    'chatterbox:1@2.00 + intern:10@0.55 + newhire:4@0.95 + chaser:5@0.20',
+    'boardmember:1@2.00 + intern:10@0.50 + newhire:4@0.95 + chaser:3@0.20',
+    'oldguard:1@2.00 + chaser:17@0.14 + impersonator:3@0.90',
+    'chaser:26@0.12 + newhire:6@0.90 + intern:5@0.50',
+    'chatterbox:2@1.80 + intern:12@0.50 + oldguard:1@2.00 + newhire:2@0.90 + chaser:4@0.15',
+    'chaser:29@0.11 + requester:3@1.40 + boardmember:1@2.00 + intern:2@0.50',
+    'oldguard:2@1.80 + intern:14@0.48 + chaser:5@0.20 + impersonator:3@0.80',
+    'chaser:27@0.11 + newhire:7@0.85 + impersonator:4@0.70 + boardmember:1@2.00',
+    'intern:15@0.45 + oldguard:2@1.70 + requester:3@1.30 + chatterbox:1@1.80',
+    'chaser:39@0.10 + newhire:9@0.80 + impersonator:4@0.70 + boardmember:1@2.00',
+    'oldguard:2@1.60 + requester:3@1.20 + intern:17@0.42 + chatterbox:1@1.80 + newhire:3@0.80',
+    'impersonator:9@0.55 + chaser:31@0.10 + newhire:10@0.75 + boardmember:2@1.80',
+    'oldguard:3@1.50 + chaser:20@0.10 + requester:3@1.20 + chatterbox:2@1.60 + newhire:2@0.80',
+    'intern:20@0.40 + newhire:15@0.70 + impersonator:7@0.60 + chaser:20@0.11 + boardmember:1@1.80',
+    'chaser:41@0.09 + oldguard:3@1.40 + requester:4@1.10 + boardmember:2@1.60',
+    'oldguard:3@1.30 + impersonator:9@0.50 + newhire:7@0.70 + chaser:10@0.10 + chatterbox:2@1.50 + boardmember:1@1.60',
+    'linemanager:1@2.00 + newhire:5@0.80',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

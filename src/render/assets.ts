@@ -162,6 +162,7 @@ export const MODEL_NAMES = [
   'control_desk',
   'tv_camera',
   'stage_screen',
+  'glass_blinds',
 ] as const;
 
 export class Assets {

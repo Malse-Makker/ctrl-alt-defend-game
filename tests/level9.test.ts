@@ -24,6 +24,12 @@ describe('Motivational Poster', () => {
     expect(far.rateBuff).toBe(1);
   });
 
+  it('can stand anywhere: it needs towers near it, not the walkway', () => {
+    const g = game({ size: { w: 21, h: 10 } });
+    expect(g.canPlace('poster', 8, 9).ok).toBe(true);
+    expect(g.canPlace('autoreply', 8, 9).reason).toMatch(/Too far/);
+  });
+
   it('FRAMED PRINT makes them hit harder and, at tier 3, through shields', () => {
     const g = game();
     const a = g.place('autoreply', 8, 1).tower!;

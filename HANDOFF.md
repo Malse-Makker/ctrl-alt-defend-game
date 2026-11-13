@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.25.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.26.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,23 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 10 Boardroom II (v0.26.0)
+- Kaart = L5 (pad, bureau op (10, 10)) plus de glazen kamer `B` met deur onderaan, kunstwerk
+  (`sculpture`) en bar rechts. `B`: doorzichtig, maar tijdens hazard `blinds` (eerst 30 s, dan elke
+  20 s na het opgaan, 10 s dicht = om de 30 s, 2 s waarschuwing met geluid `blinds`) blokkeert het
+  zicht (`blindsDown`, `isBlinds`, in `lineOfSight`). Model `glass_blinds` met los deel
+  `BlindSlats` dat de render laat zakken (deels tijdens de waarschuwing).
+- Boss: Line Manager x1,4 (bijbel).
+- **Fout gevonden en opgelost:** `pickTargets` keek alleen naar zicht als er muren waren; op een
+  kaart met alleen jaloezieën schoten torens erdoorheen. En de Poster mocht niet ver van het pad
+  staan (de "too far"-regel gold voor alles behalve koffie); nu ook niet voor `support`. Tests.
+- **OPEN, balans L10 (voor de maker):** de glazen wand staat pal langs het pad, dus binnen bouw je
+  altijd 2 tegels van het pad, en om de 30 s staan binnen en buiten los. Gemeten (seeds 1 en 2):
+  met 15 medior-golven verloor goed spelen (ook met L8-golven en met L5-golven gespreid over 15);
+  met de 22 golven van L5 won goed spelen met 49/83. Nu: de 22 L5-golven x0,85 (boss niet):
+  goed spelen 70 Focus/2 sterren en 100/3; eerst koffie 100/3. Test eist winnen met >= 2 sterren.
+  Daarmee heeft L10 22 golven (medior is verder 15). Optie: de glazen kamer een tegel naar binnen.
 
 ### Level 9 Town Hall (v0.25.0)
 - Kaart uit het ontwerp, twee ingangen (`level.splitPaths`: binnen een golf om en om, zodat beide
