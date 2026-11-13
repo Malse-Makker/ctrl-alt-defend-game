@@ -32,6 +32,7 @@ import { projectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
 import { briefingCard, briefingHasNews } from './ui/briefing';
 import { briefingFor } from './sim/briefing';
+import { leakHint } from './ui/badges';
 
 export interface SessionHost {
   view: View;
@@ -57,6 +58,7 @@ export interface SessionOptions {
 const MAX_TICKS_PER_FRAME = 60;
 /** The server sends this many snapshots a second; positions are smoothed in between. */
 const SNAP_INTERVAL = 0.1;
+const BOUNCE_POPUPS = 3;
 
 export class Session {
   readonly game: Game;
@@ -81,6 +83,10 @@ export class Session {
   private cardHold = false;
   /** Colleagues whose card this level already showed. */
   private readonly cardsShown = new Set<string>();
+  /** "BOUNCED OFF" popups per colleague: the first few say it, after that the bar says enough. */
+  private readonly bounces = new Map<number, number>();
+  /** Colleagues who already got the "nothing on your desk is made for him" hint this round. */
+  private readonly leakHinted = new Set<string>();
   private selected: number | null = null;
   private placing: string | null = null;
   /** A Pomodoro Timer waiting for the next floor click to pick its tile. */
@@ -220,6 +226,7 @@ export class Session {
     const dt = Math.min(realDt, 0.1);
     const g = this.game;
     const running = g.phase === 'running';
+    this.actors.labels = this.host.save.settings.labels;
     if (this.mp) {
       // Remote: nothing to simulate, just smooth between the last two snapshots.
       this.sinceSnap += dt;
@@ -364,7 +371,11 @@ export class Session {
     switch (ev.t) {
       case 'shot':
         sfx.play(ev.kind === 'reply' && g.tower(ev.towerId)?.defId === 'artillery' ? 'staple' : 'shot');
-        if (ev.result === 'blocked') this.popups.spawn('BLOCKED', ev.tx, ev.ty, 1.1, 'warn', { delay: ev.travel });
+        if (ev.result === 'blocked') {
+          const n = this.bounces.get(ev.enemyId) ?? 0;
+          this.bounces.set(ev.enemyId, n + 1);
+          if (n < BOUNCE_POPUPS) this.popups.spawn(T.bounced, ev.tx, ev.ty, 1.1, 'warn', { delay: ev.travel });
+        }
         else if (ev.result === 'immune') this.popups.spawn('IMMUNE', ev.tx, ev.ty, 1.1, 'info', { delay: ev.travel });
         else if (st.damageNumbers && this.speed <= 2) this.popups.spawn(ev.damage >= 10 ? ev.damage.toFixed(0) : ev.damage.toFixed(1), ev.tx, ev.ty, 1.0, 'dmg', { delay: ev.travel, life: 0.6 });
         break;
@@ -381,6 +392,11 @@ export class Session {
         this.hud?.hurt();
         const d = this.world.deskPos;
         this.popups.spawn(`-${ev.focus} ${T.focus}`, d.x, d.z, 1.5, 'focus', { life: 1.3 });
+        const hint = leakHint(g, ev.type, this.leakHinted, st.tips);
+        if (hint) {
+          this.leakHinted.add(ev.type);
+          this.hud?.hint(hint, 9);
+        }
         break;
       }
       case 'coffee': {

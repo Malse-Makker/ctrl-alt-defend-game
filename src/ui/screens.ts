@@ -241,6 +241,7 @@ function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLEl
     slider(T.settingsAmbience, st.ambience, (v) => (st.ambience = v)),
     check(T.settingsDamageNumbers, st.damageNumbers, (v) => (st.damageNumbers = v)),
     check(T.settingsShareStats, st.shareStats, (v) => (st.shareStats = v), T.settingsShareStatsHelp),
+    h('div', { title: T.settingsLabelsHelp }, check(T.settingsLabels, st.labels, (v) => (st.labels = v))),
     tipsBox,
     h('div', { class: 'row-buttons' }, resetTipsBtn, reset),
     status,

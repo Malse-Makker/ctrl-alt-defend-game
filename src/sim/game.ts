@@ -129,6 +129,12 @@ export interface Tower {
   quiet: 'chat' | 'cry' | 'net' | 'phone' | 'audit' | null;
   /** Seconds left of a crying fit it has to sit through. */
   hushed: number;
+  /** Why it hits nothing while colleagues are in range: it may not, cannot see them, or something
+   * is in the way. Set after IDLE_AFTER seconds, so a passing moment does not flash an icon. */
+  idle: IdleReason | null;
+  /** The colleague it is idle about (his type), for the panel text. */
+  idleWho: string | null;
+  idleTime: number;
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
   rateBuff: number;
   pulseTimer: number;
@@ -254,6 +260,10 @@ export interface LiveTowerStats {
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
+export type IdleReason = 'immune' | 'hidden' | 'sight';
+const IDLE_CODES: (IdleReason | null)[] = [null, 'immune', 'hidden', 'sight'];
+/** Seconds a tower has to sit next to colleagues it cannot hit before it says so. */
+export const IDLE_AFTER = 2;
 
 export type GameEvent =
   | { t: 'spawn'; enemyId: number }
@@ -365,6 +375,8 @@ export interface TowerSnap {
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
+  /** Why it hits nothing: [1 immune / 2 hidden / 3 no line of sight, colleague type index]. */
+  idl?: [number, number];
   /** Office chair: direction, how far out, which way rolling. */
   dir: number;
   roll: number;
@@ -1186,6 +1198,9 @@ export class Game {
       silenced: false,
       quiet: null,
       hushed: 0,
+      idle: null,
+      idleWho: null,
+      idleTime: 0,
       rateBuff: 1,
       pulseTimer: 0,
       rampTarget: 0,
@@ -1391,6 +1406,7 @@ export class Game {
         coffee: r3(t.stats.coffee),
         sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : t.quiet === 'phone' ? 4 : t.quiet === 'audit' ? 5 : 1,
         mop: t.mopped > 0 ? 1 : 0,
+        ...(t.idle ? { idl: [IDLE_CODES.indexOf(t.idle), COLLEAGUE_IDS.indexOf(t.idleWho ?? '')] as [number, number] } : {}),
         dir: t.dir,
         roll: r3(t.roll),
         rl: t.rolling,
@@ -1472,6 +1488,9 @@ export class Game {
         silenced: false,
         quiet: null,
         hushed: 0,
+        idle: null,
+        idleWho: null,
+        idleTime: 0,
         rateBuff: 1,
         pulseTimer: 0,
         rampTarget: 0,
@@ -1500,6 +1519,8 @@ export class Game {
       t.silenced = ts.sil > 0;
       t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 4 ? 'phone' : ts.sil === 5 ? 'audit' : ts.sil === 1 ? 'chat' : null;
       t.mopped = ts.mop === 1 ? 1 : 0;
+      t.idle = ts.idl ? (IDLE_CODES[ts.idl[0]] ?? null) : null;
+      t.idleWho = ts.idl ? (COLLEAGUE_IDS[ts.idl[1]] ?? null) : null;
       t.dir = ts.dir ?? 0;
       t.roll = ts.roll ?? 0;
       t.rolling = ts.rl ?? 0;
@@ -2156,7 +2177,10 @@ export class Game {
         }
         continue;
       }
-      if (t.silenced) continue;
+      if (t.silenced) {
+        this.clearIdle(t);
+        continue;
+      }
       if (t.def.role === 'pulse') {
         this.updatePulse(t, s, dt);
         continue;
@@ -2189,8 +2213,10 @@ export class Game {
       const targets = this.pickTargets(t, s.range, s.targets, s.seesHidden);
       if (targets.length === 0) {
         t.cooldown = 0;
+        this.noteIdle(t, this.blockedBy(t, s.range, s.seesHidden), dt);
         continue;
       }
+      this.clearIdle(t);
       if (s.rampMax > 0) {
         // Quick Reply: the build-up belongs to the first target; switching costs most of it.
         const first = targets[0];
@@ -2649,6 +2675,10 @@ export class Game {
     const inside = this.enemies.filter(
       (e) => e.alive && this.onFloor(e) && !e.def.zoneProof && e.def.immune !== t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
     );
+    if (inside.length === 0) {
+      const near = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.immune === t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range);
+      this.noteIdle(t, near ? { reason: 'immune', who: near.type } : null, dt);
+    } else this.clearIdle(t);
     if (inside.length > 0) {
       const each = s.unshared ? s.dot : s.dot / inside.length;
       for (const e of inside) {
@@ -2727,6 +2757,39 @@ export class Game {
 
   private visibleTo(e: Enemy, seesHidden: boolean): boolean {
     return this.onFloor(e) && (!e.def.invisible || e.revealed || seesHidden);
+  }
+
+  /**
+   * Why an aiming tower found nothing: the colleagues in range it skipped, the strongest reason
+   * first. Null when there simply is nobody in range.
+   */
+  blockedBy(t: Tower, range: number, seesHidden: boolean): { reason: IdleReason; who: string } | null {
+    let best: { reason: IdleReason; who: string } | null = null;
+    const rank = { immune: 3, hidden: 2, sight: 1 };
+    for (const e of this.enemies) {
+      if (!e.alive || !this.onFloor(e) || dist(t, e) > range) continue;
+      let reason: IdleReason;
+      if (t.def.damageClass && e.def.immune === t.def.damageClass) reason = 'immune';
+      else if (!this.visibleTo(e, seesHidden)) reason = 'hidden';
+      else reason = 'sight';
+      if (!best || rank[reason] > rank[best.reason]) best = { reason, who: e.type };
+    }
+    return best;
+  }
+
+  private noteIdle(t: Tower, why: { reason: IdleReason; who: string } | null, dt: number): void {
+    if (!why) return this.clearIdle(t);
+    t.idleTime += dt;
+    if (t.idleTime + 1e-9 >= IDLE_AFTER) {
+      t.idle = why.reason;
+      t.idleWho = why.who;
+    }
+  }
+
+  private clearIdle(t: Tower): void {
+    t.idle = null;
+    t.idleWho = null;
+    t.idleTime = 0;
   }
 
   /** Valid targets in range, best first according to the tower's targeting mode. */

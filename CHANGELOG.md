@@ -3,6 +3,19 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.34.0] - 2026-11-14
+
+### New
+- Small icons over colleagues who shrug something off: a crossed-out hand (PHYSICAL does nothing), a crossed-out laptop (DIGITAL does nothing), a box with "10" (small hits bounce off), a crossed-out eye (hidden) and an exclamation mark (pulls the attention of towers nearby). They can be switched off in Settings.
+- A tower that sits next to colleagues it cannot hit says so: a grey icon over it, and a line in its panel saying who and why ("Cannot touch The Board Member", "Cannot see The Impersonator", "Something is in the way").
+- Every reason a tower is quiet has its own icon now: a Chatterbox, a crying Baby, no internet, stuck on the phone, called in by HR, a mopped floor.
+- The Chatterbox shows his circle: towers inside it stop working while he talks.
+- If a colleague with a rule of his own reaches your desk and nothing on the floor answers him, a hint says what would. Once per colleague per round, and not when you are already losing.
+- DIGITAL towers stand on a blue ring, PHYSICAL towers on an orange one, the same colours as in the shop.
+
+### Changed
+- "BLOCKED" is now "BOUNCED OFF", and only the first few hits on each colleague say it.
+
 ## [0.33.0] - 2026-11-13
 
 ### New

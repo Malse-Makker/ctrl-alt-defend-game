@@ -1384,6 +1384,10 @@ button:disabled {
   color: var(--bad);
 }
 
+.status.warn {
+  color: var(--warn);
+}
+
 /* Popups over the 3D scene */
 .popup {
   position: absolute;

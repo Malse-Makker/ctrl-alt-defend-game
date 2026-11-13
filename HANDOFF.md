@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.33.0 (2026-11-13), nog niet live (live: 0.24.0); alle 15 levels staan erin; review stap 1-3 klaar
+## Stand: v0.34.0 (2026-11-14), live; alle 15 levels staan erin; review stap 1-4 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -51,9 +51,20 @@ De review staat lokaal in `/home/mick/projecten/CTRL-ALT-DEFEND/docs/review/TORE
 13. Eerst tier-stippen uit de code, daarna voorwerpjes per pad (ik).
 14. Reply All: grotere straal, minder schade per mail.
 
-Voortgang: stap 1 teksten (0.31.1), stap 2 kaart + tips (0.32.0), stap 3 briefing (0.33.0). Volgende:
-stap 4 "zeggen wat niet werkt" (iconen boven collega's, idle-reden per toren in de snapshot, zes
-stil-iconen, kring van de Chatterbox). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+Voortgang: stap 1 teksten (0.31.1), stap 2 kaart + tips (0.32.0), stap 3 briefing (0.33.0), stap 4
+"zeggen wat niet werkt" (0.34.0). Releasen mag sinds 2026-11-14 per afgeronde stap zonder te vragen.
+Stap 4, keuzes van mij:
+- `Tower.idle` ('immune' / 'hidden' / 'sight') plus `idleWho`, gezet na `IDLE_AFTER` = 2 s (de review
+  zei 3; een Chaser is in 2 s al voorbij). Alleen richtende torens en de Shredder; in de snapshot als
+  `idl: [code, typeIndex]`. Volgorde bij meerdere: immuun boven verborgen boven zicht.
+- Iconen: pure keuze in `src/ui/badges.ts`, tekenen in `src/render/badges.ts` (Font Awesome-glyphs
+  op canvas, dezelfde iconen als in de winkel). Instelling `labels` voor de iconen boven collega's;
+  torens tonen altijd waarom ze stil liggen.
+- DIGITAL/PHYSICAL: blauwe of oranje ring onder de toren, alleen in single player (in multiplayer
+  zegt de ring van wie hij is).
+- De hint bij doorlopen alleen voor collega's met een eigen regel (immuun, doos, verborgen, kring,
+  taunt, pointResist, stunOnlyFrom), niet voor gewone. "BOUNCED OFF" de eerste 3 keer per collega.
+- Nog niet gedaan uit 9.3: de iconen in de lijst "On the floor" en de golf-preview (stap 9). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

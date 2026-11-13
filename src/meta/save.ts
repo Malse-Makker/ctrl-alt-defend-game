@@ -12,6 +12,8 @@ export interface Settings {
   ambience: number;
   /** Cards and hints that explain things. Off for players who know the floor. */
   tips: boolean;
+  /** Icons over colleagues who shrug something off. */
+  labels: boolean;
 }
 
 export interface SaveData {
@@ -62,7 +64,7 @@ export function defaults(): SaveData {
     hintsDone: [],
     lastSeenVersion: '',
     mpName: '',
-    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true, ambience: 0.5, tips: true },
+    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true, ambience: 0.5, tips: true, labels: true },
   };
 }
 

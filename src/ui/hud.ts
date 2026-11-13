@@ -20,6 +20,7 @@ import {
 import { earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
+import { idleNote } from './badges';
 import { cardCountdown, colleagueCard } from './colleaguecard';
 import { fmt, h, icon, img, setText, toggle } from './dom';
 import { UI_TEXT as T } from './text';
@@ -465,7 +466,7 @@ export class Hud {
       }
       return;
     }
-    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.quiet ?? '-'}:${this.game.rangeFactor(t) < 1 ? 's' : ''}:${t.mopped > 0 ? 1 : 0}:${t.dir}`;
+    const key = `${t.id}:${t.tiers.join('')}:${t.target}:${t.quiet ?? '-'}:${t.idle ?? '-'}${t.idleWho ?? ''}:${this.game.rangeFactor(t) < 1 ? 's' : ''}:${t.mopped > 0 ? 1 : 0}:${t.dir}`;
     if (key !== this.towerKey) {
       this.towerKey = key;
       this.buildTowerPanel(t);
@@ -718,6 +719,7 @@ export class Hud {
 
     if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : t.quiet === 'audit' ? T.auditNote : T.silencedNote }));
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
+    else if (t.idle) parts.splice(2, 0, h('div', { class: 'status warn', text: idleNote(t.idle, t.def.damageClass, COLLEAGUES[t.idleWho ?? '']?.name ?? '') }));
     else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
     else if (g.slowWifi(t)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.wifiNote }));
     else if (g.isCold(t.tx, t.ty)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.coldNote }));

@@ -4,7 +4,9 @@
 import * as THREE from 'three';
 import { modelFor } from '../sim/data/towers';
 import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '../sim/game';
+import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
+import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
 import { PAL } from './palette';
 import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
 
@@ -42,6 +44,11 @@ interface EnemyView {
   stars: THREE.Group | null;
   /** The Impersonator's own see-through materials (null for everyone you can just see). */
   ghostMats: THREE.Material[] | null;
+  /** Icons over his head: what he shrugs off. Rebuilt only when the set changes. */
+  badges: THREE.Sprite[];
+  badgeKey: string;
+  /** The Chatterbox: the circle in which towers stop working. */
+  talkRing: THREE.Mesh | null;
 }
 
 interface TowerView {
@@ -55,8 +62,9 @@ interface TowerView {
   recoil: number;
   /** The Shredder's zone on the floor. */
   zone: THREE.Mesh | null;
-  /** Shown while a Chatterbox silences the tower. */
-  mute: THREE.Sprite | null;
+  /** Why it is quiet, or why it hits nothing. */
+  badge: THREE.Sprite | null;
+  badgeKind: BadgeKind | null;
   /** Wet floor sign while The Cleaner has mopped it. */
   wet: THREE.Object3D | null;
   /** The top of the worktop it stands on (Coffee Corner), or undefined on the floor. */
@@ -128,6 +136,18 @@ export class Actors {
   private ownerColors: string[] = [];
   private ringGeo = new THREE.RingGeometry(0.4, 0.48, 32).rotateX(-Math.PI / 2);
   private ringMats = new Map<string, THREE.MeshBasicMaterial>();
+  /** DIGITAL or PHYSICAL: a thin ring in the colour of its kind, the same colour as in the shop. */
+  private classGeo = new THREE.RingGeometry(0.4, 0.45, 32).rotateX(-Math.PI / 2);
+  private classMats = {
+    digital: new THREE.MeshBasicMaterial({ color: CLASS_COLOR.digital, transparent: true, opacity: 0.8, depthWrite: false }),
+    physical: new THREE.MeshBasicMaterial({ color: CLASS_COLOR.physical, transparent: true, opacity: 0.8, depthWrite: false }),
+  };
+  /** Icons over colleagues (a setting). Towers always say why they are quiet. */
+  labels = true;
+  private readonly talkGeo = new THREE.RingGeometry(0.93, 1, 48).rotateX(-Math.PI / 2);
+  private readonly talkFillGeo = new THREE.CircleGeometry(0.93, 48).rotateX(-Math.PI / 2);
+  private readonly talkMat = new THREE.MeshBasicMaterial({ color: '#e5534b', transparent: true, opacity: 0.55, depthWrite: false });
+  private readonly talkFillMat = new THREE.MeshBasicMaterial({ color: '#e5534b', transparent: true, opacity: 0.08, depthWrite: false });
 
   setOwnerColors(colors: string[]): void {
     this.ownerColors = colors;
@@ -330,14 +350,25 @@ export class Actors {
         v.root.add(v.wet);
       }
       if (v.wet) v.wet.visible = t.mopped > 0;
-      if (t.silenced && !v.mute) {
-        v.mute = new THREE.Sprite(this.muteMat());
-        v.mute.scale.set(0.42, 0.42, 1);
-        v.mute.position.set(0, 1.25, 0);
-        v.mute.renderOrder = 12;
-        v.root.add(v.mute);
+      const kind = towerBadge(t);
+      if (kind !== v.badgeKind) {
+        v.badgeKind = kind;
+        if (kind && !v.badge) {
+          v.badge = new THREE.Sprite(badgeMaterial(kind));
+          v.badge.position.set(0, 1.35, 0);
+          v.badge.renderOrder = 12;
+          v.root.add(v.badge);
+        }
+        if (v.badge) {
+          v.badge.visible = kind !== null;
+          if (kind) {
+            v.badge.material = badgeMaterial(kind);
+            // Grey "cannot hit" icons are a remark, the red ones an alarm.
+            const sz = kind.startsWith('idle-') ? 0.5 : 0.6;
+            v.badge.scale.set(sz, sz, 1);
+          }
+        }
       }
-      if (v.mute) v.mute.visible = t.silenced;
     }
     this.clock += dt;
     for (const [id, v] of this.towers) {
@@ -603,6 +634,13 @@ export class Actors {
     // A chair turns with its lane (in sync); everything else faces the walkway.
     root.rotation.y = t.def.role === 'chair' ? 0 : Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
     const color = this.ownerColors[t.owner];
+    // In multiplayer the ring says whose it is; that matters more there.
+    if (!color && t.def.damageClass) {
+      const ring = new THREE.Mesh(this.classGeo, this.classMats[t.def.damageClass]);
+      ring.position.y = (surface !== undefined ? surface - root.position.y : 0) + 0.012;
+      ring.renderOrder = 1;
+      root.add(ring);
+    }
     if (color) {
       let mat = this.ringMats.get(color);
       if (!mat) {
@@ -616,7 +654,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null, surface };
+    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface };
     this.towers.set(t.id, v);
     return v;
   }
@@ -719,7 +757,19 @@ export class Actors {
       boss,
       stars: null,
       ghostMats: null,
+      badges: [],
+      badgeKey: '',
+      talkRing: null,
     };
+    if (e.def.silence) {
+      const ring = new THREE.Mesh(this.talkGeo, this.talkMat);
+      ring.add(new THREE.Mesh(this.talkFillGeo, this.talkFillMat));
+      ring.scale.setScalar(e.def.silence);
+      ring.position.y = 0.02;
+      ring.renderOrder = 1;
+      root.add(ring);
+      v.talkRing = ring;
+    }
     if (e.def.invisible) {
       // His own copy of the materials, so he can fade without fading every other model.
       const mats: THREE.Material[] = [];
@@ -808,6 +858,29 @@ export class Actors {
       if (v.shieldBack) v.shieldBack.visible = v.shieldFill.visible;
       v.shieldFill.scale.x = Math.max(0.001, v.barWidth * (e.shield / Math.max(1, e.maxShield)));
     }
+    // A stopped Chatterbox does not talk, so his circle goes.
+    if (v.talkRing) v.talkRing.visible = e.stunTime <= 0;
+    this.placeBadges(v, e);
+  }
+
+  /** A row of icons over his head, above the bars, centred. */
+  private placeBadges(v: EnemyView, e: Enemy): void {
+    const kinds = this.labels ? colleagueBadges(e.def, e.shield, e.revealed) : [];
+    const key = kinds.join(',');
+    if (key === v.badgeKey) return;
+    v.badgeKey = key;
+    for (const b of v.badges) v.root.remove(b);
+    const size = v.boss ? 0.56 : 0.46;
+    const y = v.barY + (e.maxShield > 0 ? 0.38 : 0.3) + (v.boss ? 0.08 : 0);
+    v.badges = kinds.map((k, i) => {
+      const sp = new THREE.Sprite(badgeMaterial(k));
+      sp.scale.set(size, size, 1);
+      const off = (i - (kinds.length - 1) / 2) * size * 1.1;
+      sp.position.copy(this.camRight).multiplyScalar(off).setY(y);
+      sp.renderOrder = 12;
+      v.root.add(sp);
+      return sp;
+    });
   }
 
   private animateGone(v: EnemyView, dt: number): void {
@@ -818,6 +891,7 @@ export class Actors {
       v.hpBack.visible = v.hpFill.visible = false;
       if (v.shieldFill) v.shieldFill.visible = false;
       if (v.shieldBack) v.shieldBack.visible = false;
+      this.hideExtras(v);
       if (k >= 1) this.removeEnemy(v);
       return;
     }
@@ -835,12 +909,19 @@ export class Actors {
       v.hpBack.visible = v.hpFill.visible = false;
       if (v.shieldFill) v.shieldFill.visible = false;
       if (v.shieldBack) v.shieldBack.visible = false;
+      this.hideExtras(v);
     }
     v.dying += dt;
     const k = Math.min(1, v.dying / 0.28);
     v.model.rotation.x = -k * 1.2;
     v.model.scale.setScalar(Math.max(0.001, (1 - k * k) * PERSON_SCALE));
     if (k >= 1) this.removeEnemy(v);
+  }
+
+  /** Icons and his circle go the moment he is dealt with or reaches your desk. */
+  private hideExtras(v: EnemyView): void {
+    for (const b of v.badges) b.visible = false;
+    if (v.talkRing) v.talkRing.visible = false;
   }
 
   private accentOf(v: EnemyView): string {
@@ -857,34 +938,6 @@ export class Actors {
   private pulses: { mesh: THREE.Mesh; t: number; r: number }[] = [];
 
   private clock = 0;
-  private muteMaterial: THREE.SpriteMaterial | null = null;
-
-  /** A speech bubble with a line through it, drawn once on a canvas. */
-  private muteMat(): THREE.SpriteMaterial {
-    if (this.muteMaterial) return this.muteMaterial;
-    const c = document.createElement('canvas');
-    c.width = c.height = 64;
-    const x = c.getContext('2d')!;
-    x.fillStyle = '#f6f3ea';
-    x.beginPath();
-    x.ellipse(32, 28, 24, 18, 0, 0, Math.PI * 2);
-    x.fill();
-    x.beginPath();
-    x.moveTo(20, 40);
-    x.lineTo(14, 56);
-    x.lineTo(30, 44);
-    x.fill();
-    x.strokeStyle = '#e5534b';
-    x.lineWidth = 7;
-    x.beginPath();
-    x.moveTo(12, 50);
-    x.lineTo(52, 8);
-    x.stroke();
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    this.muteMaterial = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
-    return this.muteMaterial;
-  }
 
   private makeZone(): THREE.Mesh {
     const zone = new THREE.Mesh(

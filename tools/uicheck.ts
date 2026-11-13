@@ -351,6 +351,48 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   console.log(`  ${await ff('chatter')}`);
   await new Promise((r) => setTimeout(r, 1500));
   total += await check(page, 'l2-chatterbox', size);
+  // Saying what does not work: icons over the Board Member, the Old Guard's box and the
+  // Impersonator, and a Shredder that says it may not touch the Board Member.
+  const immune = await page.evaluate(() => {
+    type Any = any;
+    const s = (window as unknown as { cad: { session: Any } }).cad.session;
+    const g = s.game;
+    for (const e of g.enemies) e.alive = false;
+    g.enemies = [];
+    const sh = g.towers.find((t: Any) => t.defId === 'shredder');
+    const path = g.paths[0];
+    let best = { d: 0, dd: Infinity };
+    for (let d = 0; d <= path.length; d += 0.1) {
+      const p = path.pointAt(d);
+      const dd = Math.hypot(p.x - sh.x, p.y - sh.y);
+      if (dd < best.dd) best = { d, dd };
+    }
+    const put = (type: string, d: number) => {
+      const e = g.spawn(type, 0, d, false);
+      e.hp = e.maxHp = 5000;
+      e.stunTime = 1e9;
+      return e;
+    };
+    put('boardmember', best.d);
+    put('oldguard', Math.max(0.5, best.d - 3));
+    // Away from the Shredder: inside its zone he would give it something to do.
+    let far = Math.max(0.5, best.d - 6);
+    while (far > 0.5 && Math.hypot(path.pointAt(far).x - sh.x, path.pointAt(far).y - sh.y) < 4) far -= 0.5;
+    put('impersonator', far);
+    for (let i = 0; i < 60 * 3; i++) g.step();
+    g.drainEvents();
+    s.selected = sh.id;
+    return `shredder idle=${sh.idle} about ${sh.idleWho}`;
+  });
+  console.log(`  ${immune}`);
+  if (!immune.includes('idle=immune')) errors.push(`l2: the Shredder did not say it cannot touch the Board Member (${immune})`);
+  await new Promise((r) => setTimeout(r, 600));
+  total += await check(page, 'l2-immune', size);
+  await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: { enemies: { alive: boolean }[] } } } }).cad.session.game;
+    for (const e of g.enemies) e.alive = false;
+    g.enemies = [];
+  });
   for (const def of ['shredder', 'headphones', 'artillery']) {
     await page.evaluate((d) => {
       const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
