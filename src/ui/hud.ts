@@ -424,8 +424,23 @@ export class Hud {
     };
     this.infoCard.replaceChildren(...colleagueCard(def, { label: isNew ? T.newColleague : def.role, close, gotIt: gotIt ? close : undefined }));
     toggle(this.infoCard, 'waiting', gotIt !== undefined);
+    toggle(this.infoCard, 'briefing', false);
     this.infoCard.hidden = false;
     this.infoTimer = gotIt ? 0 : seconds;
+  }
+
+  /** The briefing before the day starts, in the same spot as the colleague card. */
+  showBriefing(children: HTMLElement[]): void {
+    this.infoCard.replaceChildren(...children);
+    toggle(this.infoCard, 'waiting', false);
+    toggle(this.infoCard, 'briefing', true);
+    this.infoCard.hidden = false;
+    this.infoTimer = 0;
+  }
+
+  /** Close the briefing if it is still up (the day started). */
+  closeBriefing(): void {
+    if (this.infoCard.classList.contains('briefing')) this.infoCard.hidden = true;
   }
 
   /** The card is open and the game waits for "Got it". */

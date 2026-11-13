@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.33.0] - 2026-11-13
+
+### New
+- A briefing before the day starts: which towers are new on your desk, which colleagues are new on the floor and what they need, the one rule of this floor, and who comes at the end of the day. Only what is new. "Do not show again for this floor" puts it away; "Show all tips again" in Settings brings it back.
+
 ## [0.32.0] - 2026-11-13
 
 ### New

@@ -4,17 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
 import { TOWERS } from '../src/sim/data/towers';
-import { parseWave } from '../src/sim/waves';
+import { briefingFor, firstLevelOf, typesIn } from '../src/sim/briefing';
 import { defaults, resetTips } from '../src/meta/save';
 import { cardCountdown } from '../src/ui/colleaguecard';
-
-/** The first level whose waves bring this colleague in. */
-function firstLevel(type: string): number | null {
-  for (const level of Object.values(LEVELS).sort((a, b) => a.id - b.id)) {
-    if (level.waves.some((w) => parseWave(w).some((g) => g.type === type))) return level.id;
-  }
-  return null;
-}
 
 describe('the colleague card', () => {
   const regulars = Object.values(COLLEAGUES).filter((c) => !c.boss);
@@ -34,7 +26,7 @@ describe('the colleague card', () => {
 
   it('never leaves a colleague without an answer: a counter is in the shop where he first turns up', () => {
     for (const c of regulars) {
-      const at = firstLevel(c.id);
+      const at = firstLevelOf(c.id);
       if (at === null) continue;
       const shop = LEVELS[at].towers;
       expect(c.counters!.some((id) => shop.includes(id)), `${c.id} in level ${at}`).toBe(true);
@@ -69,5 +61,39 @@ describe('tips', () => {
     expect(s.tipsSeen).toEqual([]);
     expect(s.hintsDone).toEqual([]);
     expect(s.stars).toEqual({ '1': 3 });
+  });
+});
+
+describe('the briefing', () => {
+  it('names the towers that are new in this shop', () => {
+    expect(briefingFor(2).towers).toEqual(LEVELS[2].towers.filter((t) => !LEVELS[1].towers.includes(t)));
+    expect(briefingFor(10).towers).toEqual([]);
+  });
+
+  it('names only colleagues who have not been on an earlier floor, and no bosses', () => {
+    for (const level of Object.values(LEVELS)) {
+      for (const id of briefingFor(level.id).colleagues) {
+        expect(COLLEAGUES[id].boss, id).toBeUndefined();
+        for (let earlier = 1; earlier < level.id; earlier++) expect(typesIn(earlier), `${id} in ${earlier}`).not.toContain(id);
+      }
+    }
+    expect(briefingFor(2).colleagues).toContain('oldguard');
+  });
+
+  it('has a rule and a boss for every floor after the first', () => {
+    for (const level of Object.values(LEVELS)) {
+      if (level.id === 1) continue;
+      const b = briefingFor(level.id);
+      expect(b.rule, level.name).toBeTruthy();
+      expect(b.rule!.length, level.name).toBeLessThanOrEqual(110);
+      expect(b.boss, level.name).not.toBeNull();
+    }
+  });
+
+  it('gives every tower a short line', () => {
+    for (const t of Object.values(TOWERS)) {
+      expect(t.short, t.id).toBeTruthy();
+      expect(t.short.length, t.id).toBeLessThanOrEqual(80);
+    }
   });
 });

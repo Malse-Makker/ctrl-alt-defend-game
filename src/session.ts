@@ -30,6 +30,8 @@ import { formGame } from './ui/form';
 import { phoneGame } from './ui/phone';
 import { projectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
+import { briefingCard, briefingHasNews } from './ui/briefing';
+import { briefingFor } from './sim/briefing';
 
 export interface SessionHost {
   view: View;
@@ -181,6 +183,27 @@ export class Session {
       this.hintStage = 1;
       this.hud.hint(T.hintFirstPlace, 12);
     }
+    this.showBriefing();
+  }
+
+  /** What is new on this floor, before the day starts. Level 1 has its own hints. */
+  private showBriefing(): void {
+    const save = this.host.save;
+    const id = this.game.level.id;
+    if (this.attract || id <= 1 || !save.settings.tips || save.briefingsHidden.includes(id)) return;
+    const b = briefingFor(id);
+    if (!briefingHasNews(b)) return;
+    const close = () => this.hud?.closeBriefing();
+    this.hud?.showBriefing(
+      briefingCard(this.game.level.name, b, {
+        close,
+        hide: () => {
+          save.briefingsHidden.push(id);
+          store(save);
+          close();
+        },
+      }),
+    );
   }
 
   private get isHost(): boolean {
@@ -382,6 +405,7 @@ export class Session {
         break;
       case 'wave': {
         sfx.play('wave');
+        if (ev.index === 1) this.hud?.closeBriefing();
         if (ev.index === 1 && !ev.early && this.mp) this.hud?.toast(T.dayBegins, '', 2.5);
         if (ev.boss) {
           const def = Object.values(COLLEAGUES).find((c) => c.boss && g.waves[ev.index - 1].some((gr) => gr.type === c.id));

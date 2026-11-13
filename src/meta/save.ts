@@ -26,6 +26,8 @@ export interface SaveData {
   seenColleagues: string[];
   /** Colleagues whose card already stopped the game once. Reset tips empties it. */
   tipsSeen: string[];
+  /** Floors whose briefing the player asked not to see again. */
+  briefingsHidden: number[];
   hintsDone: string[];
   lastSeenVersion: string;
   /** Name used in multiplayer lobbies. */
@@ -56,6 +58,7 @@ export function defaults(): SaveData {
     smokes: 0,
     seenColleagues: [],
     tipsSeen: [],
+    briefingsHidden: [],
     hintsDone: [],
     lastSeenVersion: '',
     mpName: '',
@@ -76,6 +79,7 @@ export function load(): SaveData {
       settings: { ...base.settings, ...(d.settings ?? {}) },
       // Saves from before tips: whoever already met a colleague has had his card.
       tipsSeen: Array.isArray(d.tipsSeen) ? d.tipsSeen : Array.isArray(d.seenColleagues) ? [...d.seenColleagues] : [],
+      briefingsHidden: Array.isArray(d.briefingsHidden) ? d.briefingsHidden.filter((n): n is number => typeof n === 'number') : [],
       perks: Array.isArray(d.perks) ? d.perks.filter((p): p is string => typeof p === 'string') : [],
       smokes: typeof d.smokes === 'number' && d.smokes >= 0 ? Math.floor(d.smokes) : 0,
       playerId: typeof d.playerId === 'string' && /^[0-9a-f]{16}$/.test(d.playerId) ? d.playerId : base.playerId,
@@ -88,6 +92,7 @@ export function load(): SaveData {
 /** Show every explanation again, as for a new player. Progress stays. */
 export function resetTips(s: SaveData): void {
   s.tipsSeen = [];
+  s.briefingsHidden = [];
   s.hintsDone = [];
   s.settings.tips = true;
 }

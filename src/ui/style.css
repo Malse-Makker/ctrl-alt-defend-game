@@ -997,6 +997,45 @@ button:disabled {
   display: none;
 }
 
+.info-card.briefing {
+  width: min(480px, 100%);
+}
+
+.info-card .brief-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.info-card .brief-line {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: 13px;
+}
+
+.info-card .brief-line img {
+  width: 34px;
+  height: 34px;
+}
+
+.info-card .brief-name {
+  font-weight: 700;
+}
+
+.info-card .brief-need {
+  color: var(--ok);
+  font-size: 12px;
+}
+
+.info-card .brief-rule {
+  font-size: 13px;
+}
+
 .tips-toggle {
   display: inline-flex;
   align-items: center;

@@ -170,6 +170,8 @@ export interface LevelDef {
   block: 'junior' | 'medior' | 'senior';
   intro: string;
   gimmick: string;
+  /** The briefing: the one rule of this floor, in a line. */
+  rule?: string;
   size: { w: number; h: number };
   paths: { x: number; y: number }[][];
   desk: { x: number; y: number };
@@ -318,6 +320,7 @@ const L2: LevelDef = {
   block: 'junior',
   intro: 'The office kitchen. One good coffee machine, one queue, and everyone is in a hurry.',
   gimmick: 'A small kitchen with a lot of furniture in it. You build on the bit of floor that is left. Headphones, Office Artillery and The Shredder arrive.',
+  rule: 'A small kitchen. Furniture blocks the view of towers that aim.',
   size: { w: 14, h: 14 },
   paths: [
     [
@@ -431,6 +434,7 @@ const L3: LevelDef = {
   block: 'junior',
   intro: 'You are giving the presentation. Everyone has a laptop open, and nobody is looking at you.',
   gimmick: 'They wind through the rows of tables towards you. The projector acts up, but it warns you three seconds early. Quick Reply arrives.',
+  rule: 'The projector cuts out now and then. It warns you three seconds early.',
   size: { w: 21, h: 12 },
   paths: [
     [
@@ -528,6 +532,7 @@ const L4: LevelDef = {
   block: 'junior',
   intro: 'Everyone eats at twelve. The queue for the soup winds all the way round the canteen.',
   gimmick: 'A long spiral round the tables, and a queue for the soup where only Thumbtacks may go. Thumbtacks and Self-Service arrive, and so does lunch.',
+  rule: 'At lunch a crowd of Interns rushes in and everyone walks faster. Only Thumbtacks go in the soup queue.',
   size: { w: 21, h: 12 },
   paths: [
     [
@@ -620,6 +625,7 @@ const L5: LevelDef = {
   block: 'junior',
   intro: 'The board meets today. Everyone walks the long way round the table to get to you.',
   gimmick: 'A loop round the boardroom table. The specials arrive: Keyboard Smash and the Office Chair, one each. And Your Line Manager wants a word.',
+  rule: 'Specials: one Keyboard Smash and one Office Chair each.',
   size: { w: 21, h: 12 },
   paths: [
     [
@@ -710,6 +716,7 @@ const L6: LevelDef = {
   block: 'medior',
   intro: 'You thought working from home would be quiet. Your colleagues found the address.',
   gimmick: 'Your colleagues walk through your house: in at the front door, through the living room and the kitchen, to your home office. Walls block sight. The wifi in the bedroom is bad, and the internet keeps dropping out. Reply All arrives, and so does The Cold Caller.',
+  rule: 'Walls block the view. The internet drops out: DIGITAL towers wait until you reconnect.',
   size: { w: 18, h: 14 },
   paths: [
     [
@@ -818,6 +825,7 @@ const L7: LevelDef = {
   block: 'medior',
   intro: 'Everyone parks underground. Everyone also walks past your car on the way in.',
   gimmick: 'An underground car park at scale: a car is two tiles wide and three long. You can only build in an empty bay. Exhaust fumes cut your range. Delegation arrives, and The Speakerphone Caller wants all the attention.',
+  rule: 'Build only in an empty bay. Exhaust fumes cut the range of towers near them.',
   size: { w: 26, h: 17 },
   paths: [
     [
@@ -912,6 +920,7 @@ const L8: LevelDef = {
   block: 'medior',
   intro: 'Nobody has a desk of their own any more. Everyone wants the one by the window.',
   gimmick: 'A zigzag through rows of flex desks. You can only build on a desk, and every wave a few are reserved. The desk phone rings. The Pomodoro Timer arrives, and The Head of Comms is back, heavier.',
+  rule: 'Build only on a desk, and some are reserved every wave. Answer the desk phone.',
   size: { w: 20, h: 12 },
   paths: [
     [
@@ -985,6 +994,7 @@ const L9: LevelDef = {
   block: 'medior',
   intro: 'The whole company in the auditorium. Everyone comes in at the back, and everyone ends up at the front.',
   gimmick: 'Two entrances that meet in front of the stage, and both are busy every wave. Towers on the tribune steps reach further. The fire alarm goes off now and then. The Motivational Poster arrives, and The Repair Guy is back, heavier.',
+  rule: 'Two entrances. Towers on the tribune steps reach further. The fire alarm makes everyone run.',
   size: { w: 22, h: 14 },
   paths: [
     [
@@ -1069,6 +1079,7 @@ const L10: LevelDef = {
   block: 'medior',
   intro: 'The same boardroom. The board had a glass room built round the table, with blinds for when it gets serious.',
   gimmick: 'The loop from the Boardroom, with a glass room round the table. Every half minute the blinds come down for ten seconds: nobody sees through the glass, either way. Your Line Manager wants another word, a longer one.',
+  rule: 'Every half minute the blinds come down for ten seconds: nobody sees through the glass.',
   size: { w: 21, h: 12 },
   paths: [
     [
@@ -1168,6 +1179,7 @@ const L11: LevelDef = {
   block: 'senior',
   intro: 'Two companies become one. Nobody has unpacked yet.',
   gimmick: 'The old company on the left takes DIGITAL towers only, the startup on the right PHYSICAL ones. Moving boxes in the middle: clear a stack for 40 Coffee and anything goes there. Two entrances, one per company. The Consultant was brought in for the merger.',
+  rule: 'Left takes DIGITAL towers only, right PHYSICAL only. Clear the boxes for 40 Coffee.',
   size: { w: 22, h: 13 },
   paths: [
     [
@@ -1254,6 +1266,7 @@ const L12: LevelDef = {
   block: 'senior',
   intro: 'The HR department. After the merger comes the reorganisation.',
   gimmick: 'The tightest floor yet: an archive full of filing cabinets, an observation room behind a one-way mirror, and the interview room where it ends at your desk. Towers in the observation room see through the mirror; nobody sees them. HR sends forms, and while you fill one in you cannot upgrade. The HR Manager does audits.',
+  rule: 'Towers behind the mirror see through it. While an HR form is open you cannot upgrade.',
   size: { w: 18, h: 12 },
   paths: [
     [
@@ -1345,6 +1358,7 @@ const L13: LevelDef = {
   block: 'senior',
   intro: 'The server room. Cold, loud, and the only door into the NOC.',
   gimmick: 'One long, straight run through the server room. It is cold in there: towers reload at half speed. The room is closed: towers inside only reach colleagues inside, towers outside only those outside; Office Artillery and the Pomodoro Timer reach anywhere. Now and then the cooling fails. The Cleaner is back, heavier, and he is not careful with your cables.',
+  rule: 'Cold: towers reload at half speed. Inside the room only reaches inside.',
   size: { w: 34, h: 9 },
   paths: [
     [
@@ -1425,6 +1439,7 @@ const L14: LevelDef = {
   block: 'senior',
   intro: 'Release night. The office is dark, the deploy is running, and there is pizza.',
   gimmick: 'A long winding run through the dark office. Only the desk lamps give light: towers in the dark reach 40% less far. Now and then a pizza turns up: grab it in time for Coffee and a bit of extra light. The Project Manager wants it live, and the longer he stays, the faster everything moves.',
+  rule: 'In the dark, towers reach 40% less far. Grab the pizza for Coffee and light.',
   size: { w: 22, h: 12 },
   paths: [
     [
@@ -1510,6 +1525,7 @@ const L15: LevelDef = {
   block: 'senior',
   intro: 'The same boardroom, for the third time. The most important meeting of the year, and the board came in through the back.',
   gimmick: 'The glass room from Boardroom II, with the blinds coming down every 20 seconds now. A second entrance on the right: both streams meet for the last stretch. Your Line Manager has your 360-degree review, and earlier bosses come back to give feedback.',
+  rule: 'The blinds come down every 20 seconds. Two entrances meet for the last stretch.',
   size: { w: 21, h: 12 },
   paths: [
     [

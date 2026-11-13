@@ -14,6 +14,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer, { type Page } from 'puppeteer-core';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
+import { LEVELS } from '../src/sim/data/levels';
 
 const args = process.argv.slice(2);
 const arg = (name: string, def: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : def);
@@ -28,9 +29,10 @@ mkdirSync(OUT, { recursive: true });
 // need it to exist. And a fresh save with round stats switched off and sound muted, so a check
 // against the live site never ends up in the playtest data. Every colleague card has already
 // stopped the game once (tipsSeen), so flows are not held up; level 2 checks the waiting card.
+// Briefings are hidden too, so they never catch a click on the floor; briefingFlow shows them.
 const SETUP = `window.__name = (f) => f;
 try {
-  localStorage.setItem('ctrl-alt-defend.save.v1', JSON.stringify({ v: 1, settings: { shareStats: false, volume: 0, sfx: 0, damageNumbers: true }, tipsSeen: ${JSON.stringify(Object.keys(COLLEAGUES))} }));
+  localStorage.setItem('ctrl-alt-defend.save.v1', JSON.stringify({ v: 1, settings: { shareStats: false, volume: 0, sfx: 0, damageNumbers: true }, tipsSeen: ${JSON.stringify(Object.keys(COLLEAGUES))}, briefingsHidden: ${JSON.stringify(Object.keys(LEVELS).map(Number))} }));
 } catch (e) {}`;
 
 interface Problem {
@@ -227,6 +229,31 @@ async function mpFlow(browser: import('puppeteer-core').Browser, errors: string[
 }
 
 /** Level 2: all the new towers, the first Chatterbox, The Repair Guy, and the new tower panels. */
+/** The briefing before the day starts, on the floors where it has the most to say. */
+async function briefingFlow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (briefings)`);
+  let total = 0;
+  for (const id of [2, 4, 6, 7]) {
+    const page = await browser.newPage();
+    page.on('pageerror', (e) => errors.push(`briefing L${id}: ${String(e)}`));
+    await page.setViewport({ width: 1600, height: 900 });
+    const stars = Object.fromEntries(Array.from({ length: id - 1 }, (_, i) => [String(i + 1), 3]));
+    await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", `v: 1, stars: ${JSON.stringify(stars)}, settings:`).replace(/briefingsHidden: \[[^\]]*\]/, 'briefingsHidden: []'));
+    await page.goto(URL_, { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+    await clickText(page, 'Clock in');
+    await clickText(page, LEVELS[id].name);
+    await page.waitForFunction(() => document.querySelector('.info-card.briefing:not([hidden])'), { timeout: 15000 });
+    total += await check(page, `l${id}-briefing`, size);
+    await clickText(page, 'Start planning');
+    const gone = await page.evaluate(() => !document.querySelector('.info-card.briefing:not([hidden])'));
+    if (!gone) errors.push(`briefing L${id}: Start planning did not close it`);
+    await page.close();
+  }
+  return total;
+}
+
 async function level2Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   const size = '1600x900';
   console.log(`\n${size} (level 2)`);
@@ -1617,6 +1644,10 @@ async function run(): Promise<void> {
   let total = 0;
   const errors: string[] = [];
   try {
+    if (args.includes('--brief-only')) {
+      total += await briefingFlow(browser, errors);
+      throw new Done();
+    }
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
       throw new Done();
@@ -1834,6 +1865,7 @@ async function run(): Promise<void> {
     total += await level13Flow(browser, errors);
     total += await level14Flow(browser, errors);
     total += await level15Flow(browser, errors);
+    total += await briefingFlow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;
