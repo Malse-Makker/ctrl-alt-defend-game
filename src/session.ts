@@ -14,7 +14,7 @@ import { Actors } from './render/actors';
 import type { Assets } from './render/assets';
 import { Popups } from './render/popups';
 import type { View } from './render/view';
-import { surfaceAt, World } from './render/world';
+import { raiseAt, surfaceAt, World } from './render/world';
 import { solidBot, type Bot } from './sim/bots';
 import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
@@ -452,6 +452,11 @@ export class Session {
           if (ev.on) {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
+          }
+        } else if (ev.kind === 'firealarm') {
+          if (ev.on) {
+            sfx.play('alarm');
+            this.hud?.toast(T.alarmStarts, 'warn', 3);
           }
         } else if (ev.kind === 'phone') {
           if (ev.on) {
@@ -905,7 +910,7 @@ export class Session {
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
       const chair = def.role === 'chair';
       const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
-      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty));
+      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty), raiseAt(this.game.level, this.hover.tx, this.hover.ty));
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
       if (needsSight(def)) this.actors.showBlind(g, this.hover.tx + 0.5, this.hover.ty + 0.5, def.base.global ? Infinity : def.base.range);
       else this.actors.showBlind(null);

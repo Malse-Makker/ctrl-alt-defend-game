@@ -11,6 +11,14 @@ const WALL_T = 0.16;
 /** Height of the cabinet every tower stands on (side_desk in the Blender script). */
 export const TOWER_CABINET_H = 0.42;
 
+/** How high a step on this tile lifts a tower that stands on it with its cabinet (the tribune). */
+export function raiseAt(level: LevelDef, tx: number, ty: number): number {
+  for (const d of level.decor) {
+    if (d.raise !== undefined && tx >= d.rect.x && tx < d.rect.x + d.rect.w && ty >= d.rect.y && ty < d.rect.y + d.rect.h) return d.raise;
+  }
+  return 0;
+}
+
 /** The top of a worktop on this tile (kitchen counter, table, bar), or undefined on the floor. */
 export function surfaceAt(level: LevelDef, tx: number, ty: number): number | undefined {
   for (const d of level.decor) {

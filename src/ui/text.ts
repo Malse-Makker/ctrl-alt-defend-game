@@ -227,6 +227,7 @@ export const UI_TEXT = {
   aimPick: 'Pick a tile',
   aimHelp: 'Click any tile on the floor. The tomatoes land there.',
   aimNow: 'Click the tile to lob at. Esc to cancel.',
+  alarmStarts: 'Fire alarm. Everyone stops, then makes a run for the front.',
   projWarn: 'The projector fan spins up. Three seconds: place what you want to place.',
   projStarts: 'The projector is not working. Nobody can build until someone fixes it.',
   projFixed: 'The projector works. +{n} Coffee for not calling IT.',

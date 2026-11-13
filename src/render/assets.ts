@@ -154,6 +154,14 @@ export const MODEL_NAMES = [
   'phone_booth',
   'desk_phone',
   'reserved_sign',
+  'poster_1',
+  'poster_2',
+  'poster_3',
+  'tribune_step',
+  'auditorium_seats',
+  'control_desk',
+  'tv_camera',
+  'stage_screen',
 ] as const;
 
 export class Assets {

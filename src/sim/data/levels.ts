@@ -23,6 +23,8 @@ export interface Decor {
   turn?: number;
   /** A worktop you may build on: the height of its top. Towers stand on it without their cabinet. */
   surface?: number;
+  /** A step you may build on (the tribune): towers stand on it with their cabinet, this much higher. */
+  raise?: number;
   /** Something people walk through (a door): it may stand on the walkway. */
   walkThrough?: boolean;
 }
@@ -90,7 +92,18 @@ export interface PhoneHazard {
   block: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard;
+/** The fire alarm (Town Hall): everyone stops where they are, then rushes to the front. */
+export interface FireAlarmHazard {
+  type: 'firealarm';
+  first: number;
+  every: number;
+  /** Seconds everyone stands still, then seconds they rush at `haste` times their speed. */
+  freeze: number;
+  rush: number;
+  haste: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -117,6 +130,8 @@ export interface LevelDef {
   startFocus: number;
   waves: readonly string[];
   hazard?: HazardDef;
+  /** Town Hall: every wave comes in through all the entrances at once, one colleague each in turn. */
+  splitPaths?: boolean;
   /** Hot Desks: this many empty flex desks (b) are reserved at the start of every wave. */
   reserve?: number;
   /** The boss comes back heavier: its HP times this (Head of Comms on Hot Desks, x1.8). */
@@ -911,7 +926,91 @@ const L8: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8 };
+const L9: LevelDef = {
+  id: 9,
+  name: 'Town Hall',
+  block: 'medior',
+  intro: 'The whole company in the auditorium. Everyone comes in at the back, and everyone ends up at the front.',
+  gimmick: 'Two entrances that meet in front of the stage, and both are busy every wave. Towers on the tribune steps reach further. The fire alarm goes off now and then. The Motivational Poster arrives, and The Repair Guy is back, heavier.',
+  size: { w: 22, h: 14 },
+  paths: [
+    [
+      { x: -1.5, y: 1.5 },
+      { x: 5.5, y: 1.5 },
+      { x: 5.5, y: 9.5 },
+      { x: 10.5, y: 9.5 },
+      { x: 10.5, y: 11.0 },
+    ],
+    [
+      { x: 23.5, y: 1.5 },
+      { x: 16.5, y: 1.5 },
+      { x: 16.5, y: 9.5 },
+      { x: 10.5, y: 9.5 },
+      { x: 10.5, y: 11.0 },
+    ],
+  ],
+  splitPaths: true,
+  desk: { x: 10, y: 11 },
+  // The level design (docs/leveldesign, level 9). ^: a tribune step, +25% range. The middle aisle
+  // and the stage stay clear (-). Your desk sits one tile up so the chair fits behind it.
+  grid: [
+    '......tt.HHHH.tt......',
+    'S=====..........=====S',
+    '.....=tttt--tttt=.....',
+    'tttt.=^^^^--^^^^=.tttt',
+    '^^^^.=tttt--tttt=.^^^^',
+    'tttt.=^^^^--^^^^=.tttt',
+    '^^^^.=tttt--tttt=.^^^^',
+    'tttt.=^^^^--^^^^=.tttt',
+    '.....=....--....=.....',
+    '.....============.....',
+    '..H------.=.------.H..',
+    '...------.D.tt----....',
+    '...------...------....',
+    '......HHHHHHHHHH......',
+  ],
+  decor: [
+    { model: 'control_desk', rect: { x: 6, y: 0, w: 2, h: 1 } },
+    { model: 'tall_cabinet', rect: { x: 9, y: 0, w: 2, h: 1 } },
+    { model: 'tall_cabinet', rect: { x: 11, y: 0, w: 2, h: 1 } },
+    ...run('tv_camera', 14, 0, 2, 'x'),
+    ...[2, 4, 6].flatMap((y) => [...run('auditorium_seats', 6, y, 4, 'x'), ...run('auditorium_seats', 12, y, 4, 'x')]),
+    ...[3, 5, 7].flatMap((y) => [...run('auditorium_seats', 0, y, 4, 'x'), ...run('auditorium_seats', 18, y, 4, 'x')]),
+    ...[3, 5, 7].flatMap((y) => [...run('tribune_step', 6, y, 4, 'x', { raise: 0.18 }), ...run('tribune_step', 12, y, 4, 'x', { raise: 0.18 })]),
+    ...[4, 6].flatMap((y) => [...run('tribune_step', 0, y, 4, 'x', { raise: 0.18 }), ...run('tribune_step', 18, y, 4, 'x', { raise: 0.18 })]),
+    { model: 'speaker', rect: { x: 2, y: 10, w: 1, h: 1 } },
+    { model: 'speaker', rect: { x: 19, y: 10, w: 1, h: 1 } },
+    // The lectern on the stage, next to your desk.
+    ...run('conference_table', 12, 11, 2, 'x', { turn: 2 }),
+    { model: 'stage_screen', rect: { x: 6, y: 13, w: 10, h: 1 }, turn: 2 },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  // Auditorium carpet, and a red runner down the aisles.
+  look: { floorA: '#3e4a63', floorB: '#3a455d', walkway: '#8f3b33', edge: '#6d2b25', wall: '#d8d3c8' },
+  hazard: { type: 'firealarm', first: 60, every: 60, freeze: 2, rush: 6, haste: 1.4 },
+  bossHpMult: 1.8,
+  // Medior, two entrances busy at once. The Repair Guy comes back with 1.8x his HP.
+  waves: [
+    'intern:20@0.40 + newhire:4@0.85 + chaser:6@0.18',
+    'intern:16@0.40 + newhire:6@0.80 + coldcaller:2@1.00 + chaser:6@0.16',
+    'chaser:20@0.13 + phonecaller:2@1.00 + newhire:6@0.80 + intern:8@0.40',
+    'oldguard:1@1.60 + intern:14@0.40 + coldcaller:2@0.90 + chaser:6@0.16',
+    'impersonator:5@0.70 + newhire:8@0.75 + phonecaller:2@0.90 + chaser:12@0.14',
+    'boardmember:1@1.40 + coldcaller:3@0.85 + intern:20@0.38 + chaser:12@0.13',
+    'oldguard:1@1.40 + chatterbox:2@1.40 + phonecaller:3@0.85 + requester:4@0.90 + intern:14@0.38',
+    'chaser:48@0.09 + phonecaller:3@0.80 + newhire:12@0.70',
+    'requester:5@0.90 + boardmember:2@1.30 + coldcaller:3@0.80 + impersonator:6@0.55 + chaser:22@0.11',
+    'oldguard:2@1.30 + phonecaller:4@0.80 + coldcaller:4@0.80 + intern:24@0.34',
+    'chaser:58@0.08 + newhire:14@0.60 + phonecaller:4@0.75 + chatterbox:2@1.40',
+    'oldguard:2@1.20 + requester:6@0.85 + boardmember:2@1.20 + impersonator:6@0.50 + newhire:8@0.65',
+    'boardmember:2@1.20 + phonecaller:6@0.70 + newhire:18@0.55 + chaser:44@0.08 + coldcaller:4@0.75',
+    'oldguard:2@1.10 + phonecaller:6@0.65 + requester:7@0.85 + chaser:48@0.08 + coldcaller:4@0.75',
+    'repairguy:1@2.00 + newhire:12@0.60 + chaser:24@0.10',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

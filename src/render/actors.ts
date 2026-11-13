@@ -6,7 +6,7 @@ import { modelFor } from '../sim/data/towers';
 import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '../sim/game';
 import { part, type Assets } from './assets';
 import { PAL } from './palette';
-import { surfaceAt, TOWER_CABINET_H } from './world';
+import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
 
 /** Red blind-spot cells per tile, each way. */
 const BLIND_CELLS = 4;
@@ -46,6 +46,8 @@ interface EnemyView {
 
 interface TowerView {
   id: number;
+  /** Standing on a tribune step: this much higher, cabinet and all. */
+  lift: number;
   root: THREE.Group;
   model: THREE.Object3D;
   modelKey: string;
@@ -179,7 +181,7 @@ export class Actors {
 
   // ------------------------------------------------------------- placement preview
 
-  showGhost(model: string | null, tx: number, ty: number, ok: boolean, range: number, surface?: number): void {
+  showGhost(model: string | null, tx: number, ty: number, ok: boolean, range: number, surface?: number, raise = 0): void {
     if (!model) {
       if (this.ghost) this.ghost.visible = false;
       this.ghostTile.visible = false;
@@ -197,7 +199,7 @@ export class Actors {
     this.ghost!.traverse((o) => {
       if (o.name.endsWith('_Desk')) o.visible = surface === undefined;
     });
-    this.ghost!.position.set(tx + 0.5, surface === undefined ? 0 : Actors.standOn(this.ghost!, surface), ty + 0.5);
+    this.ghost!.position.set(tx + 0.5, surface === undefined ? raise : Actors.standOn(this.ghost!, surface), ty + 0.5);
     this.ghostTile.visible = true;
     this.ghostTile.position.set(tx + 0.5, (surface ?? 0) + 0.01, ty + 0.5);
     (this.ghostTile.material as THREE.MeshBasicMaterial).color.set(ok ? PAL.ok : PAL.bad);
@@ -586,7 +588,8 @@ export class Actors {
     const model = this.assets.clone(modelKey);
     root.add(model);
     const surface = surfaceAt(game.level, t.tx, t.ty);
-    root.position.y = Actors.standOn(model, surface);
+    const lift = surface === undefined ? raiseAt(game.level, t.tx, t.ty) : 0;
+    root.position.y = Actors.standOn(model, surface) + lift;
     // Face the nearest bit of walkway, snapped to a quarter turn so desks line up with the grid.
     let best = { d: Infinity, x: t.x, y: t.y + 1 };
     for (const path of game.paths) {
@@ -613,7 +616,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null, surface };
+    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, mute: null, wet: null, surface };
     this.towers.set(t.id, v);
     return v;
   }
@@ -623,7 +626,7 @@ export class Actors {
     v.modelKey = modelFor(t.def, t.tiers);
     v.model = this.assets.clone(v.modelKey);
     v.root.add(v.model);
-    v.root.position.y = Actors.standOn(v.model, v.surface);
+    v.root.position.y = Actors.standOn(v.model, v.surface) + v.lift;
     v.pop = 1;
   }
 

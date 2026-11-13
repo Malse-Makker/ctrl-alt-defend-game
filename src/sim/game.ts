@@ -244,6 +244,13 @@ export interface LiveTowerStats {
   /** Pomodoro Timer: a second tomato after every launch, and the burning patch it leaves. */
   doubleShot: boolean;
   crater: { time: number; dps: number } | null;
+  /** Motivational Poster: what it gives the towers in its range. */
+  auraDamage: number;
+  auraDamageAdd: number;
+  auraRange: number;
+  auraShield: boolean;
+  auraHidden: boolean;
+  discount: number;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
@@ -423,6 +430,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
   return { x: level.desk.x + Math.sign(b.x - a.x), y: level.desk.y + Math.sign(b.y - a.y) };
 }
 
+/** On the tribune (Town Hall) towers reach this much further. */
+export const RAISED_RANGE = 1.25;
+
 /** On bad wifi (Work From Home) DIGITAL towers fire at this share of their rate: 40% slower. */
 export const BAD_WIFI = 0.6;
 
@@ -471,7 +481,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     knockback: 0,
     vulnerable: 0,
     stunnedTakes: 1,
-    buffRate: 1,
+    buffRate: b.buffRate ?? 1,
     dot: b.dot ?? 0,
     bleed: 0,
     unshared: false,
@@ -501,6 +511,12 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rollBack: false,
     doubleShot: false,
     crater: null,
+    auraDamage: 1,
+    auraDamageAdd: 0,
+    auraRange: 1,
+    auraShield: false,
+    auraHidden: false,
+    discount: 0,
   };
   let radiusMult = 1;
   let aoeMult = 1;
@@ -551,6 +567,12 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     rangeAdd += e.rangeAdd ?? 0;
     if (e.rollBack) s.rollBack = true;
     if (e.doubleShot) s.doubleShot = true;
+    if (e.auraDamage !== undefined) s.auraDamage = Math.max(s.auraDamage, e.auraDamage);
+    s.auraDamageAdd += e.auraDamageAdd ?? 0;
+    if (e.auraRange !== undefined) s.auraRange = Math.max(s.auraRange, e.auraRange);
+    if (e.auraShield) s.auraShield = true;
+    if (e.auraHidden) s.auraHidden = true;
+    if (e.discount !== undefined) s.discount = Math.max(s.discount, e.discount);
     if (e.crater && (!s.crater || e.crater.dps > s.crater.dps)) s.crater = e.crater;
     if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
@@ -631,6 +653,8 @@ export class Game {
   stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
+  /** 1 on a tribune step (Town Hall). */
+  private raised: Uint8Array | null = null;
   /** 1 where the wifi is bad (Work From Home, the bedroom). */
   private wifi: Uint8Array | null = null;
   private walls: Uint8Array | null = null;
@@ -685,6 +709,8 @@ export class Game {
       level.grid.forEach((row, y) => [...row].forEach((c, x) => c === 'b' && this.flex.push({ x, y })));
       this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
+      const raised = Uint8Array.from(level.grid.join(''), (c) => (c === '^' ? 1 : 0));
+      this.raised = raised.some((v) => v === 1) ? raised : null;
       this.gates = this.gatesOnPaths(g.gates);
     } else {
       for (const d of level.decor) {
@@ -875,7 +901,9 @@ export class Game {
 
   pathCostFor(t: Tower, path: number): number | null {
     if (t.tiers[path] >= t.def.paths[path].tiers.length) return null;
-    return pathCost(t.def, path, t.tiers[path] + 1, this.costMult);
+    // Sponsored Content: a poster nearby takes a share off.
+    const off = t.def.role === 'support' ? 0 : (this.posterAura(t)?.discount ?? 0);
+    return Math.max(1, Math.round(pathCost(t.def, path, t.tiers[path] + 1, this.costMult) * (1 - off)));
   }
 
   sellValueFor(t: Tower): number {
@@ -892,7 +920,43 @@ export class Game {
     const f = this.rangeFactor(t);
     if (f < 1) s.range *= f;
     if (this.slowWifi(t)) s.interval /= BAD_WIFI;
+    // The tribune (Town Hall): whoever sits up high sees further.
+    if (this.isRaised(t.tx, t.ty) && Number.isFinite(s.range)) s.range *= RAISED_RANGE;
+    // Motivational Posters nearby: the best one of each kind counts.
+    if (t.def.role !== 'support' && t.def.role !== 'economy') {
+      const a = this.posterAura(t);
+      if (a) {
+        s.damage = (s.damage + a.add) * a.damage;
+        s.dot *= a.damage;
+        if (Number.isFinite(s.range)) s.range *= a.range;
+        if (a.shield) s.ignoresMinHit = true;
+        if (a.hidden) s.seesHidden = true;
+      }
+    }
     return s;
+  }
+
+  /** What the Motivational Posters around this tower give it, or null when there are none. */
+  posterAura(t: Tower): { damage: number; add: number; range: number; shield: boolean; hidden: boolean; discount: number } | null {
+    let a: { damage: number; add: number; range: number; shield: boolean; hidden: boolean; discount: number } | null = null;
+    for (const p of this.towers) {
+      if (p.def.role !== 'support' || p === t) continue;
+      const ps = computeStats(p.def, p.tiers);
+      if (Math.hypot(p.x - t.x, p.y - t.y) > ps.range) continue;
+      a ??= { damage: 1, add: 0, range: 1, shield: false, hidden: false, discount: 0 };
+      a.damage = Math.max(a.damage, ps.auraDamage);
+      a.add = Math.max(a.add, ps.auraDamageAdd);
+      a.range = Math.max(a.range, ps.auraRange);
+      a.shield ||= ps.auraShield;
+      a.hidden ||= ps.auraHidden;
+      a.discount = Math.max(a.discount, ps.discount);
+    }
+    return a;
+  }
+
+  /** The tribune steps (Town Hall): towers there reach RAISED_RANGE further. */
+  isRaised(tx: number, ty: number): boolean {
+    return this.raised !== null && this.inBounds(tx, ty) && this.raised[ty * this.level.size.w + tx] === 1;
   }
 
   /** Is this a tile with bad wifi? */
@@ -1373,6 +1437,7 @@ export class Game {
   /** Lunch break: everyone on the floor walks faster while it lasts. */
   get lunchHaste(): number {
     const hz = this.level.hazard;
+    if (this.hazardOn && hz?.type === 'firealarm') return this.time < this.hazardUntil - hz.rush ? 0 : hz.haste;
     return this.hazardOn && hz?.type === 'lunch' ? hz.haste : 1;
   }
 
@@ -1466,7 +1531,7 @@ export class Game {
         this.phone = pool[Math.floor(this.rng.next() * pool.length) % pool.length];
       }
       this.hazardOn = true;
-      this.hazardUntil = this.time + hz.window;
+      this.hazardUntil = this.time + (hz.type === 'firealarm' ? hz.freeze + hz.rush : hz.window);
       this.hazardSolved = [];
       this.events.push({ t: 'hazard', kind: hz.type, on: true, until: this.hazardUntil });
     } else if (this.hazardOn && this.time >= this.hazardUntil) {
@@ -1534,7 +1599,9 @@ export class Game {
     let at = this.time;
     for (const g of groups) {
       for (let i = 0; i < g.count; i++) {
-        this.pending.push({ at, seq: this.seq++, type: g.type, pathIndex });
+        // Town Hall: one through each entrance in turn.
+        const p = this.level.splitPaths ? this.seq % this.paths.length : pathIndex;
+        this.pending.push({ at, seq: this.seq++, type: g.type, pathIndex: p });
         at += g.interval;
       }
     }
@@ -1902,6 +1969,8 @@ export class Game {
         this.updateMortar(t, s, dt);
         continue;
       }
+      // A Motivational Poster only works through the towers around it (updateAuras).
+      if (t.def.role === 'support') continue;
       if (s.ability) this.updateAbility(t, s, dt);
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;

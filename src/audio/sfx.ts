@@ -37,6 +37,7 @@ export const SOUNDS = [
   'phone',
   'tick',
   'splat',
+  'alarm',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 

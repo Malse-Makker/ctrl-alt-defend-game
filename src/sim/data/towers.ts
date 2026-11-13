@@ -15,8 +15,9 @@ export type DamageClass = 'digital' | 'physical';
  * everyone standing in it. trap: drops piles on the walkway that hit whoever walks over them.
  * smash: slams the walkway and leaves a barrier. chair: rolls down a straight lane and back.
  * mortar: lobs at a tile the player picks, anywhere on the floor, over everything in between.
+ * support: does nothing itself, makes the towers around it better (Motivational Poster).
  */
-export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap' | 'smash' | 'chair' | 'mortar';
+export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap' | 'smash' | 'chair' | 'mortar' | 'support';
 export type TargetMode = 'first' | 'last' | 'closest' | 'farthest' | 'strongest' | 'weakest';
 export type Tiers = [number, number, number];
 
@@ -157,6 +158,19 @@ export interface Effect {
   barrierThorns?: number;
   /** Every smash comes twice. */
   doubleSmash?: boolean;
+  // Motivational Poster: what it does for the towers in its range (the best poster counts)
+  /** Towers in range deal this much more damage (1.15 = +15%). */
+  auraDamage?: number;
+  /** Towers in range deal this much extra damage per hit. */
+  auraDamageAdd?: number;
+  /** Towers in range reach this much further (1.1 = +10%). */
+  auraRange?: number;
+  /** Towers in range get through any shield. */
+  auraShield?: boolean;
+  /** Towers in range see hidden colleagues. */
+  auraHidden?: boolean;
+  /** Upgrades for towers in range cost this share less (0.15 = 15% off). */
+  discount?: number;
   // Pomodoro Timer
   /** Every launch sends a second tomato after the first. */
   doubleShot?: boolean;
@@ -223,6 +237,8 @@ export interface TowerBase {
   stun?: number;
   /** Zone: damage per second, shared over everyone inside. */
   dot?: number;
+  /** Support: towers in range fire this much faster (0.9 = 10% shorter reload). */
+  buffRate?: number;
 }
 
 export interface TowerDef {
@@ -886,6 +902,52 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  poster: {
+    id: 'poster',
+    name: 'Motivational Poster',
+    flavour: 'Hang in there.',
+    verb: 'Does nothing itself. Every tower around it works a bit faster, because someone believes in it.',
+    role: 'support',
+    unlockLevel: 9,
+    accent: '#f2c641',
+    models: ['poster_1', 'poster_2', 'poster_3'],
+    base: { cost: 30, range: 2.5, buffRate: 0.9 },
+    paths: [
+      {
+        name: 'HANG IN THERE',
+        quote: 'Teamwork makes the dream work.',
+        color: '#3fa7a0',
+        tiers: [
+          { name: 'Hang In There', desc: 'Towers around it fire 10% faster on top.', cost: 25, effect: { buffRate: 0.8 } },
+          { name: 'Team Spirit', desc: 'Towers around it fire 25% faster in all.', cost: 40, effect: { buffRate: 0.72 } },
+          { name: 'All Hands', desc: 'Towers around it see hidden colleagues.', cost: 90, effect: { auraHidden: true } },
+          { name: 'Employee of the Month', desc: 'Towers around it fire 50% faster and hit 20% harder.', cost: 260, effect: { buffRate: 0.6, auraDamage: 1.2 } },
+        ],
+      },
+      {
+        name: 'FRAMED PRINT',
+        quote: 'Believe. Achieve. Repeat.',
+        color: '#e2553f',
+        tiers: [
+          { name: 'Framed Print', desc: 'Towers around it hit 10% harder.', cost: 28, effect: { auraDamage: 1.1 } },
+          { name: 'Quote of the Day', desc: 'Towers around it hit 20% harder.', cost: 45, effect: { auraDamage: 1.2 } },
+          { name: 'Inspirational Quote', desc: 'Towers around it get through any shield, and +1 damage.', cost: 110, effect: { auraShield: true, auraDamageAdd: 1 } },
+          { name: 'Mission Statement', desc: 'Towers around it hit 45% harder.', cost: 280, effect: { auraDamage: 1.45 } },
+        ],
+      },
+      {
+        name: 'LED WALL',
+        quote: 'Our people are our greatest asset.',
+        color: '#7fb6e3',
+        tiers: [
+          { name: 'Bigger Frame', desc: 'Reaches 25% more towers around it.', cost: 18, effect: { rangeMult: 1.25 } },
+          { name: 'Backlit', desc: 'Towers around it reach 10% further.', cost: 35, effect: { auraRange: 1.1 } },
+          { name: 'Sponsored Content', desc: 'Upgrades for towers around it cost 15% less.', cost: 80, effect: { discount: 0.15 } },
+          { name: 'LED Wall', desc: 'Towers around it reach 20% further, upgrades cost 25% less, and it reaches further itself.', cost: 240, effect: { auraRange: 1.2, discount: 0.25, rangeMult: 1.2 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
@@ -919,5 +981,4 @@ export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Motivational Poster', unlockLevel: 9 },
 ];

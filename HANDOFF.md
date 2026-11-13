@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.24.0 (2026-11-13)
+## Stand: v0.25.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,29 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 9 Town Hall (v0.25.0)
+- Kaart uit het ontwerp, twee ingangen (`level.splitPaths`: binnen een golf om en om, zodat beide
+  banen tegelijk druk zijn; mijn keuze). Bureau op (10, 11) i.p.v. tegen het scherm (stoel). De
+  `n`-tegels (middenpad, podium) zijn `-` geworden: de Thumbtacks-regel is van de Canteen.
+- Tribune `^`: +25% bereik (`RAISED_RANGE`, `isRaised`). Treden zijn decor met `raise: 0.18`: een
+  toren staat er met zijn kastje op (`raiseAt` in world.ts, `lift` in Actors).
+- Brandalarm (hazard `firealarm`): iedereen 2 s stil, dan 6 s x1,4 (via `lunchHaste`).
+- **Motivational Poster** (rol `support`, L9, mijn ontwerp): basis bereik 2,5, torens erin vuren
+  10% sneller (`buffRate` 0,9, via de bestaande Headphones-buff). Paden: HANG IN THERE (sneller; T3
+  zien verborgen; T4 x0,6 herlaad en +20% schade), FRAMED PRINT (+10/+20%; T3 door schilden en +1;
+  T4 +45%), LED WALL (groter; T2 hun bereik +10%; T3 upgrades 15% goedkoper; T4 +20% bereik, 25%
+  korting). `posterAura(t)` in game.ts, beste poster per soort telt. Modellen `poster_1-3` + iconen.
+- Nieuwe modellen: `tribune_step`, `auditorium_seats`, `control_desk`, `tv_camera`, `stage_screen`
+  (laag gehouden: een hoog scherm onderaan verborg het podium). Geluid `alarm`.
+- Bots: nieuwe plek-soorten `support` (Poster waar de meeste geïnvesteerde torens binnen bereik
+  staan) en `view` (tegel met het meeste zichtbare pad op vol bereik).
+- **OPEN, balans L9 (voor de maker):** twee korte banen van ~20 tegels die pas vlak voor je bureau
+  samenkomen. Goed spelen wint met 51 Focus en 2 sterren (Repair Guy, twee Board Members, een Old
+  Guard komen door); eerst koffie wint met 9-17 Focus. Geen golf- of bossinstelling maakte goed
+  spelen foutloos (boss x0,7 tot x1,8 en golven x0,65 tot x1 gemeten; de Repair Guy komt steeds
+  door: de banen zijn te kort). Test eist nu winnen met >= 2 sterren. Opties: langere banen (bijv.
+  om de tribunes heen), of het samenkomstpunt hoger in de zaal.
 
 ### Level 8 Hot Desks (v0.24.0), keuzes maker met knoppen
 - **Pomodoro Timer** (rol `mortar`, PHYSICAL, L8): richt op een tegel, hele vloer, **geen zicht

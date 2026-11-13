@@ -25,7 +25,8 @@ ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3", "autoreply_1", "autoreply_
                   "shredder_p0_3", "shredder_p0_4", "shredder_p1_3", "shredder_p1_4", "shredder_p2_3", "shredder_p2_4",
                   "keyboardsmash_1", "keyboardsmash_2", "keyboardsmash_3", "chair_1", "chair_2", "chair_3",
                   "replyall_1", "replyall_2", "replyall_3", "delegation_1", "delegation_2", "delegation_3",
-                  "pomodoro_1", "pomodoro_2", "pomodoro_3"]
+                  "pomodoro_1", "pomodoro_2", "pomodoro_3",
+                  "poster_1", "poster_2", "poster_3"]
 
 
 def render_icon(key, out_dir, size):

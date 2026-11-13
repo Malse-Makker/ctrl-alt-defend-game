@@ -3,6 +3,18 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.25.0] - 2026-11-13
+
+### New
+- Level 9, Town Hall: the whole company in the auditorium. Two entrances at the back, both busy every wave, meeting in front of the stage where your desk is. Opens once you finish Hot Desks.
+- The tribune: towers on the steps between the rows of seats reach 25% further.
+- The fire alarm: everyone stops where they are for two seconds, then rushes to the front.
+- The Motivational Poster: does nothing itself, makes the towers around it better. HANG IN THERE makes them fire faster, FRAMED PRINT makes them hit harder and through shields, LED WALL makes them reach further and their upgrades cheaper.
+- The Repair Guy is back for the end of Town Hall, and heavier.
+
+### Changed
+- Every tower has arrived now, so the Coming later list is gone from the shop.
+
 ## [0.24.0] - 2026-11-13
 
 ### New

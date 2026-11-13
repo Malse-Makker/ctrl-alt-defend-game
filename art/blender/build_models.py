@@ -2713,6 +2713,123 @@ def b_reserved_sign():
     return root
 
 
+# ---------------------------------------------------------------- level 9: Town Hall
+
+def _poster_board(w, hgt, z, col, text_col="plastic_white", emit=0.3, name="Board"):
+    frame = box(f"{name}Frame", (w + 0.06, 0.04, hgt + 0.06), loc=(0, 0.1, z - 0.03), material=mat("plastic_black"))
+    art = box(f"{name}Art", (w, 0.045, hgt), loc=(0, 0.095, z), material=mat(col, emit=emit))
+    sun = ball(f"{name}Sun", w * 0.16, loc=(0, 0.07, z + hgt * 0.62), material=mat("yellow", emit=emit + 0.4), subdiv=1, scale=(1, 0.2, 1))
+    hill = box(f"{name}Hill", (w * 0.9, 0.05, hgt * 0.22), loc=(0, 0.08, z + hgt * 0.12), material=mat("plant", emit=emit), taper=0.5)
+    line = box(f"{name}Line", (w * 0.7, 0.05, 0.035), loc=(0, 0.075, z + hgt * 0.04), material=mat(text_col, emit=emit + 0.3))
+    return [frame, art, sun, hill, line]
+
+
+def b_poster_1():
+    root = empty("poster_1")
+    h = 0.42
+    parts = side_desk("Desk")
+    easel = [box(f"Easel{i}", (0.03, 0.03, 0.62), loc=(x, 0.12, h), material=mat("wood_dark")) for i, x in enumerate((-0.2, 0.2))]
+    parts += easel + _poster_board(0.42, 0.5, h + 0.12, "#5a7fb4")
+    ob = join("poster_1_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_poster_2():
+    root = empty("poster_2")
+    h = 0.42
+    parts = side_desk("Desk")
+    easel = [box(f"Easel{i}", (0.035, 0.035, 0.8), loc=(x, 0.12, h), material=mat("metal")) for i, x in enumerate((-0.27, 0.27))]
+    parts += easel + _poster_board(0.56, 0.62, h + 0.16, "#3fa7a0", emit=0.5)
+    ob = join("poster_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_poster_3():
+    """Tier 4: an LED wall on a stand, glowing."""
+    root = empty("poster_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    stand = box("Stand", (0.08, 0.08, 0.3), loc=(0, 0.12, h), material=mat("metal"))
+    parts += [stand] + _poster_board(0.7, 0.55, h + 0.3, "#2f3d5c", emit=1.2)
+    leds = [box(f"Led{i}", (0.04, 0.05, 0.04), loc=(-0.3 + i * 0.12, 0.07, h + 0.9), material=mat(["red", "yellow", "teal", "pink", "blue", "plant"][i], emit=2.5)) for i in range(6)]
+    ob = join("poster_3_mesh", parts + leds)
+    parent(ob, root)
+    return root
+
+
+def b_tribune_step():
+    """A raised step of the tribune: towers on it stand a little higher and see further."""
+    root = empty("tribune_step")
+    step = box("Step", (1.0, 1.0, 0.18), loc=(0, 0, 0), material=mat("#8a6a4c", rough=0.7))
+    nose = box("Nose", (1.0, 0.06, 0.02), loc=(0, -0.47, 0.18), material=mat("yellow"))
+    ob = join("tribune_step_mesh", [step, nose])
+    parent(ob, root)
+    return root
+
+
+def b_auditorium_seats():
+    """One tile of a row of folding seats on a riser, facing -Y."""
+    root = empty("auditorium_seats")
+    riser = box("Riser", (1.0, 1.0, 0.18), loc=(0, 0, 0), material=mat("#8a6a4c", rough=0.7))
+    parts = [riser]
+    for i, x in enumerate((-0.24, 0.24)):
+        parts.append(box(f"Seat{i}", (0.4, 0.38, 0.06), loc=(x, -0.05, 0.6), material=mat("#8f3b33", rough=0.6), bevel=0.02))
+        parts.append(box(f"Back{i}", (0.4, 0.06, 0.44), loc=(x, 0.17, 0.62), material=mat("#8f3b33", rough=0.6), bevel=0.02))
+        parts.append(box(f"Arm{i}", (0.04, 0.4, 0.3), loc=(x + 0.22, 0.0, 0.42), material=mat("metal")))
+    parts.append(box("Leg", (0.9, 0.06, 0.42), loc=(0, 0.17, 0.18), material=mat("metal")))
+    ob = join("auditorium_seats_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_control_desk():
+    """The sound and light desk at the back, two tiles wide, faders and all. Front to -Y."""
+    root = empty("control_desk")
+    body = box("Body", (1.9, 0.7, 0.8), loc=(0, 0.05, 0), material=mat("charcoal"), bevel=0.02)
+    top = box("Top", (1.9, 0.6, 0.05), loc=(0, 0.05, 0.8), material=mat("plastic_black"))
+    kit.tilt([top], rx=-0.25, pivot=(0, 0.05, 0.8))
+    parts = [body, top]
+    for i in range(12):
+        parts.append(box(f"Fader{i}", (0.04, 0.12, 0.03), loc=(-0.8 + i * 0.145, 0.0, 0.84 + (i % 3) * 0.01), material=mat(["red", "yellow", "plant"][i % 3], emit=1.2)))
+    parts += _monitor(-0.4, 0.3, 0.86, w=0.5, hgt=0.3) + _monitor(0.4, 0.3, 0.86, w=0.5, hgt=0.3)
+    ob = join("control_desk_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_tv_camera():
+    """A camera on a tripod, pointed at the stage (-Y)."""
+    root = empty("tv_camera")
+    parts = []
+    for i, a in enumerate((0.0, 2.1, 4.2)):
+        leg = box(f"Leg{i}", (0.03, 0.03, 1.3), loc=(math.sin(a) * 0.22, math.cos(a) * 0.22, 0), material=mat("metal"))
+        kit.tilt([leg], rx=math.cos(a) * 0.17, ry=-math.sin(a) * 0.17, pivot=(math.sin(a) * 0.22, math.cos(a) * 0.22, 0))
+        parts.append(leg)
+    body = box("Body", (0.24, 0.5, 0.28), loc=(0, 0, 1.25), material=mat("plastic_black"), bevel=0.03)
+    lens = cyl("Lens", 0.09, 0.2, loc=(0, -0.25, 1.39), material=mat("charcoal"), verts=14)
+    kit.tilt([lens], rx=math.pi / 2, pivot=(0, -0.25, 1.39))
+    tally = box("Tally", (0.05, 0.03, 0.04), loc=(0, -0.2, 1.55), material=mat("red", emit=3.0))
+    ob = join("tv_camera_mesh", parts + [body, lens, tally])
+    parent(ob, root)
+    return root
+
+
+def b_stage_screen():
+    """The screen at the front of the stage, ten tiles wide but kept low so you can still see
+    the stage over it. Front to -Y."""
+    root = empty("stage_screen")
+    frame = box("Frame", (9.4, 0.16, 1.1), loc=(0, 0, 0.1), material=mat("plastic_black"))
+    legs = [box(f"Leg{i}", (0.08, 0.3, 0.1), loc=(x, 0, 0), material=mat("metal")) for i, x in enumerate((-4.4, 4.4))]
+    glow = box("Glow", (9.1, 0.05, 0.85), loc=(0, -0.08, 0.22), material=mat("#2f3d5c", emit=0.9))
+    parts = [frame, glow] + legs
+    for i, (w, z, c) in enumerate(((6.0, 0.85, "plastic_white"), (4.0, 0.6, "yellow"), (7.0, 0.35, "teal"))):
+        parts.append(box(f"Line{i}", (w, 0.06, 0.1), loc=(0, -0.1, z), material=mat(c, emit=1.4)))
+    ob = join("stage_screen_mesh", parts)
+    parent(ob, root)
+    return root
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2863,6 +2980,14 @@ BUILDERS = {
     "phone_booth": b_phone_booth,
     "desk_phone": b_desk_phone,
     "reserved_sign": b_reserved_sign,
+    "poster_1": b_poster_1,
+    "poster_2": b_poster_2,
+    "poster_3": b_poster_3,
+    "tribune_step": b_tribune_step,
+    "auditorium_seats": b_auditorium_seats,
+    "control_desk": b_control_desk,
+    "tv_camera": b_tv_camera,
+    "stage_screen": b_stage_screen,
 }
 
 

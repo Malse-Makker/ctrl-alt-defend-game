@@ -262,8 +262,8 @@ export class Hud {
       h('div', { class: 'section-head' }, h('span', { class: 'label', text: T.shop })),
       h('div', { class: 'faint', attrs: { style: 'font-size:12px' }, text: T.shopHint }),
       grid,
-      h('div', { class: 'label', attrs: { style: 'margin-top:4px' }, text: T.comingLater }),
-      later,
+      UPCOMING_TOWERS.length ? h('div', { class: 'label', attrs: { style: 'margin-top:4px' }, text: T.comingLater }) : null,
+      UPCOMING_TOWERS.length ? later : null,
     );
     this.towerPanel = h('div', { class: 'tower-panel panel' });
     this.towerPanel.hidden = true;
@@ -569,6 +569,21 @@ export class Hud {
       const dealt = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
       dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
+    } else if (def.role === 'support') {
+      const towersNear = h('span', { class: 'v' });
+      stats.append(
+        h('span', { class: 'k', text: 'Fire rate' }),
+        h('span', { class: 'v', text: `+${Math.round((1 / s.buffRate - 1) * 100)}%` }),
+        h('span', { class: 'k', text: T.range }),
+        h('span', { class: 'v', text: fmt(s.range, 2) }),
+      );
+      if (s.auraDamage > 1 || s.auraDamageAdd > 0) stats.append(h('span', { class: 'k', text: 'Damage' }), h('span', { class: 'v', text: `+${Math.round((s.auraDamage - 1) * 100)}%${s.auraDamageAdd ? ` +${s.auraDamageAdd}` : ''}` }));
+      if (s.auraRange > 1) stats.append(h('span', { class: 'k', text: 'Their reach' }), h('span', { class: 'v', text: `+${Math.round((s.auraRange - 1) * 100)}%` }));
+      if (s.discount > 0) stats.append(h('span', { class: 'k', text: 'Upgrades' }), h('span', { class: 'v', text: `-${Math.round(s.discount * 100)}%` }));
+      const extra = [s.auraShield ? 'through shields' : '', s.auraHidden ? 'they see hidden' : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      stats.append(h('span', { class: 'k', text: 'Towers helped' }), towersNear);
+      dyn.push(() => setText(towersNear, String(g.towers.filter((o) => o !== t && o.def.role !== 'economy' && o.def.role !== 'support' && Math.hypot(o.x - t.x, o.y - t.y) <= s.range).length)));
     } else if (def.role === 'mortar') {
       stats.append(
         h('span', { class: 'k', text: T.damage }),

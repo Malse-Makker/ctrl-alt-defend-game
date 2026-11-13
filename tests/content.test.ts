@@ -115,6 +115,7 @@ describe('DIGITAL and PHYSICAL', () => {
       keyboardsmash: 'physical',
       chair: 'physical',
       pomodoro: 'physical',
+      poster: 'none',
     });
   });
 });

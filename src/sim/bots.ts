@@ -154,7 +154,7 @@ export const beginnerBot: Bot = {
 // ------------------------------------------------------------------ scripted build orders
 
 type Step =
-  | { place: string; spot: 'cover' | 'far' | 'zone' | 'desk'; from?: number }
+  | { place: string; spot: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'; from?: number }
   | { up: string; path: number; all?: boolean };
 
 /** A good player's build order for a level, step by step; each step waits until it is affordable. */
@@ -404,7 +404,68 @@ SCRIPTS[8] = [
   { up: 'autoreply', path: 1, all: true },
 ];
 
-function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'): Spot | undefined {
+SCRIPTS[9] = [
+  // Town Hall: two entrances busy at once, joined in front of the stage. Most towers at the
+  // meeting point; Office Artillery right by each long lane (the seats block everything else),
+  // and a Motivational Poster next to the busiest towers.
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'view' },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'pomodoro', path: 1 },
+  { up: 'artillery', path: 0 },
+  { place: 'poster', spot: 'support' },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'poster', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'poster', path: 1 },
+  { place: 'artillery', spot: 'view' },
+  { up: 'artillery', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'replyall', path: 0 },
+  { up: 'poster', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
+function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'): Spot | undefined {
+  if (kind === 'view') {
+    // The tile that sees the most walkway at the tower's full reach (Office Artillery on a floor
+    // full of furniture: right by a long, straight stretch).
+    let best: Spot | undefined;
+    for (let ty = 0; ty < g.level.size.h; ty++) {
+      for (let tx = 0; tx < g.level.size.w; tx++) {
+        if (!placeable(g, def, tx, ty)) continue;
+        const cover = seenCoverage(g, { x: tx + 0.5, y: ty + 0.5 }, Math.min(TOWERS[def].base.range, 30));
+        if (!best || cover > best.cover) best = { tx, ty, cover };
+      }
+    }
+    if (best) return best;
+  }
+  if (kind === 'support') {
+    // A Motivational Poster goes where it reaches the most Coffee already spent on towers.
+    const r = TOWERS[def].base.range;
+    let best: Spot | undefined;
+    for (let ty = 0; ty < g.level.size.h; ty++) {
+      for (let tx = 0; tx < g.level.size.w; tx++) {
+        if (!placeable(g, def, tx, ty)) continue;
+        const cover = g.towers.filter((t) => t.def.role !== 'economy' && t.def.role !== 'support' && Math.hypot(t.x - tx - 0.5, t.y - ty - 0.5) <= r).reduce((n, t) => n + t.invested, 0);
+        if (!best || cover > best.cover) best = { tx, ty, cover };
+      }
+    }
+    if (best && best.cover > 0) return best;
+  }
   if (kind === 'desk') {
     // The best spot that still covers the last stretch before your desk.
     const path = g.paths[0];

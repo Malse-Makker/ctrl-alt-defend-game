@@ -32,3 +32,4 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | phone | de bureautelefoon gaat over (Hot Desks) | preset `alarm`, profiel `soft-notification`, 1150 Hz sinus met tremolo en een blokgolf-LFO van 2,5 Hz (tring-tring), 1,3 s |
 | tick | een Pomodoro Timer lanceert een tomaat | preset `click`, profiel `mechanical-click`, 1900 Hz, herhaling 70 ms (tikken) |
 | splat | een tomaat landt | preset `hit`, profiel `punchy-impact`, 220 Hz omlaag, veel ruis, crackle |
+| alarm | het brandalarm gaat af (Town Hall) | preset `alarm`, profiel `punchy-impact`, 880 Hz blokgolf, herhaling 120 ms, toon omlaag, 1,4 s |

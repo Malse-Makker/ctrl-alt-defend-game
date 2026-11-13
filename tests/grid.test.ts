@@ -33,7 +33,7 @@ describe('the tile grid', () => {
       for (let y = d.rect.y; y < d.rect.y + d.rect.h; y++) {
         for (let x = d.rect.x; x < d.rect.x + d.rect.w; x++) {
           const free = !g.isBlockedTile(x, y) && !g.isPathTile(x, y);
-          if (free && d.surface === undefined) wrong.push(`${d.model} on ${x},${y}`);
+          if (free && d.surface === undefined && d.raise === undefined) wrong.push(`${d.model} on ${x},${y}`);
           if (d.surface !== undefined && level.grid![y][x] !== 'o') wrong.push(`worktop ${d.model} on '${level.grid![y][x]}' at ${x},${y}`);
         }
       }

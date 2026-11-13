@@ -198,3 +198,25 @@ describe('Level 8 difficulty (Hot Desks)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 9 difficulty (Town Hall)', () => {
+  const level = LEVELS[9];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.25.0): two short lanes (about 20 tiles each) that only meet right in
+  // front of your desk. Measured, seeds 1 and 2: good play wins with 51 Focus and 2 stars, The
+  // Repair Guy, two Board Members and an Old Guard get through; no wave or boss setting made it
+  // flawless (boss HP x0.7 to x1.8, waves x0.65 to x1). Coffee first wins with 9 to 17 Focus.
+  it('good play wins with at least two stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});
