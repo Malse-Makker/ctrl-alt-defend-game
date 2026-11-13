@@ -37,8 +37,15 @@ bots, een eigen boss-mechaniek die een andere aanpak afdwingt.
 
 Alle 15 levels opnieuw ingericht volgens `/home/mick/projecten/CTRL-ALT-DEFEND/docs/leveldesign/`
 (tegelraster, meubels op schaal, zichtblokkades, een eigen kaartregel per level).
-KLAAR: L1 Reception (poortjes) en L2 Coffee Corner (alleen werkbladen), v0.17.0. Eerst review van
-de maker, dan L3-L15 in die volgorde (inclusief het hernoemen naar DIGITAL/PHYSICAL bij L3).
+KLAAR (2026-11-13, v0.17.0 tot v0.31.0): alle 15 levels naar het nieuwe ontwerp, plus de
+zichtregel (alle meubels blokkeren zicht, rood bereik zoals Bloons), DIGITAL/PHYSICAL, de
+Pomodoro Timer (L8) en de Motivational Poster (L9), en de bosses The Consultant (L11), The HR
+Manager (L12), The Project Manager (L14) en Your Line Manager, 360 (L15). Per level staan de
+keuzes en metingen in HANDOFF.md.
+
+Nog open uit deze ronde (zie HANDOFF.md, "OPEN"): de balans van L9 tot en met L13 en L15 haalt
+met de bots niet "goed spelen is foutloos" (L13 het zwaarst), en de eigen mini-game voor de
+laatste boss.
 
 ## Fase 3: medior en senior
 
@@ -47,10 +54,9 @@ The Baby.
 KLAAR: Level 7 The Car Park (v0.16.0): uitlaatgassen, Delegation, The Phone Caller, The Smoking
 Colleague.
 
-Levels 6-15 met hun hazards en mini-games (No Internet-dino, telefoon, brandalarm, formulier,
-pizza, oververhitting), de resterende torens (Reply All, Delegation, Pomodoro, Motivational Poster,
-Ctrl+Alt+Del als knop met cooldown), de collega's met immuniteiten (Board Member, Cold Caller,
-Old Guard met schild, Phone Caller), en daarna Boss Rush en Endless.
+KLAAR: levels 8-15 met hun hazards (telefoon, brandalarm, jaloezieën, formulier, oververhitting,
+pizza) en de torens Pomodoro Timer en Motivational Poster.
+Nog te doen: Ctrl+Alt+Del als knop met cooldown, Boss Rush en Endless.
 
 ## Balansronde als alle levels en torens er zijn (besluit maker, 2026-11-08)
 
