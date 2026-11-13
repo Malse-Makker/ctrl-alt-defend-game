@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.31.1] - 2026-11-13
+
+### Changed
+- The Phone Caller is now The Speakerphone Caller: he takes every call on speaker, in the middle of the floor, so everyone looks. Easier to tell apart from The Cold Caller.
+
+### Fixed
+- Texts that promised something the game does not do. Office Artillery only hits what it can see, so where you put it matters. The Motivational Poster helps towers that reload, not Coffee Machines or The Shredder, and its upgrades now say how much faster. Franchise, Lo-fi Beats, The Baby, The Chaser, The New Hire, The Presenter, Your Line Manager, The Impersonator and The Smoking Colleague say what they actually do.
+- A boss calling for backup no longer says it is Interns when it is not.
+- The shop only shows a number on towers that have a key (1 to 9).
+- In the Server Room the cold slows reloading; the text now says so.
+
 ## [0.31.0] - 2026-11-13
 
 ### New

@@ -24,6 +24,33 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
 
+### Review torens en collega's (2026-11-13): besluiten van de maker
+
+De review staat lokaal in `/home/mick/projecten/CTRL-ALT-DEFEND/docs/review/TORENS_EN_COLLEGAS.md`
+(niet in git). Kern: niets schrappen, het gat zit in de uitleg. We werken het plan in 14 stappen af
+(hoofdstuk 10), elke stap een versie. Besluiten (nummers uit hoofdstuk 11):
+
+1. Old Guard: de regel blijft, het spel legt hem uit (briefing, icoon, zichtbaar ketsen, eerst
+   alleen, hint als hij doorloopt).
+2. Kaart nieuwe collega: de eerste keer pauzeren. Bij een replay mag het de flow niet breken: een
+   schakelaar "tips aan/uit" bij opnieuw spelen, dezelfde schakelaar globaal in settings, plus een
+   knop "tips resetten".
+3. Introducties herschikken: L2 Headphones + Artillery, L3 Quick Reply + Self-Service, L4 Shredder +
+   Thumbtacks. Balansronde L2-L5, nieuwe botscripts.
+4. DIGITAL/PHYSICAL houden en zichtbaar maken (kleur, icoon, doorgestreept icoon op immune collega's).
+5. Chatterbox: Noise Cancelling (tier 2) beschermt ook de torens binnen bereik van die Headphones.
+   Kring tekenen.
+6. Artillery houdt zicht (ik, volgt uit v0.18). Tekst eerlijk, gedekt pad met percentage.
+7. Stop-halvering weg voor gewone collega's; bosses houden hun weerstand.
+8. Brown Noise repareren (ik): onthuld tot de volgende puls.
+9. Self-Service: eigen werkwoord, vertragen ("Please hold"), weinig schade.
+10. The Phone Caller heet voortaan **The Speakerphone Caller**, ander uiterlijk. Eis maker:
+    collega's blijven mensen, torens blijven voorwerpen.
+11. `zoneProof` weg (ik): is de doos stuk, dan mag de Shredder.
+12. Quick Reply wordt de zwerm-toren: opbouw weg, KEEP TYPING krijgt een ander effect.
+13. Eerst tier-stippen uit de code, daarna voorwerpjes per pad (ik).
+14. Reply All: grotere straal, minder schade per mail.
+
 ### Level 15 Boardroom III (v0.31.0)
 - Kaart = L10 plus een achterdeur rechts (pad 2 voegt aan de rechterkant in, `splitPaths`) en een
   champagnebar; jaloezieën elke 20 s (`every: 10`, 10 s dicht). 22 golven van de Boardroom.

@@ -399,7 +399,7 @@ export class Session {
       case 'bossPhase': {
         sfx.play('bossphase');
         const e = g.enemy(ev.enemyId);
-        this.hud?.toast(`${e ? e.def.name : 'The boss'} calls everyone in. (${ev.called} Interns)`, 'warn');
+        this.hud?.toast(T.bossBackup.replace('{name}', e ? e.def.name : 'The boss'), 'warn');
         break;
       }
       case 'split':

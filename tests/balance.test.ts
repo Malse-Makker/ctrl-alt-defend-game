@@ -163,7 +163,7 @@ describe('Level 6 difficulty (the first medior floor)', () => {
 describe('Level 7 difficulty (The Car Park)', () => {
   const level = LEVELS[7];
 
-  it('Auto-Replies alone are not enough: fumes and Phone Callers see to that', () => {
+  it('Auto-Replies alone are not enough: fumes and Speakerphone Callers see to that', () => {
     expect(runBot(level, spamBot).won).toBe(false);
   });
 

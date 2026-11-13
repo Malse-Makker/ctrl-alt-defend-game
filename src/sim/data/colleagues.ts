@@ -65,6 +65,12 @@ export interface ColleagueDef {
   quote: string;
   ability: string;
   counter: string;
+  /** The new-colleague card: what he does, one short line. Bosses use their intro instead. */
+  short?: string;
+  /** The new-colleague card: what helps, one short line. */
+  helps?: string;
+  /** Towers that answer him, shown as icons on the card. At least one is in the shop where he first turns up. */
+  counters?: string[];
   hp: number;
   speed: number;
   focus: number;
@@ -86,7 +92,7 @@ export interface ColleagueDef {
   stunResist?: number;
   /** Towers this close aim at him before anyone else (all the attention). */
   taunt?: number;
-  /** Takes this share of a hit from towers that hit one colleague at a time (The Phone Caller: 0.5). */
+  /** Takes this share of a hit from towers that hit one colleague at a time (The Speakerphone Caller: 0.5). */
   pointResist?: number;
   split?: { into: string; count: number };
   boss?: BossDef;
@@ -110,6 +116,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Is this the right floor?',
     ability: 'Just there. And there are a lot of them. Some bosses call more in.',
     counter: 'Any cheap damage tower. One Auto-Reply handles a few.',
+    short: 'Light. There are a lot of them.',
+    helps: 'Anything cheap.',
+    counters: ['autoreply'],
     hp: 4,
     speed: 2.625,
     focus: 1,
@@ -125,7 +134,10 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Normal, heavy',
     quote: 'Sorry, where do I find...?',
     ability: 'Lasts a lot longer than an Intern. Keeps asking for directions.',
-    counter: 'Upgrade your Auto-Reply. Level 1 is too slow for these.',
+    counter: 'Upgrade your Auto-Reply. A bare one is too slow for these.',
+    short: 'Tougher than an Intern.',
+    helps: 'Upgrade a tower instead of buying another.',
+    counters: ['autoreply', 'quickreply'],
     hp: 12,
     speed: 2.0,
     focus: 2,
@@ -141,7 +153,10 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Fast, weak, many',
     quote: 'Just bumping this up your inbox.',
     ability: 'Very fast and never alone. Gone past your towers before they finish a sentence.',
-    counter: 'More shots per second, or more targets per shot (ESCALATION).',
+    counter: 'Towers that hit several at once, or one that fires fast.',
+    short: 'Fast, weak, never alone.',
+    helps: 'Towers that hit several at once, or one that fires fast.',
+    counters: ['quickreply', 'thumbtacks', 'delegation', 'shredder'],
     hp: 3,
     speed: 4.75,
     focus: 1,
@@ -158,6 +173,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Can we just tweak one thing?',
     ability: 'When you deal with him, two Chasers come out of the conversation.',
     counter: 'Hit him early, with towers further down the route ready for the two halves.',
+    short: 'Deal with him and two Chasers come out.',
+    helps: 'Hit him early. Keep something behind for the Chasers.',
+    counters: ['delegation', 'quickreply', 'shredder'],
     hp: 16,
     speed: 2.0,
     focus: 3,
@@ -202,6 +220,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Did you see what happened at the party?',
     ability: 'Every tower near him stops working while he talks. Ignores slowing down: only Headphones make him stop.',
     counter: 'Headphones just out of his reach, or NOISE CANCELLING at tier 2 anywhere: he cannot talk those quiet. Or keep your towers away from his route.',
+    short: 'Towers close to him stop working.',
+    helps: 'Hit him from further away. Headphones pause him.',
+    counters: ['artillery', 'headphones'],
     hp: 22,
     speed: 1.875,
     focus: 5,
@@ -220,6 +241,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'We tried that in 1998.',
     ability: 'Drags the archive box along. Hits under 10 bounce off it, and the Shredder may not touch it: that archive is legally required to be kept.',
     counter: 'Office Artillery breaks the box. Light hits bounce off, so do not count on Auto-Reply alone.',
+    short: 'Carries the archive box. Hits under 10 bounce off it.',
+    helps: 'One heavy hit.',
+    counters: ['artillery', 'pomodoro'],
     hp: 46,
     shield: 30,
     shieldMinHit: 10,
@@ -239,6 +263,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Can everyone hear me? I am on the train.',
     ability: 'Never actually in the building: he attends on a screen. Nothing PHYSICAL touches him, not even the Shredder.',
     counter: 'Send him something. Auto-Reply and everything else DIGITAL works. PHYSICAL towers do nothing at all.',
+    short: 'Attends on a screen. PHYSICAL towers do nothing.',
+    helps: 'Anything DIGITAL.',
+    counters: ['autoreply', 'quickreply'],
     hp: 40,
     speed: 1.5,
     focus: 8,
@@ -255,7 +282,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Can everyone see my screen?',
     ability:
-      'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide straight at your desk: a handful of Chasers appear right next to it.',
+      'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide straight at your desk: a handful of Chasers appear on the last stretch before it.',
     counter: 'Keep something near your desk for the slides. Quick Reply builds up on him; break the loading screen again at 66% and 33%.',
     hp: 560,
     shield: 180,
@@ -271,7 +298,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
       phase3Speed: 1.5,
       addsAt: 0.82,
       shieldRecharge: true,
-      intro: 'His slides land right next to your desk, and his loading screen comes back every phase.',
+      intro: 'His slides land on the last stretch before your desk, and his loading screen comes back every phase.',
     },
     stunResist: 0.4,
     scale: 1,
@@ -315,7 +342,10 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Hidden',
     quote: 'It is me, the CEO. I need gift cards.',
     ability: 'Nobody sees him coming. Your towers cannot aim at him until a Shredder zone shows him up, or a tower that can see hidden colleagues spots him.',
-    counter: 'A Shredder zone on his route, then anything can hit him. Thumbtacks do not need to see him at all.',
+    counter: 'A Shredder zone on his route, then anything can hit him. Thumbtacks, Keyboard Smash, the Office Chair and the Pomodoro Timer hit him anyway. Auto-Reply READ RECEIPTS tier 2 sees him.',
+    short: 'Hidden. Towers that aim cannot see him.',
+    helps: 'A Shredder zone shows him. Tacks hit him anyway.',
+    counters: ['shredder', 'thumbtacks'],
     hp: 10,
     speed: 2.5,
     focus: 3,
@@ -362,7 +392,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Do you have a minute? It will not take long.',
     ability:
       'Three phases. First a stack of agenda points as a shield. At 66% he calls in peer reviewers who keep coming. At 33% he walks faster, and every tower near him reloads a lot slower while he asks how you are getting on.',
-    counter: 'Break the agenda early with anything that hits hard. Keep damage away from his route for the last phase: Office Artillery from across the floor, or a barrier he has to kick.',
+    counter: 'Break the agenda early: anything works on it. Keep damage away from his route for the last phase: Office Artillery from across the floor, or a barrier he has to kick.',
     hp: 720,
     shield: 180,
     speed: 0.9,
@@ -507,6 +537,9 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Is this a good time? Great.',
     ability: 'He does not read email. He calls. Nothing DIGITAL touches him: no Auto-Reply, no Quick Reply, no Reply All.',
     counter: 'Anything PHYSICAL: Office Artillery, The Shredder, Thumbtacks, Keyboard Smash, the Office Chair.',
+    short: 'Does not read email. DIGITAL towers do nothing.',
+    helps: 'Anything PHYSICAL.',
+    counters: ['artillery', 'thumbtacks', 'shredder'],
     hp: 24,
     speed: 2.3,
     focus: 4,
@@ -524,7 +557,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Waaaah.',
     ability:
       'Demands all the attention. Every tower near him aims at him and nobody else, and every so often he has a crying fit: all towers close by stop until it is over.',
-    counter: 'Keep most of your towers out of his reach, so they keep dealing with everyone else. Office Artillery from across the house. Noise Cancelling headphones do not hear the crying.',
+    counter: 'Keep most of your towers out of his reach, so they keep dealing with everyone else. A Pomodoro Timer lobs over the walls. Noise Cancelling headphones do not hear the crying.',
     hp: 950,
     speed: 0.6,
     focus: 30,
@@ -548,11 +581,14 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
   },
   phonecaller: {
     id: 'phonecaller',
-    name: 'The Phone Caller',
+    name: 'The Speakerphone Caller',
     role: 'Taunt',
     quote: 'Sorry, you are breaking up. Can you hear me now?',
-    ability: 'Every tower that deals with one colleague at a time aims at him first, and he can take it: those towers only do him half.',
+    ability: 'Takes every call on speaker, in the middle of the floor, so everyone looks. Every tower near him aims at him first. Towers that hit one colleague at a time only do him half.',
     counter: 'Anything that hits a crowd: Reply All, Self-Service, Thumbtacks, The Shredder, Delegation. Or keep your single-target towers out of his reach.',
+    short: 'Towers near him aim at him first. One-at-a-time towers do him half.',
+    helps: 'Towers that hit a crowd.',
+    counters: ['delegation', 'thumbtacks', 'replyall'],
     hp: 34,
     speed: 2.15,
     focus: 5,
@@ -570,7 +606,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Just popping out for a minute.',
     ability:
-      'Walks through the car park in a cloud of his own smoke. Every tower near him reaches a lot less far, and wherever he stops for a puff the smoke hangs around for a while.',
+      'Walks through the car park in a cloud of his own smoke. Every tower near him reaches a lot less far, and wherever he stops for a puff the smoke hangs around for a while. He brings a Chatterbox along now and then.',
     counter: 'Long range and lots of it: Office Artillery does not care about smoke. Spread your towers out so a cloud never covers all of them.',
     hp: 1000,
     speed: 0.85,

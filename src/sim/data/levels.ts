@@ -817,7 +817,7 @@ const L7: LevelDef = {
   name: 'The Car Park',
   block: 'medior',
   intro: 'Everyone parks underground. Everyone also walks past your car on the way in.',
-  gimmick: 'An underground car park at scale: a car is two tiles wide and three long. You can only build in an empty bay. Exhaust fumes cut your range. Delegation arrives, and The Phone Caller wants all the attention.',
+  gimmick: 'An underground car park at scale: a car is two tiles wide and three long. You can only build in an empty bay. Exhaust fumes cut your range. Delegation arrives, and The Speakerphone Caller wants all the attention.',
   size: { w: 26, h: 17 },
   paths: [
     [
@@ -1344,7 +1344,7 @@ const L13: LevelDef = {
   name: 'Server Room',
   block: 'senior',
   intro: 'The server room. Cold, loud, and the only door into the NOC.',
-  gimmick: 'One long, straight run through the server room. It is cold in there: towers fire at half speed. The room is closed: towers inside only reach colleagues inside, towers outside only those outside; Office Artillery and the Pomodoro Timer reach anywhere. Now and then the cooling fails. The Cleaner is back, heavier, and he is not careful with your cables.',
+  gimmick: 'One long, straight run through the server room. It is cold in there: towers reload at half speed. The room is closed: towers inside only reach colleagues inside, towers outside only those outside; Office Artillery and the Pomodoro Timer reach anywhere. Now and then the cooling fails. The Cleaner is back, heavier, and he is not careful with your cables.',
   size: { w: 34, h: 9 },
   paths: [
     [

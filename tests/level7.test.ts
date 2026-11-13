@@ -1,4 +1,4 @@
-// Level 7: Delegation, The Phone Caller, exhaust fumes and The Smoking Colleague.
+// Level 7: Delegation, The Speakerphone Caller, exhaust fumes and The Smoking Colleague.
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/sim/data/levels';
@@ -35,7 +35,7 @@ describe('Delegation', () => {
   });
 });
 
-describe('The Phone Caller', () => {
+describe('The Speakerphone Caller', () => {
   it('single-target towers aim at him first and only do him half', () => {
     const g = game();
     const t = g.place('autoreply', 8, 1).tower!;
@@ -106,7 +106,7 @@ describe('The Smoking Colleague', () => {
 });
 
 describe('The Car Park', () => {
-  it('has fumes, Delegation, Phone Callers and ends on The Smoking Colleague', () => {
+  it('has fumes, Delegation, Speakerphone Callers and ends on The Smoking Colleague', () => {
     const l = LEVELS[7];
     expect(l.hazard?.type).toBe('smoke');
     expect(l.towers).toContain('delegation');

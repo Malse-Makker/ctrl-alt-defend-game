@@ -24,6 +24,18 @@ describe('player-facing text', () => {
     expect(bad).toEqual([]);
   });
 
+  it('does not point at upgrades, levels or rules that no longer exist', () => {
+    // The Godot version had an ESCALATION side track and towers with levels; review 2026-11-13.
+    const bad = allStrings(COLLEAGUES).filter((t) => /ESCALATION|Level 1 is|does not matter where you put it/.test(t));
+    expect(bad).toEqual([]);
+    expect(TOWERS.artillery.verb).toMatch(/only what it can see/);
+  });
+
+  it('says what a boss calls in without naming the wrong colleague', () => {
+    expect(UI_TEXT.bossBackup).not.toMatch(/Intern/);
+    expect(UI_TEXT.bossBackup).toContain('{name}');
+  });
+
   it('is plain ASCII, so the font can always draw it (no emoji, no fancy quotes)', () => {
     const bad = texts.filter((t) => /[^\x20-\x7e\n]/.test(t));
     expect(bad).toEqual([]);

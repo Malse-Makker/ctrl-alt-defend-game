@@ -234,11 +234,13 @@ export class Hud {
     let key = 1;
     for (const defId of this.game.level.towers) {
       const def = TOWERS[defId];
+      const n = key++;
       const cost = h('span', { class: 'cost' });
       const el = h(
         'button',
         { class: 'shop-item', title: def.verb, on: { click: () => this.act.pick(defId) } },
-        h('span', { class: 'hotkey', text: String(key++) }),
+        // Only 1 to 9 are keys; a number above that would promise a shortcut that does not exist.
+        h('span', { class: 'hotkey', text: n <= 9 ? String(n) : '' }),
         img(`icons/${def.models[0]}.png`, def.name),
         h('span', { class: 'name', text: def.name }),
         cost,
