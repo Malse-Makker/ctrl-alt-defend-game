@@ -2587,6 +2587,58 @@ def b_garage_lift():
     return root
 
 
+# ---------------------------------------------------------------- Pomodoro Timer (level 8)
+
+def _tomato(x, y, z, r, name="Tomato"):
+    body = ball(f"{name}Body", r, loc=(x, y, z + r * 0.85), material=mat("#d8452f", rough=0.45), subdiv=2, scale=(1, 1, 0.85))
+    dial = cyl(f"{name}Dial", r * 0.55, 0.01, loc=(x, y - r * 0.92, z + r * 0.85), material=mat("plastic_white"), verts=16)
+    kit.tilt([dial], rx=math.pi / 2, pivot=(x, y - r * 0.92, z + r * 0.85))
+    hand = box(f"{name}Hand", (r * 0.06, 0.012, r * 0.45), loc=(x, y - r * 0.95, z + r * 0.85), material=mat("plastic_black"))
+    stem = cyl(f"{name}Stem", r * 0.12, r * 0.25, loc=(x, y, z + r * 1.6), material=mat("plant_dark"), verts=8)
+    leaves = [box(f"{name}Leaf{i}", (r * 0.5, r * 0.14, 0.01), loc=(x, y, z + r * 1.62), material=mat("plant"), rot_z=a) for i, a in enumerate((0.0, 1.05, 2.1))]
+    return [body, dial, hand, stem] + leaves
+
+
+def b_pomodoro_1():
+    root = empty("pomodoro_1")
+    h = 0.42
+    parts = side_desk("Desk") + _tomato(0, 0, h, 0.16)
+    note = box("Note", (0.18, 0.18, 0.005), loc=(0.24, 0.12, h), material=mat("yellow"))
+    ob = join("pomodoro_1_mesh", parts + [note])
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_2():
+    root = empty("pomodoro_2")
+    h = 0.42
+    parts = side_desk("Desk") + _tomato(-0.05, 0, h, 0.2) + _tomato(0.25, -0.1, h, 0.09, "Small")
+    ob = join("pomodoro_2_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_3():
+    """Tier 4: a big tomato on a stand, with a bell on top, aimed at the ceiling."""
+    root = empty("pomodoro_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood_dark")
+    stand = cyl("Stand", 0.08, 0.12, loc=(0, 0.05, h), material=mat("metal"), verts=10)
+    parts += [stand] + _tomato(0, 0.05, h + 0.1, 0.24)
+    bell = ball("Bell", 0.07, loc=(0, 0.05, h + 0.56), material=mat("yellow", metal=0.8, rough=0.3), subdiv=1, scale=(1, 1, 0.8))
+    ob = join("pomodoro_3_mesh", parts + [bell])
+    parent(ob, root)
+    return root
+
+
+def b_tomato_shell():
+    """The tomato in flight."""
+    root = empty("tomato_shell")
+    ob = join("tomato_shell_mesh", _tomato(0, 0, -0.12, 0.14))
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2728,6 +2780,10 @@ BUILDERS = {
     "van_long": b_van_long,
     "stairwell": b_stairwell,
     "garage_lift": b_garage_lift,
+    "pomodoro_1": b_pomodoro_1,
+    "pomodoro_2": b_pomodoro_2,
+    "pomodoro_3": b_pomodoro_3,
+    "tomato_shell": b_tomato_shell,
 }
 
 

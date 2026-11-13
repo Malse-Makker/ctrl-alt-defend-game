@@ -145,6 +145,10 @@ export const MODEL_NAMES = [
   'van_long',
   'stairwell',
   'garage_lift',
+  'pomodoro_1',
+  'pomodoro_2',
+  'pomodoro_3',
+  'tomato_shell',
 ] as const;
 
 export class Assets {

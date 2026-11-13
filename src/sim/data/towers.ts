@@ -14,8 +14,9 @@ export type DamageClass = 'digital' | 'physical';
  * damage: shoots. pulse: hits everyone in range every few seconds (no damage). zone: works on
  * everyone standing in it. trap: drops piles on the walkway that hit whoever walks over them.
  * smash: slams the walkway and leaves a barrier. chair: rolls down a straight lane and back.
+ * mortar: lobs at a tile the player picks, anywhere on the floor, over everything in between.
  */
-export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap' | 'smash' | 'chair';
+export type TowerRole = 'economy' | 'damage' | 'pulse' | 'zone' | 'trap' | 'smash' | 'chair' | 'mortar';
 export type TargetMode = 'first' | 'last' | 'closest' | 'farthest' | 'strongest' | 'weakest';
 export type Tiers = [number, number, number];
 
@@ -156,6 +157,11 @@ export interface Effect {
   barrierThorns?: number;
   /** Every smash comes twice. */
   doubleSmash?: boolean;
+  // Pomodoro Timer
+  /** Every launch sends a second tomato after the first. */
+  doubleShot?: boolean;
+  /** The impact leaves a burning patch: damage per second for this many seconds (highest counts). */
+  crater?: { time: number; dps: number };
   // The office chair
   chairHpAdd?: number;
   chairHpMult?: number;
@@ -201,6 +207,7 @@ export interface TowerBase {
   /** Trap: tacks per pile, and how long a pile stays on the floor. */
   pierce?: number;
   pileLife?: number;
+  /** Pomodoro Timer: how far from the tile it lands the impact reaches is `aoe`. */
   /** Quick Reply: damage builds up per hit on the same target, to this multiplier. */
   ramp?: { add: number; max: number };
   interval?: number;
@@ -832,6 +839,53 @@ export const TOWERS: Record<string, TowerDef> = {
       },
     ],
   },
+  pomodoro: {
+    id: 'pomodoro',
+    name: 'Pomodoro Timer',
+    flavour: 'Twenty-five minutes. Then a break. Then twenty-five minutes.',
+    verb: 'Lobs a tomato at a tile you pick, anywhere on the floor, over walls and furniture. Everyone around that tile gets it.',
+    role: 'mortar',
+    damageClass: 'physical',
+    unlockLevel: 8,
+    accent: '#e2553f',
+    models: ['pomodoro_1', 'pomodoro_2', 'pomodoro_3'],
+    base: { cost: 26, range: 99, interval: 3.0, damage: 7, aoe: 1.0, global: true },
+    paths: [
+      {
+        name: 'FOCUS SPRINT',
+        quote: 'Just one more pomodoro.',
+        color: '#3fa7a0',
+        tiers: [
+          { name: 'Shorter Sprints', desc: 'Lobs 25% more often.', cost: 20, effect: { intervalMult: 0.8 } },
+          { name: 'Timer App', desc: 'Lobs 25% more often again.', cost: 32, effect: { intervalMult: 0.8 } },
+          { name: 'Back to Back', desc: 'Every launch sends two tomatoes, one after the other.', cost: 95, effect: { doubleShot: true } },
+          { name: 'Flow', desc: 'Lobs two thirds more often, and +5 damage.', cost: 240, effect: { intervalMult: 0.6, damageAdd: 5 } },
+        ],
+      },
+      {
+        name: 'DEEP WORK',
+        quote: 'Do not disturb. I mean it.',
+        color: '#e2553f',
+        tiers: [
+          { name: 'Louder Ticking', desc: '+3 damage.', cost: 22, effect: { damageAdd: 3 } },
+          { name: 'Do Not Disturb', desc: '+3 damage, and it gets through any shield.', cost: 34, effect: { damageAdd: 3, ignoresMinHit: true } },
+          { name: 'Burnt Out', desc: 'Leaves a burning patch for 3 seconds that hurts whoever walks through.', cost: 100, effect: { crater: { time: 3, dps: 5 } } },
+          { name: 'Deep Work', desc: 'Two and a half times the damage, and the patch burns 5 seconds.', cost: 270, effect: { damageMult: 2.5, crater: { time: 5, dps: 9 } } },
+        ],
+      },
+      {
+        name: 'BREAK TIME',
+        quote: 'Five minutes. Stretch your legs.',
+        color: '#f2c641',
+        tiers: [
+          { name: 'Bigger Bell', desc: 'Hits 25% wider around the tile.', cost: 18, effect: { aoeMult: 1.25 } },
+          { name: 'Ring Ring', desc: 'Everyone it hits stops for a moment.', cost: 30, effect: { stunOnHit: 0.4 } },
+          { name: 'Snooze', desc: 'Everyone it hits is pushed back a tile (bosses barely move).', cost: 85, effect: { knockback: 1 } },
+          { name: 'Alarm Clock', desc: 'Stops everyone it hits for over a second, pushes them back further, and hits wider.', cost: 220, effect: { stunOnHit: 1.2, knockback: 1.6, aoeMult: 1.3 } },
+        ],
+      },
+    ],
+  },
 };
 
 /** Model for the current upgrades: base, mid (a path at 2), then the leading path's own tier 3 / 4 look. */
@@ -865,6 +919,5 @@ export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [
-  { name: 'Pomodoro Timer', unlockLevel: 8 },
   { name: 'Motivational Poster', unlockLevel: 9 },
 ];

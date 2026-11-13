@@ -75,7 +75,22 @@ export interface SmokeHazard {
   rangeMult: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard;
+/**
+ * The desk phone (Hot Desks): it rings on a flex desk. Hang up (red) and you get Coffee. Pick up
+ * (green) or let it ring, and that desk is stuck on the call: the tower on it does nothing for a while.
+ */
+export interface PhoneHazard {
+  type: 'phone';
+  first: number;
+  every: number;
+  /** Seconds it rings before it counts as ignored. */
+  window: number;
+  reward: number;
+  /** Seconds the desk is stuck on the call. */
+  block: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -102,6 +117,10 @@ export interface LevelDef {
   startFocus: number;
   waves: readonly string[];
   hazard?: HazardDef;
+  /** Hot Desks: this many empty flex desks (b) are reserved at the start of every wave. */
+  reserve?: number;
+  /** The boss comes back heavier: its HP times this (Head of Comms on Hot Desks, x1.8). */
+  bossHpMult?: number;
   /** Leave out for the grey office carpet. */
   look?: LevelLook;
   /** Walls inside the floor: nothing is built on them, and towers cannot shoot through them. */

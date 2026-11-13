@@ -11,9 +11,11 @@ export type Command =
   | { c: 'claim'; id: number }
   | { c: 'target'; id: number; mode: TargetMode }
   | { c: 'dir'; id: number; dir: number }
+  | { c: 'aim'; id: number; tx: number; ty: number }
   | { c: 'gift'; to: number; amount: number }
   | { c: 'next' }
-  | { c: 'solve' };
+  | { c: 'solve' }
+  | { c: 'phone'; hang: boolean };
 
 const int = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
 
@@ -33,12 +35,16 @@ export function parseCommand(raw: unknown): Command | null {
       return int(o.id, 1, 1e9) && TARGET_MODES.includes(o.mode as TargetMode) ? { c: 'target', id: o.id, mode: o.mode as TargetMode } : null;
     case 'dir':
       return int(o.id, 1, 1e9) && int(o.dir, 0, 3) ? { c: 'dir', id: o.id, dir: o.dir } : null;
+    case 'aim':
+      return int(o.id, 1, 1e9) && int(o.tx, 0, 200) && int(o.ty, 0, 200) ? { c: 'aim', id: o.id, tx: o.tx, ty: o.ty } : null;
     case 'gift':
       return int(o.to, 0, 7) && int(o.amount, 1, 1e6) ? { c: 'gift', to: o.to, amount: o.amount } : null;
     case 'next':
       return { c: 'next' };
     case 'solve':
       return { c: 'solve' };
+    case 'phone':
+      return typeof o.hang === 'boolean' ? { c: 'phone', hang: o.hang } : null;
     default:
       return null;
   }
@@ -63,10 +69,14 @@ export function applyCommand(game: Game, player: number, cmd: Command): Check {
     }
     case 'dir':
       return game.setDir(cmd.id, cmd.dir, player);
+    case 'aim':
+      return game.setAim(cmd.id, cmd.tx, cmd.ty, player);
     case 'gift':
       return game.gift(player, cmd.to, cmd.amount);
     case 'next':
       return game.callNextWave() ? { ok: true } : { ok: false, reason: 'No more waves to call.' };
+    case 'phone':
+      return game.answerPhone(player, cmd.hang);
     case 'solve':
       return game.solveHazard(player);
   }

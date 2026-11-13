@@ -126,7 +126,7 @@ export interface Tower {
   /** A Chatterbox is talking next to it: it does nothing this tick. */
   silenced: boolean;
   /** Why it is quiet: a Chatterbox, a crying Baby, or no internet. Null when it works. */
-  quiet: 'chat' | 'cry' | 'net' | null;
+  quiet: 'chat' | 'cry' | 'net' | 'phone' | null;
   /** Seconds left of a crying fit it has to sit through. */
   hushed: number;
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
@@ -144,6 +144,9 @@ export interface Tower {
   rolling: number;
   chairHp: number;
   knocked: Set<number>;
+  /** Pomodoro Timer: the middle of the tile it lobs at. */
+  aimX: number;
+  aimY: number;
   invested: number;
   /** Coffee each player put into this tower, so selling pays everyone back their own share. */
   paidBy: number[];
@@ -238,12 +241,17 @@ export interface LiveTowerStats {
   chairHp: number;
   rollSpeed: number;
   rollBack: boolean;
+  /** Pomodoro Timer: a second tomato after every launch, and the burning patch it leaves. */
+  doubleShot: boolean;
+  crater: { time: number; dps: number } | null;
 }
 
 export type ShotResult = 'hit' | 'blocked' | 'immune';
 
 export type GameEvent =
   | { t: 'spawn'; enemyId: number }
+  | { t: 'lob'; towerId: number; fx: number; fy: number; x: number; y: number; flight: number }
+  | { t: 'boom'; towerId: number; x: number; y: number; r: number }
   | {
       t: 'shot';
       towerId: number;
@@ -275,6 +283,8 @@ export type GameEvent =
   | { t: 'hazard'; kind: string; on: boolean; until: number }
   | { t: 'hazardSolved'; player: number; bonus: number }
   | { t: 'hazardWarn'; kind: string; at: number }
+  | { t: 'reserved'; desks: number[][] }
+  | { t: 'phone'; x: number; y: number; hung: boolean; bonus: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
   | { t: 'mopped'; towerId: number; enemyId: number }
@@ -339,7 +349,7 @@ export interface TowerSnap {
   dmg: number;
   kills: number;
   coffee: number;
-  /** Why it is quiet: 0 working, 1 a Chatterbox, 2 a crying Baby, 3 no internet. */
+  /** Why it is quiet: 0 working, 1 a Chatterbox, 2 a crying Baby, 3 no internet, 4 stuck on the phone. */
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
@@ -347,6 +357,9 @@ export interface TowerSnap {
   dir: number;
   roll: number;
   rl: number;
+  /** Pomodoro Timer: the tile it lobs at. */
+  ax?: number;
+  ay?: number;
 }
 
 /**
@@ -369,11 +382,13 @@ export interface Snapshot {
   piles: number[][];
   /** Keyboard barriers: [id, x, y, dirX, dirY, hp, maxHp]. */
   barriers?: number[][];
+  /** Burning patches from a Pomodoro Timer: x, y, radius, seconds left. */
+  craters?: number[][];
   /** Smoke clouds: [x, y, radius, range left, seconds left]. */
   smoke?: number[][];
   stats: RoundStats;
   /** next: when the next mini-game starts (-1: not planned), so a copy can show the warning. */
-  hz: { on: boolean; until: number; solved: number[]; next?: number };
+  hz: { on: boolean; until: number; solved: number[]; next?: number; ph?: number[]; st?: number[]; rs?: number[][] };
 }
 
 /** Fixed order of colleague types, so a snapshot can send a number instead of a name. */
@@ -410,6 +425,10 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
 
 /** On bad wifi (Work From Home) DIGITAL towers fire at this share of their rate: 40% slower. */
 export const BAD_WIFI = 0.6;
+
+/** Seconds a Pomodoro tomato is in the air, and the gap before the second one (Back to Back). */
+export const MORTAR_FLIGHT = 0.7;
+export const MORTAR_SECOND = 0.35;
 
 /** Seconds of warning before the projector mini-game starts (level 3, Boardroom III). */
 export const HAZARD_WARN = 3;
@@ -480,6 +499,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     chairHp: b.chairHp ?? 0,
     rollSpeed: b.rollSpeed ?? 0,
     rollBack: false,
+    doubleShot: false,
+    crater: null,
   };
   let radiusMult = 1;
   let aoeMult = 1;
@@ -529,6 +550,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     speedMult *= e.speedMult ?? 1;
     rangeAdd += e.rangeAdd ?? 0;
     if (e.rollBack) s.rollBack = true;
+    if (e.doubleShot) s.doubleShot = true;
+    if (e.crater && (!s.crater || e.crater.dps > s.crater.dps)) s.crater = e.crater;
     if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
@@ -601,6 +624,11 @@ export class Game {
   private tiles: Uint8Array;
   /** Per tile: the only tower role allowed there, or '' (the Canteen's soup queue). */
   private only: string[] = [];
+  /** Hot Desks: the flex desks (b), the ones reserved this wave, and a desk stuck on a call. */
+  private flex: { x: number; y: number }[] = [];
+  reserved: { x: number; y: number }[] = [];
+  phone: { x: number; y: number } | null = null;
+  stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
   /** 1 where the wifi is bad (Work From Home, the bedroom). */
@@ -654,6 +682,7 @@ export class Game {
       });
       sight.set(g.sight);
       this.only = g.only;
+      level.grid.forEach((row, y) => [...row].forEach((c, x) => c === 'b' && this.flex.push({ x, y })));
       this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.gates = this.gatesOnPaths(g.gates);
@@ -899,6 +928,8 @@ export class Game {
     if (this.bare?.[ty * this.level.size.w + tx]) return { ok: false, reason: 'Not on this bit of floor. Look for the green tiles.', cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
+    if (this.isReserved(tx, ty)) return { ok: false, reason: 'Reserved for someone else this wave.', cost };
+    if (this.stuckDesk && this.stuckDesk.x === tx && this.stuckDesk.y === ty) return { ok: false, reason: 'Someone is on the phone at that desk.', cost };
     if (!this.tileAllows(defId, tx, ty)) return { ok: false, reason: 'That is the queue for the soup. Only Thumbtacks go there.', cost };
     if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
@@ -960,12 +991,15 @@ export class Game {
       rolling: 0,
       chairHp: 0,
       knocked: new Set(),
+      aimX: tx + 0.5,
+      aimY: ty + 0.5,
       invested: check.cost,
       paidBy: this.paidList(player, check.cost),
       placedAtWave: this.waveIndex,
       stats: { damage: 0, kills: 0, shots: 0, coffee: 0 },
     };
     if (def.role === 'chair') t.dir = this.bestLane(t);
+    if (def.role === 'mortar') this.aimAtWalkway(t);
     this.spend(player, check.cost);
     this.towers.push(t);
     this.stats.built[defId] = (this.stats.built[defId] ?? 0) + 1;
@@ -1149,11 +1183,12 @@ export class Game {
         dmg: Math.round(t.stats.damage),
         kills: t.stats.kills,
         coffee: r3(t.stats.coffee),
-        sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : 1,
+        sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : t.quiet === 'phone' ? 4 : 1,
         mop: t.mopped > 0 ? 1 : 0,
         dir: t.dir,
         roll: r3(t.roll),
         rl: t.rolling,
+        ...(t.def.role === 'mortar' ? { ax: r3(t.aimX), ay: r3(t.aimY) } : {}),
       })),
       enemies: this.enemies.map((e) => [
         e.id,
@@ -1176,9 +1211,14 @@ export class Game {
       ]),
       piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
       barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
+      craters: this.craters.map((c) => [r3(c.x), r3(c.y), r3(c.r), r3(c.life)]),
       smoke: this.smoke.map((c) => [r3(c.x), r3(c.y), r3(c.r), c.mult, r3(c.life)]),
       stats: this.stats,
-      hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved], next: Number.isFinite(this.hazardNext) ? r3(this.hazardNext) : -1 },
+      hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved], next: Number.isFinite(this.hazardNext) ? r3(this.hazardNext) : -1,
+        ...(this.phone ? { ph: [this.phone.x, this.phone.y] } : {}),
+        ...(this.stuckDesk ? { st: [this.stuckDesk.x, this.stuckDesk.y, r3(this.stuckDesk.until)] } : {}),
+        ...(this.reserved.length ? { rs: this.reserved.map((d) => [d.x, d.y]) } : {}),
+      },
     };
   }
 
@@ -1197,6 +1237,9 @@ export class Game {
     this.hazardUntil = s.hz.until;
     this.hazardSolved = [...s.hz.solved];
     this.hazardNext = s.hz.next === undefined || s.hz.next < 0 ? Infinity : s.hz.next;
+    this.phone = s.hz.ph ? { x: s.hz.ph[0], y: s.hz.ph[1] } : null;
+    this.stuckDesk = s.hz.st ? { x: s.hz.st[0], y: s.hz.st[1], until: s.hz.st[2] } : null;
+    this.reserved = (s.hz.rs ?? []).map((d) => ({ x: d[0], y: d[1] }));
     const old = new Map(this.towers.map((t) => [t.id, t]));
     this.towers = s.towers.map((ts) => {
       const def = TOWERS[ts.def];
@@ -1228,6 +1271,8 @@ export class Game {
         rolling: 0,
         chairHp: 0,
         knocked: new Set(),
+        aimX: ts.tx + 0.5,
+        aimY: ts.ty + 0.5,
         invested: 0,
         paidBy: [],
         placedAtWave: s.waveIndex,
@@ -1242,11 +1287,15 @@ export class Game {
       t.stats.kills = ts.kills;
       t.stats.coffee = ts.coffee;
       t.silenced = ts.sil > 0;
-      t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 1 ? 'chat' : null;
+      t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 4 ? 'phone' : ts.sil === 1 ? 'chat' : null;
       t.mopped = ts.mop === 1 ? 1 : 0;
       t.dir = ts.dir ?? 0;
       t.roll = ts.roll ?? 0;
       t.rolling = ts.rl ?? 0;
+      if (ts.ax !== undefined && ts.ay !== undefined) {
+        t.aimX = ts.ax;
+        t.aimY = ts.ay;
+      }
       return t;
     });
     this.enemies = s.enemies.map((a) => {
@@ -1290,6 +1339,7 @@ export class Game {
     });
     this.piles = (s.piles ?? []).map((a) => ({ id: a[0], tower: 0, x: a[1], y: a[2], pierce: a[3], maxPierce: a[4], life: 1, hit: new Set<number>() }));
     this.smoke = (s.smoke ?? []).map((a) => ({ x: a[0], y: a[1], r: a[2], mult: a[3], life: a[4] }));
+    this.craters = (s.craters ?? []).map((a) => ({ tower: 0, x: a[0], y: a[1], r: a[2], dps: 0, life: a[3] }));
     this.barriers = (s.barriers ?? []).map((a) => ({ id: a[0], tower: 0, pathIndex: 0, dist: 0, x: a[1], y: a[2], dirX: a[3], dirY: a[4], hp: a[5], maxHp: a[6], time: 1, thorns: 0 }));
   }
 
@@ -1317,13 +1367,36 @@ export class Game {
   /** Is there a mini-game waiting for this player (the projector, or getting back online)? */
   hazardOpenFor(player: number): boolean {
     const type = this.level.hazard?.type;
-    return this.hazardOn && (type === 'projector' || type === 'nointernet') && !this.hazardSolved.includes(player);
+    return this.hazardOn && (type === 'projector' || type === 'nointernet' || type === 'phone') && !this.hazardSolved.includes(player);
   }
 
   /** Lunch break: everyone on the floor walks faster while it lasts. */
   get lunchHaste(): number {
     const hz = this.level.hazard;
     return this.hazardOn && hz?.type === 'lunch' ? hz.haste : 1;
+  }
+
+  /**
+   * The desk phone: hang up (red) and you get Coffee. Pick up (green) and it is "Hi, do you have a
+   * minute?": that desk is stuck on the call. One of you answering is enough.
+   */
+  answerPhone(player: number, hangUp: boolean): Check {
+    const hz = this.level.hazard;
+    if (!hz || hz.type !== 'phone' || !this.hazardOn || !this.phone) return { ok: false, reason: 'Nothing is ringing.' };
+    const at = this.phone;
+    let bonus = 0;
+    if (hangUp) {
+      bonus = this.earnFor(player, hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time)));
+      this.stats.coffeeFromBonus += bonus;
+    } else this.stickDesk(at, hz.block);
+    this.events.push({ t: 'phone', x: at.x, y: at.y, hung: hangUp, bonus });
+    this.hazardSolved = [player];
+    this.endHazard();
+    return { ok: true, cost: -bonus };
+  }
+
+  private stickDesk(at: { x: number; y: number }, seconds: number): void {
+    this.stuckDesk = { x: at.x, y: at.y, until: this.time + seconds };
   }
 
   /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
@@ -1342,6 +1415,7 @@ export class Game {
 
   private endHazard(): void {
     this.hazardOn = false;
+    this.phone = null;
     this.hazardNext = this.time + (this.level.hazard?.every ?? Infinity);
     this.events.push({ t: 'hazard', kind: this.level.hazard?.type ?? '', on: false, until: this.time });
   }
@@ -1380,11 +1454,24 @@ export class Game {
         }
         this.pending.sort((a, b) => a.at - b.at || a.seq - b.seq);
       }
+      if (hz.type === 'phone') {
+        // It rings on a flex desk with something on it, if there is one: that is where it hurts.
+        const free = this.flex.filter((d) => !(this.stuckDesk && this.stuckDesk.x === d.x && this.stuckDesk.y === d.y));
+        const busy = free.filter((d) => this.towerAt(d.x, d.y));
+        const pool = busy.length ? busy : free;
+        if (!pool.length) {
+          this.hazardNext = this.time + hz.every;
+          return;
+        }
+        this.phone = pool[Math.floor(this.rng.next() * pool.length) % pool.length];
+      }
       this.hazardOn = true;
       this.hazardUntil = this.time + hz.window;
       this.hazardSolved = [];
       this.events.push({ t: 'hazard', kind: hz.type, on: true, until: this.hazardUntil });
     } else if (this.hazardOn && this.time >= this.hazardUntil) {
+      // Nobody hung up: the desk is stuck on the call.
+      if (hz.type === 'phone' && this.phone) this.stickDesk(this.phone, hz.block);
       this.endHazard();
     }
   }
@@ -1395,6 +1482,7 @@ export class Game {
     if (this.phase !== 'running') return;
     this.time += dt;
     this.updateHazard();
+    if (this.stuckDesk && this.time >= this.stuckDesk.until) this.stuckDesk = null;
     this.spawnDue();
     this.updateBosses(dt);
     this.updateAuras();
@@ -1402,6 +1490,7 @@ export class Game {
     this.moveEnemies(dt);
     this.updatePiles(dt);
     this.updateBarriers(dt);
+    this.updateShells(dt);
     if (this.smoke.length) {
       for (const c of this.smoke) c.life -= dt;
       this.smoke = this.smoke.filter((c) => c.life > 0);
@@ -1440,6 +1529,7 @@ export class Game {
     }
     const groups = this.waves[this.waveIndex];
     this.waveIndex++;
+    this.reserveDesks();
     const pathIndex = (this.waveIndex - 1) % this.paths.length;
     let at = this.time;
     for (const g of groups) {
@@ -1452,6 +1542,20 @@ export class Game {
     this.nextWaveTimer = WAVE_INTERVAL;
     const boss = groups.some((g) => COLLEAGUES[g.type].boss !== undefined);
     this.events.push({ t: 'wave', index: this.waveIndex, total: this.totalWaves, boss, early, points });
+  }
+
+  /** Hot Desks: a few empty flex desks are booked for the wave. Towers already there stay. */
+  private reserveDesks(): void {
+    const n = this.level.reserve ?? 0;
+    if (!n) return;
+    const empty = this.flex.filter((d) => !this.towerAt(d.x, d.y));
+    this.reserved = [];
+    for (let i = 0; i < n && empty.length; i++) this.reserved.push(empty.splice(Math.floor(this.rng.next() * empty.length) % empty.length, 1)[0]);
+    this.events.push({ t: 'reserved', desks: this.reserved.map((d) => [d.x, d.y]) });
+  }
+
+  isReserved(tx: number, ty: number): boolean {
+    return this.reserved.some((d) => d.x === tx && d.y === ty);
   }
 
   /** Start of a wave: Expense Claim deposits and interest, and Supply Drops. Blocked by the Repair Guy. */
@@ -1482,12 +1586,14 @@ export class Game {
     const path = this.paths[pathIndex];
     const d = Math.max(0, Math.min(path.length - 0.01, atDist));
     const pt = path.pointAt(d);
+    // A boss on its second visit is heavier (Head of Comms on Hot Desks).
+    const hp = def.hp * (def.boss && this.level.bossHpMult ? this.level.bossHpMult : 1);
     const e: Enemy = {
       id: this.nextId++,
       type,
       def,
-      hp: def.hp,
-      maxHp: def.hp,
+      hp,
+      maxHp: hp,
       shield: def.shield ?? 0,
       maxShield: def.shield ?? 0,
       pathIndex,
@@ -1636,9 +1742,10 @@ export class Game {
         if (Math.hypot(t.x - n.x, t.y - n.y) <= ts.radius) r *= ts.mult;
       }
       t.rateBuff = r;
-      // Quiet for one of three reasons. Coffee Machines never are.
+      // Quiet for one of four reasons. Coffee Machines never are.
       t.quiet = null;
-      if (t.def.role !== 'economy') {
+      if (this.stuckDesk && this.stuckDesk.x === t.tx && this.stuckDesk.y === t.ty) t.quiet = 'phone';
+      else if (t.def.role !== 'economy') {
         const proof = this.liveStats(t).silenceProof;
         if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!)) t.quiet = 'chat';
         else if (!proof && t.hushed > 0) t.quiet = 'cry';
@@ -1789,6 +1896,10 @@ export class Game {
       }
       if (t.def.role === 'chair') {
         this.updateChair(t, s, dt);
+        continue;
+      }
+      if (t.def.role === 'mortar') {
+        this.updateMortar(t, s, dt);
         continue;
       }
       if (s.ability) this.updateAbility(t, s, dt);
@@ -2037,6 +2148,106 @@ export class Game {
     const dir = this.bestLane(probe);
     probe.dir = dir;
     return { dir, length: this.laneLength(probe, computeStats(def, [0, 0, 0]).range) };
+  }
+
+  /** Tomatoes in the air, and the burning patches they leave (Pomodoro Timer). */
+  private shells: { tower: number; x: number; y: number; at: number }[] = [];
+  craters: { tower: number; x: number; y: number; r: number; dps: number; life: number }[] = [];
+
+  /** A new Pomodoro Timer aims at the bit of walkway nearest to it. */
+  private aimAtWalkway(t: Tower): void {
+    let best = { x: t.x, y: t.y, d: Infinity };
+    for (const path of this.paths) {
+      for (let d = 0; d <= path.length; d += 0.25) {
+        const p = path.pointAt(d);
+        if (!this.onFloorPoint(p)) continue;
+        const gap = Math.hypot(p.x - t.x, p.y - t.y);
+        if (gap < best.d) best = { x: Math.floor(p.x) + 0.5, y: Math.floor(p.y) + 0.5, d: gap };
+      }
+    }
+    t.aimX = best.x;
+    t.aimY = best.y;
+  }
+
+  private onFloorPoint(p: { x: number; y: number }): boolean {
+    return this.inBounds(Math.floor(p.x), Math.floor(p.y));
+  }
+
+  /** Point the Pomodoro Timer at a tile. Anywhere on the floor will do. */
+  setAim(towerId: number, tx: number, ty: number, player = 0): Check {
+    const t = this.tower(towerId);
+    if (!t || t.def.role !== 'mortar') return { ok: false, reason: 'Only the Pomodoro Timer aims at a tile.' };
+    if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.' };
+    if (!this.inBounds(tx, ty)) return { ok: false, reason: 'That is outside the office.' };
+    t.aimX = tx + 0.5;
+    t.aimY = ty + 0.5;
+    return { ok: true };
+  }
+
+  /** Pomodoro Timer: when someone is on the floor, lob a tomato (or two) at the tile. */
+  private updateMortar(t: Tower, s: LiveTowerStats, dt: number): void {
+    t.cooldown -= dt;
+    if (t.cooldown > 0) return;
+    if (!this.enemies.some((e) => e.alive && this.onFloor(e))) {
+      t.cooldown = 0;
+      return;
+    }
+    const flight = MORTAR_FLIGHT;
+    for (let i = 0; i < (s.doubleShot ? 2 : 1); i++) {
+      const extra = i * MORTAR_SECOND;
+      this.shells.push({ tower: t.id, x: t.aimX, y: t.aimY, at: this.time + flight + extra });
+      this.events.push({ t: 'lob', towerId: t.id, fx: t.x, fy: t.y, x: t.aimX, y: t.aimY, flight: flight + extra });
+    }
+    t.stats.shots++;
+    t.cooldown += s.interval * t.rateBuff;
+    if (t.cooldown < 0) t.cooldown = s.interval;
+  }
+
+  /** Tomatoes land, and burning patches burn. */
+  private updateShells(dt: number): void {
+    if (this.shells.length) {
+      const due = this.shells.filter((sh) => sh.at <= this.time + 1e-9);
+      this.shells = this.shells.filter((sh) => sh.at > this.time + 1e-9);
+      for (const sh of due) {
+        const t = this.tower(sh.tower);
+        if (!t) continue;
+        const s = this.liveStats(t);
+        const hit = new Set<Enemy>();
+        const near = this.enemies
+          .filter((e) => e.alive && this.onFloor(e) && Math.hypot(e.x - sh.x, e.y - sh.y) <= s.aoe)
+          .sort((a, b) => a.id - b.id);
+        for (const e of near) {
+          if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
+          this.hitOne(t, e, s, sh.x, sh.y, 0, 'hop', hit);
+          if (e.alive && s.knockback > 0) {
+            // Snooze: back towards the door. Bosses barely budge.
+            const path = this.paths[e.pathIndex];
+            e.dist = Math.max(0, e.dist - s.knockback * (e.def.boss ? 0.2 : 1));
+            const pt = path.pointAt(e.dist);
+            e.x = pt.x;
+            e.y = pt.y;
+          }
+        }
+        if (s.crater) this.craters.push({ tower: t.id, x: sh.x, y: sh.y, r: s.aoe, dps: s.crater.dps, life: s.crater.time });
+        this.events.push({ t: 'boom', towerId: t.id, x: sh.x, y: sh.y, r: s.aoe });
+      }
+    }
+    if (this.craters.length) {
+      for (const c of this.craters) {
+        c.life -= dt;
+        const t = this.tower(c.tower);
+        for (const e of this.enemies) {
+          if (!e.alive || !this.onFloor(e) || Math.hypot(e.x - c.x, e.y - c.y) > c.r) continue;
+          const { dealt } = this.damage(e, c.dps * dt, 'physical', false, true);
+          if (t) t.stats.damage += dealt;
+          if (!e.alive) {
+            if (t) t.stats.kills++;
+            this.onKill(e, 0, t);
+          }
+        }
+      }
+      this.craters = this.craters.filter((c) => c.life > 0);
+    }
   }
 
   /** Turn the chair. A run in progress is called off. */
@@ -2323,7 +2534,7 @@ export class Game {
     // The Phone Caller can take it from towers that deal with one colleague at a time.
     const single = s.targets === 1 && s.aoe === 0 && s.splash === 0 && s.bounce === 0;
     const amount = s.damage * mult * (e.def.boss ? s.bossMult : 1) * (single && e.def.pointResist ? e.def.pointResist : 1);
-    const { dealt, result } = this.damage(e, amount, t.def.damageClass);
+    const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
     t.stats.damage += dealt;
     const killed = !e.alive;
     if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);

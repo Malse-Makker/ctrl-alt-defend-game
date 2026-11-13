@@ -114,6 +114,7 @@ describe('DIGITAL and PHYSICAL', () => {
       thumbtacks: 'physical',
       keyboardsmash: 'physical',
       chair: 'physical',
+      pomodoro: 'physical',
     });
   });
 });
