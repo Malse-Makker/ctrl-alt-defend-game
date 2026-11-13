@@ -8,9 +8,11 @@ const BUILD = new Set(['.', 'o', 'L', 'b', 'P', '^', '*', 'k', 'f', 'a', 'p']);
 const SIGHT = new Set(['#', 'H', 'R', 't', 'w', 'x']);
 /**
  * Letters you may build on with only some towers: the soup queue in the Canteen (n) takes
- * Thumbtacks only, you scatter those on the floor anyway. The value is the tower role allowed.
+ * Thumbtacks only, you scatter those on the floor anyway. The Merger: company A (a) takes DIGITAL
+ * towers only, company B (p) PHYSICAL ones. The value is the tower role or damage class allowed;
+ * towers that deal no damage (Coffee Machine, Headphones, Poster) may stand on either company.
  */
-export const ONLY: Record<string, string> = { n: 'trap' };
+export const ONLY: Record<string, string> = { n: 'trap', a: 'digital', p: 'physical' };
 /** Letters on the walkway: entrance, walkway, gate, door, your desk. */
 const WALKWAY = new Set(['=', 'S', 'G', 'd', 'D']);
 /** Every letter the grid may use. Anything else is a typo in a level. */

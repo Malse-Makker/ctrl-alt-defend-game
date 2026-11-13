@@ -163,6 +163,11 @@ export const MODEL_NAMES = [
   'tv_camera',
   'stage_screen',
   'glass_blinds',
+  'consultant',
+  'pingpong_table',
+  'beanbag',
+  'neon_sign',
+  'moving_boxes',
 ] as const;
 
 export class Assets {

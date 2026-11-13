@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -34,6 +34,12 @@ export interface BossDef {
   cry?: { every: number; duration: number; radius: number };
   /** Smoke around him: towers this close reach less far; and every so often he leaves a cloud. */
   smoke?: { radius: number; rangeMult: number; cloudEvery: number; cloudRadius: number; cloudTime: number };
+  /**
+   * The Consultant: while he is on the floor everyone else takes this share of the damage (lower
+   * from phase 3) and walks this much faster. When he goes, everyone on the floor drops to `hpShare`
+   * of their HP and stands still for `stun` seconds: the wave collapses.
+   */
+  cover?: { taken: number; taken3: number; haste: number; hpShare: number; stun: number };
   intro: string;
 }
 
@@ -362,6 +368,34 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     scale: 1.1,
     accent: '#8e6fbf',
     model: 'linemanager',
+    armSwing: 0.3,
+  },
+  consultant: {
+    id: 'consultant',
+    name: 'The Consultant',
+    role: 'Boss',
+    quote: 'Let us take a step back and look at the bigger picture.',
+    ability:
+      'Brought in for the merger. While he is on the floor everyone else takes less damage and walks a bit faster: he covers for them. From his last phase he covers even more. Deal with him and the whole wave falls apart: everyone left drops to half their HP and stands there for a moment.',
+    counter: 'Everything on him, the rest can wait: Office Artillery on Most HP, a Pomodoro Timer on his route. Once he is gone, mop up.',
+    hp: 820,
+    speed: 1.0,
+    focus: 25,
+    rewardFlat: 35,
+    boss: {
+      kind: 'consultant',
+      addType: 'requester',
+      addEvery: 7,
+      addCount: 2,
+      phaseBurst: 4,
+      phase3Speed: 1.3,
+      cover: { taken: 0.7, taken3: 0.5, haste: 1.15, hpShare: 0.5, stun: 1.5 },
+      intro: 'He covers for everyone else. Deal with him first and the wave falls apart.',
+    },
+    stunResist: 0.4,
+    scale: 1.1,
+    accent: '#e67e3a',
+    model: 'consultant',
     armSwing: 0.3,
   },
   coldcaller: {

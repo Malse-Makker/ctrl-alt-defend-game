@@ -230,6 +230,8 @@ export const UI_TEXT = {
   alarmStarts: 'Fire alarm. Everyone stops, then makes a run for the front.',
   blindsWarn: 'The blinds rattle. The board is about to meet: nobody will see through the glass.',
   blindsUp: 'The blinds are up again.',
+  boxesCleared: 'Boxes cleared. Free floor: anything goes here.',
+  consultantGone: 'The Consultant has left the building. Nobody knows what they were doing here any more.',
   projWarn: 'The projector fan spins up. Three seconds: place what you want to place.',
   projStarts: 'The projector is not working. Nobody can build until someone fixes it.',
   projFixed: 'The projector works. +{n} Coffee for not calling IT.',

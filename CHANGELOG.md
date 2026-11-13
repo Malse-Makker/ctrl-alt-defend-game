@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.27.0] - 2026-11-13
+
+### New
+- Level 11, The Merger: two companies become one. The old company on the left takes DIGITAL towers only, the startup on the right PHYSICAL ones. Moving boxes in the middle: click a stack and pay 40 Coffee to clear it, and anything goes there. Two entrances, one per company. Opens once you finish Boardroom II.
+- The Consultant, brought in for the merger: while he is on the floor everyone else takes less damage and walks faster. Deal with him and the whole wave falls apart.
+
+### Changed
+- The Merger is level 11 now and HR Room level 12.
+
 ## [0.26.0] - 2026-11-13
 
 ### New

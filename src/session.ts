@@ -509,6 +509,16 @@ export class Session {
         if (ev.hung) sfx.play('cash');
         this.hud?.toast(ev.hung ? T.phoneHung : T.phoneStuck, ev.hung ? '' : 'warn', 2.5);
         break;
+      case 'boxes':
+        if (ev.player === this.me) {
+          sfx.play('place', { pitch: 0.7 });
+          this.hud?.toast(T.boxesCleared, '', 2);
+        }
+        break;
+      case 'collapse':
+        sfx.play('bossphase', { pitch: 0.7 });
+        this.hud?.toast(T.consultantGone, 'good', 3);
+        break;
       case 'reserved':
         if (!this.toldReserved) {
           this.toldReserved = true;
@@ -847,6 +857,11 @@ export class Session {
       this.run({ c: 'place', def: this.placing, tx: tile.tx, ty: tile.ty });
       const cost = check.cost ?? 0;
       if (!e.shiftKey || this.game.walletOf(this.me) - cost < this.game.placeCostFor(this.placing, this.me)) this.placing = null;
+      return;
+    }
+    // The Merger: click a stack of moving boxes to clear it.
+    if (tile && this.game.isBoxes(tile.tx, tile.ty)) {
+      this.run({ c: 'clear', tx: tile.tx, ty: tile.ty });
       return;
     }
     const t = tile ? this.game.towerAt(tile.tx, tile.ty) : undefined;

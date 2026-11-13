@@ -63,6 +63,8 @@ export class World {
   private readonly reservedTint: THREE.Mesh[] = [];
   private phoneObj: THREE.Object3D | null = null;
   private assetsRef: Assets;
+  /** The Merger: a stack of moving boxes per x tile, gone once cleared. */
+  private readonly boxViews: { x: number; y: number; obj: THREE.Object3D }[] = [];
   /** Boardroom II: the blinds in the glass room, and how far down they are (0 up, 1 down). */
   private readonly slats: THREE.Object3D[] = [];
   private slatsDown = 0;
@@ -180,6 +182,14 @@ export class World {
     }
     // Flex desks (Hot Desks): an empty desk on every b tile. A tower you place takes its spot.
     this.assetsRef = assets;
+    for (const b of game.boxes) {
+      const obj = assets.clone('moving_boxes');
+      obj.position.set(b.x + 0.5, 0, b.y + 0.5);
+      obj.rotation.y = ((b.x * 7 + b.y * 3) % 4) * (Math.PI / 2);
+      this.shared.add(obj);
+      g.add(obj);
+      this.boxViews.push({ x: b.x, y: b.y, obj });
+    }
     if (level.grid) {
       level.grid.forEach((row, y) =>
         [...row].forEach((c, x) => {
@@ -208,7 +218,22 @@ export class World {
     }
     // Tiles only some towers may use (the soup queue): painted stripes on the floor.
     const lane: { x: number; y: number }[] = [];
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isRestrictedTile(x, y)) lane.push({ x, y });
+    const concrete: { x: number; y: number }[] = [];
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const rule = game.ruleAt(x, y);
+        if (rule === 'trap') lane.push({ x, y });
+        else if (rule === 'physical') concrete.push({ x, y });
+      }
+    // The Merger: the startup's half is polished concrete.
+    if (concrete.length) {
+      const mat = new THREE.MeshStandardMaterial({ color: '#8f9294', roughness: 0.6 });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, concrete.length);
+      const m = new THREE.Matrix4();
+      concrete.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, 0.003, c.y + 0.5)));
+      mesh.receiveShadow = true;
+      g.add(mesh);
+    }
     if (lane.length) {
       const mat = new THREE.MeshBasicMaterial({ map: stripes(), transparent: true, opacity: 0.55, depthWrite: false });
       const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, lane.length);
@@ -276,6 +301,7 @@ export class World {
     this.clock += dt;
     this.updateBeamer(game);
     this.updateDesks(game);
+    for (const b of this.boxViews) b.obj.visible = game.isBoxes(b.x, b.y);
     if (this.slats.length) {
       // A rattle before the meeting (they start coming down), then all the way down.
       const want = game.blindsDown ? 1 : game.hazardWarning ? 0.3 : 0;

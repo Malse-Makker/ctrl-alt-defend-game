@@ -291,6 +291,8 @@ export type GameEvent =
   | { t: 'hazardSolved'; player: number; bonus: number }
   | { t: 'hazardWarn'; kind: string; at: number }
   | { t: 'reserved'; desks: number[][] }
+  | { t: 'boxes'; x: number; y: number; player: number }
+  | { t: 'collapse'; enemyId: number }
   | { t: 'phone'; x: number; y: number; hung: boolean; bonus: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
@@ -396,6 +398,8 @@ export interface Snapshot {
   stats: RoundStats;
   /** next: when the next mini-game starts (-1: not planned), so a copy can show the warning. */
   hz: { on: boolean; until: number; solved: number[]; next?: number; ph?: number[]; st?: number[]; rs?: number[][] };
+  /** Moving boxes cleared so far (The Merger). */
+  cl?: number[][];
 }
 
 /** Fixed order of colleague types, so a snapshot can send a number instead of a name. */
@@ -429,6 +433,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
   const b = pts[pts.length - 1];
   return { x: level.desk.x + Math.sign(b.x - a.x), y: level.desk.y + Math.sign(b.y - a.y) };
 }
+
+/** What it costs to clear a stack of moving boxes (The Merger). */
+export const BOX_COST = 40;
 
 /** On the tribune (Town Hall) towers reach this much further. */
 export const RAISED_RANGE = 1.25;
@@ -708,7 +715,7 @@ export class Game {
       });
       sight.set(g.sight);
       this.only = g.only;
-      level.grid.forEach((row, y) => [...row].forEach((c, x) => c === 'b' && this.flex.push({ x, y })));
+      level.grid.forEach((row, y) => [...row].forEach((c, x) => (c === 'b' ? this.flex.push({ x, y }) : c === 'x' && this.boxes.push({ x, y }))));
       this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.blinds = g.blinds.some((v) => v === 1) ? g.blinds : null;
@@ -877,13 +884,51 @@ export class Game {
 
   /** May this tower stand on this tile at all? Some tiles take only one kind (the soup queue). */
   tileAllows(defId: string, tx: number, ty: number): boolean {
-    const role = this.only[ty * this.level.size.w + tx];
-    return !role || TOWERS[defId]?.role === role;
+    const rule = this.only[ty * this.level.size.w + tx];
+    if (!rule) return true;
+    const def = TOWERS[defId];
+    if (rule === 'digital' || rule === 'physical') return !def?.damageClass || def.damageClass === rule;
+    return def?.role === rule;
   }
 
   /** Is this tile only for some towers? */
   isRestrictedTile(tx: number, ty: number): boolean {
     return this.inBounds(tx, ty) && !!this.only[ty * this.level.size.w + tx];
+  }
+
+  /** The rule on this tile: a tower role, a damage class, or '' for none. */
+  ruleAt(tx: number, ty: number): string {
+    return this.inBounds(tx, ty) ? this.only[ty * this.level.size.w + tx] : '';
+  }
+
+  // ------------------------------------------------------------------ moving boxes (The Merger)
+
+  /** Tiles with a stack of moving boxes still on them, and those already cleared. */
+  boxes: { x: number; y: number }[] = [];
+  cleared: { x: number; y: number }[] = [];
+
+  isBoxes(tx: number, ty: number): boolean {
+    return this.boxes.some((b) => b.x === tx && b.y === ty) && !this.cleared.some((b) => b.x === tx && b.y === ty);
+  }
+
+  /** Pay BOX_COST and the stack goes: free floor where any tower may stand. */
+  clearBoxes(tx: number, ty: number, player = 0): Check {
+    if (this.over) return { ok: false, reason: 'The day is over.' };
+    if (!this.isBoxes(tx, ty)) return { ok: false, reason: 'There are no boxes there.' };
+    if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.' };
+    if (this.walletOf(player) < BOX_COST) return { ok: false, reason: 'Not enough Coffee.', cost: BOX_COST };
+    this.spend(player, BOX_COST);
+    this.openTile(tx, ty);
+    this.cleared.push({ x: tx, y: ty });
+    this.events.push({ t: 'boxes', x: tx, y: ty, player });
+    return { ok: true, cost: BOX_COST };
+  }
+
+  private openTile(tx: number, ty: number): void {
+    const i = ty * this.level.size.w + tx;
+    this.tiles[i] &= ~TILE_BLOCKED;
+    this.only[i] = '';
+    if (this.walls) this.walls[i] = 0;
   }
 
   isBlockedTile(tx: number, ty: number): boolean {
@@ -1010,11 +1055,16 @@ export class Game {
     if (!this.inBounds(tx, ty)) return { ok: false, reason: 'That is outside the office.', cost };
     if (this.isPathTile(tx, ty)) return { ok: false, reason: 'That is the walkway. People need to get through.', cost };
     if (this.bare?.[ty * this.level.size.w + tx]) return { ok: false, reason: 'Not on this bit of floor. Look for the green tiles.', cost };
+    if (this.isBoxes(tx, ty)) return { ok: false, reason: `Moving boxes. Click them to clear them for ${BOX_COST} Coffee.`, cost };
     if (this.isBlockedTile(tx, ty)) return { ok: false, reason: 'Something is already standing there.', cost };
     if (this.towerAt(tx, ty)) return { ok: false, reason: 'You already put something there.', cost };
     if (this.isReserved(tx, ty)) return { ok: false, reason: 'Reserved for someone else this wave.', cost };
     if (this.stuckDesk && this.stuckDesk.x === tx && this.stuckDesk.y === ty) return { ok: false, reason: 'Someone is on the phone at that desk.', cost };
-    if (!this.tileAllows(defId, tx, ty)) return { ok: false, reason: 'That is the queue for the soup. Only Thumbtacks go there.', cost };
+    if (!this.tileAllows(defId, tx, ty)) {
+      const rule = this.only[ty * this.level.size.w + tx];
+      const why = rule === 'digital' ? 'This is the old company. DIGITAL towers only.' : rule === 'physical' ? 'This is the startup. PHYSICAL towers only.' : 'That is the queue for the soup. Only Thumbtacks go there.';
+      return { ok: false, reason: why, cost };
+    }
     if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
@@ -1297,6 +1347,7 @@ export class Game {
       piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
       barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
       craters: this.craters.map((c) => [r3(c.x), r3(c.y), r3(c.r), r3(c.life)]),
+      ...(this.cleared.length ? { cl: this.cleared.map((b) => [b.x, b.y]) } : {}),
       smoke: this.smoke.map((c) => [r3(c.x), r3(c.y), r3(c.r), c.mult, r3(c.life)]),
       stats: this.stats,
       hz: { on: this.hazardOn, until: r3(this.hazardUntil), solved: [...this.hazardSolved], next: Number.isFinite(this.hazardNext) ? r3(this.hazardNext) : -1,
@@ -1424,6 +1475,11 @@ export class Game {
     });
     this.piles = (s.piles ?? []).map((a) => ({ id: a[0], tower: 0, x: a[1], y: a[2], pierce: a[3], maxPierce: a[4], life: 1, hit: new Set<number>() }));
     this.smoke = (s.smoke ?? []).map((a) => ({ x: a[0], y: a[1], r: a[2], mult: a[3], life: a[4] }));
+    for (const [x, y] of s.cl ?? []) {
+      if (this.cleared.some((b) => b.x === x && b.y === y)) continue;
+      this.openTile(x, y);
+      this.cleared.push({ x, y });
+    }
     this.craters = (s.craters ?? []).map((a) => ({ tower: 0, x: a[0], y: a[1], r: a[2], dps: 0, life: a[3] }));
     this.barriers = (s.barriers ?? []).map((a) => ({ id: a[0], tower: 0, pathIndex: 0, dist: 0, x: a[1], y: a[2], dirX: a[3], dirY: a[4], hp: a[5], maxHp: a[6], time: 1, thorns: 0 }));
   }
@@ -1809,6 +1865,8 @@ export class Game {
       if (s.buffRate < 1) buffs.push({ x: t.x, y: t.y, r: s.range, f: s.buffRate, id: t.id });
     }
     const hurry = this.enemies.filter((e) => e.alive && e.def.boss?.haste);
+    const consultant = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.boss?.cover);
+    this.cover = consultant ? { taken: consultant.phase >= 3 ? consultant.def.boss!.cover!.taken3 : consultant.def.boss!.cover!.taken, haste: consultant.def.boss!.cover!.haste } : null;
     for (const e of this.enemies) {
       let f = 1;
       for (const a of slows) if (Math.hypot(e.x - a.x, e.y - a.y) <= a.r) f = Math.min(f, a.f);
@@ -1818,6 +1876,8 @@ export class Game {
         const hz = b.def.boss!.haste!;
         if (b !== e && Math.hypot(e.x - b.x, e.y - b.y) <= hz.radius) h = Math.max(h, hz.mult);
       }
+      // The Consultant: everyone walks with a bit more purpose while he is around.
+      if (this.cover && !e.def.boss) h = Math.max(h, this.cover.haste);
       e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
@@ -2642,6 +2702,8 @@ export class Game {
   damage(e: Enemy, amount: number, cls?: string, isHit = true, ignoresMinHit = false): { dealt: number; result: ShotResult } {
     if (!e.alive) return { dealt: 0, result: 'hit' };
     if (e.def.immune && cls === e.def.immune) return { dealt: 0, result: 'immune' };
+    // The Consultant covers for everyone else.
+    if (this.cover && !e.def.boss) amount *= this.cover.taken;
     // Focus Music: every hit lands a bit harder. Soundproof Booth: stunned colleagues take more.
     if (isHit && e.vulnerableTime > 0) amount += e.vulnerable;
     if (e.stunTime > 0 && e.stunnedTakes > 1) amount *= e.stunnedTakes;
@@ -2659,7 +2721,10 @@ export class Game {
       dealt += onHp;
     }
     if (e.def.boss) this.checkBossPhase(e);
-    if (e.hp <= 1e-9) e.alive = false;
+    if (e.hp <= 1e-9) {
+      e.alive = false;
+      if (e.def.boss?.cover) this.collapse(e);
+    }
     return { dealt, result: 'hit' };
   }
 
@@ -2687,6 +2752,21 @@ export class Game {
     }
     return Math.min(MAX_TIP, local + everywhere);
   }
+
+  /** The Consultant is gone: nobody knows what they were doing here any more. */
+  private collapse(e: Enemy): void {
+    const c = e.def.boss!.cover!;
+    this.cover = null;
+    for (const o of this.enemies) {
+      if (o === e || !o.alive || !this.onFloor(o)) continue;
+      o.hp = Math.min(o.hp, o.maxHp * c.hpShare);
+      o.stunTime = Math.max(o.stunTime, c.stun);
+    }
+    this.events.push({ t: 'collapse', enemyId: e.id });
+  }
+
+  /** The Consultant is on the floor: what everyone else takes, and how much faster they walk. */
+  private cover: { taken: number; haste: number } | null = null;
 
   private onKill(e: Enemy, delay: number, by?: Tower): void {
     const reward = killReward(e.def) * killIncomeMult(this.waveIndex) * (1 + this.tipBonusAt(e.x, e.y));

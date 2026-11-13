@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.26.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.27.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,24 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 11 The Merger (v0.27.0)
+- Volgorde gewisseld met HR Room (ontwerp): `LEVEL_NAMES` aangepast.
+- Bedrijfscultuur: `ONLY` kent nu ook damage-klassen (`a` -> digital, `p` -> physical). Torens
+  zonder klasse (Coffee Machine, Headphones, Poster) mogen op beide helften (mijn keuze). De
+  startup krijgt een betonvloer, de soeprij-strepen gelden alleen nog voor `n`.
+- Verhuisdozen `x`: blokkeren bouwen en zicht; `clearBoxes` (opdracht `clear`, `BOX_COST` 40)
+  maakt er vrije vloer van voor elke toren; in de snapshot (`cl`). Klik op dozen in het spel.
+  Model `moving_boxes` per tegel in `World`.
+- **The Consultant** (nieuwe boss, bijbel koppelt hem aan de fusie): zolang hij op de vloer is
+  krijgen anderen 70% schade (fase 3: 50%) en lopen ze x1,15. Valt hij: iedereen naar 50% HP en
+  1,5 s stil (`collapse` in `damage()`, event `collapse`). Model + icoon `consultant`.
+- Bot: stap `{ clear: true }` bestaat (doos met het meeste pad), maar maakte L11 slechter: niet
+  in het script. De meting is dus zonder dozen (het slechtste geval).
+- **OPEN, balans L11:** twee korte banen zoals L9, en per bedrijf de helft van je torens. Met de
+  Hot Desks-golven verloor goed spelen; nu de helft van de Old Guards en x0,85: goed spelen en
+  eerst koffie 51 Focus, 2 sterren (seeds 1 en 2). Test eist winnen met >= 2 sterren.
+- Nieuwe modellen: `pingpong_table`, `beanbag`, `neon_sign`, `moving_boxes`.
 
 ### Level 10 Boardroom II (v0.26.0)
 - Kaart = L5 (pad, bureau op (10, 10)) plus de glazen kamer `B` met deur onderaan, kunstwerk

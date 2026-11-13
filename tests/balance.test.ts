@@ -242,3 +242,26 @@ describe('Level 10 difficulty (Boardroom II)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 11 difficulty (The Merger)', () => {
+  const level = LEVELS[11];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.27.0): two short lanes like Town Hall, and per company only half your
+  // towers. Measured, seeds 1 and 2: with the Hot Desks waves good play lost; with half the Old
+  // Guards and 85% of the count (what it uses now) good play and Coffee first both win with 51
+  // Focus and 2 stars. The bots never clear moving boxes in this measurement (it cost them more
+  // than it gave), so a player who uses the boxes well should do better.
+  it('good play wins with at least two stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

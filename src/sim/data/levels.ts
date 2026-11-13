@@ -1119,7 +1119,93 @@ const L10: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10 };
+const L11: LevelDef = {
+  id: 11,
+  name: 'The Merger',
+  block: 'senior',
+  intro: 'Two companies become one. Nobody has unpacked yet.',
+  gimmick: 'The old company on the left takes DIGITAL towers only, the startup on the right PHYSICAL ones. Moving boxes in the middle: clear a stack for 40 Coffee and anything goes there. Two entrances, one per company. The Consultant was brought in for the merger.',
+  size: { w: 22, h: 13 },
+  paths: [
+    [
+      { x: -1.5, y: 2.5 },
+      { x: 7.5, y: 2.5 },
+      { x: 7.5, y: 7.5 },
+      { x: 10.5, y: 7.5 },
+      { x: 10.5, y: 11.0 },
+    ],
+    [
+      { x: 23.5, y: 2.5 },
+      { x: 14.5, y: 2.5 },
+      { x: 14.5, y: 7.5 },
+      { x: 10.5, y: 7.5 },
+      { x: 10.5, y: 11.0 },
+    ],
+  ],
+  splitPaths: true,
+  desk: { x: 10, y: 11 },
+  // The level design (docs/leveldesign, level 11). a: the old company, DIGITAL only. p: the
+  // startup, PHYSICAL only. x: moving boxes. Your desk one tile up so the chair fits behind it.
+  grid: [
+    'atttaHHaaxxxxppptttppp',
+    'aaaaaaaaaxxxxppppppppp',
+    'S=======axxxxp=======S',
+    'aaaaaaa=axxxxp=ppppppp',
+    'aatttaa=axxxxp=ptttppp',
+    'aatttaa=axxxxp=ptttppH',
+    'Haaaaaa=a....p=ppppppH',
+    'Haaaaaa========ppppppp',
+    'aaaaaaaaa.=xxppppppppp',
+    'attttaaaxx=xxppppttppp',
+    'attttaaaxx=xxHpppttppp',
+    'aaaaaaaaxxDxxHpppptttp',
+    'taaaaaaaxx-xxHpppppppt',
+  ],
+  decor: [
+    // The old company: desk islands and the archive.
+    { model: 'printer', rect: { x: 1, y: 0, w: 1, h: 1 } },
+    ...run('file_boxes', 2, 0, 2, 'x'),
+    ...run('bookshelf', 5, 0, 2, 'x'),
+    ...[4, 5].flatMap((y) => run('flex_desk', 2, y, 3, 'x', y === 4 ? { turn: 2 } : {})),
+    ...[9, 10].flatMap((y) => run('flex_desk', 1, y, 4, 'x', y === 9 ? { turn: 2 } : {})),
+    ...run('bookshelf', 0, 6, 2, 'y', { turn: 1 }),
+    { model: 'plant', rect: { x: 0, y: 12, w: 1, h: 1 } },
+    // The startup: a bar, ping-pong, bean bags and a neon sign.
+    { model: 'coffee_bar', rect: { x: 16, y: 0, w: 3, h: 1 } },
+    { model: 'pingpong_table', rect: { x: 16, y: 4, w: 3, h: 2 } },
+    { model: 'neon_sign', rect: { x: 21, y: 5, w: 1, h: 2 }, turn: 3 },
+    ...[9, 10].flatMap((y) => run('beanbag', 17, y, 2, 'x')),
+    ...run('bookshelf', 13, 10, 3, 'y', { turn: 3 }),
+    { model: 'sofa', rect: { x: 18, y: 11, w: 2, h: 1 }, turn: 2 },
+    { model: 'beanbag', rect: { x: 20, y: 11, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 21, y: 12, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  // The old company's blue carpet as the base; the startup gets its concrete drawn over it.
+  look: { floorA: '#4f6a8f', floorB: '#4a6487', walkway: '#d8c9ab', edge: '#b9a888', wall: '#e3e1dc' },
+  // Senior: the Hot Desks curve at 85% of the count with half the Old Guards (two short lanes at
+  // once, half your towers per company; measured, see HANDOFF), and The Consultant at the end.
+  waves: [
+    'intern:15@0.48 + newhire:3@0.90 + chaser:5@0.20',
+    'intern:12@0.46 + newhire:4@0.85 + coldcaller:1@1.20 + chaser:5@0.18',
+    'chaser:15@0.15 + phonecaller:1@1.20 + newhire:4@0.85 + intern:7@0.45',
+    'oldguard:1@1.80 + intern:10@0.45 + coldcaller:2@1.00 + chaser:3@0.18',
+    'impersonator:3@0.80 + newhire:7@0.80 + phonecaller:2@1.00 + chaser:9@0.16',
+    'boardmember:2@1.60 + coldcaller:2@0.95 + intern:15@0.42 + chaser:10@0.14',
+    'oldguard:1@1.60 + chatterbox:2@1.60 + phonecaller:2@0.95 + requester:3@1.00 + intern:12@0.42',
+    'chaser:37@0.10 + phonecaller:3@0.90 + newhire:9@0.75',
+    'requester:4@1.00 + boardmember:2@1.50 + coldcaller:3@0.85 + impersonator:4@0.60 + chaser:17@0.12',
+    'oldguard:1@1.40 + phonecaller:3@0.85 + coldcaller:3@0.85 + intern:19@0.38',
+    'chaser:46@0.09 + newhire:10@0.65 + phonecaller:3@0.80 + chatterbox:2@1.50',
+    'oldguard:1@1.30 + requester:4@0.95 + boardmember:2@1.30 + impersonator:5@0.55 + newhire:5@0.70',
+    'boardmember:3@1.30 + phonecaller:4@0.75 + newhire:14@0.60 + chaser:34@0.09 + coldcaller:3@0.80',
+    'oldguard:2@1.20 + phonecaller:4@0.70 + requester:5@0.90 + chaser:37@0.09 + coldcaller:3@0.80',
+    'consultant:1@2.00 + requester:5@0.90 + chaser:20@0.10',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [
@@ -1133,8 +1219,8 @@ export const LEVEL_NAMES: readonly string[] = [
   'Hot Desks',
   'Town Hall',
   'Boardroom II',
-  'HR Room',
   'The Merger',
+  'HR Room',
   'Server Room',
   'Release Night',
   'Boardroom III',

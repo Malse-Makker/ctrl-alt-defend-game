@@ -155,7 +155,9 @@ export const beginnerBot: Bot = {
 
 type Step =
   | { place: string; spot: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'; from?: number }
-  | { up: string; path: number; all?: boolean };
+  | { up: string; path: number; all?: boolean }
+  /** The Merger: clear the stack of moving boxes that sees the most walkway. */
+  | { clear: true };
 
 /** A good player's build order for a level, step by step; each step waits until it is affordable. */
 const SCRIPTS: Record<number, Step[]> = {
@@ -475,6 +477,40 @@ SCRIPTS[10] = [
   { up: 'autoreply', path: 0, all: true },
 ];
 
+SCRIPTS[11] = [
+  // The Merger: two entrances like Town Hall, but DIGITAL only on the old company's side and
+  // PHYSICAL only on the startup's. The bot leaves the moving boxes alone (the worst case).
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'view' },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'pomodoro', path: 1 },
+  { up: 'artillery', path: 0 },
+  { place: 'poster', spot: 'support' },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'poster', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'poster', path: 1 },
+  { place: 'artillery', spot: 'view' },
+  { up: 'artillery', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'replyall', path: 0 },
+  { up: 'poster', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'): Spot | undefined {
   if (kind === 'view') {
     // The tile that sees the most walkway at the tower's full reach (Office Artillery on a floor
@@ -537,6 +573,21 @@ function runScript(g: Game, steps: Step[], state: { i: number }): void {
   autos.forEach((t, i) => g.setTargeting(t.id, boss && i % 2 === 0 ? 'strongest' : 'first'));
   for (let guard = 0; guard < 5 && state.i < steps.length; guard++) {
     const st = steps[state.i];
+    if ('clear' in st) {
+      let best: { x: number; y: number; cover: number } | null = null;
+      for (const b of g.boxes) {
+        if (!g.isBoxes(b.x, b.y)) continue;
+        const cover = g.paths.reduce((n, p) => n + p.coverage({ x: b.x + 0.5, y: b.y + 0.5 }, 3, 0.25), 0);
+        if (!best || cover > best.cover) best = { x: b.x, y: b.y, cover };
+      }
+      if (!best) {
+        state.i++;
+        continue;
+      }
+      if (!g.clearBoxes(best.x, best.y).ok) return;
+      state.i++;
+      continue;
+    }
     if ('place' in st) {
       if (st.from !== undefined && g.waveIndex < st.from) return;
       // The projector is down: wait for it instead of skipping the step (no spot is free now).

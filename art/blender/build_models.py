@@ -2849,6 +2849,77 @@ def b_glass_blinds():
     return root
 
 
+# ---------------------------------------------------------------- level 11: the Merger
+
+def b_consultant():
+    """The Consultant: a sharp suit, a lanyard from another company, and a flip chart he
+    brought himself."""
+    s = 1.5
+    root, body, hz = person("consultant", "#3b3f46", "#3b3f46", "skin_2", "hair_dark", style="side", h=s)
+    shirt = box("ShirtV", (0.1 * s, 0.012 * s, 0.16 * s), loc=(0, -0.104 * s, 0.52 * s), material=mat("#cfe3f2"), taper=0.4)
+    lanyard = box("Lanyard", (0.02 * s, 0.012 * s, 0.2 * s), loc=(0.04 * s, -0.107 * s, 0.5 * s), material=mat("orange"))
+    card = box("Card", (0.06 * s, 0.012 * s, 0.08 * s), loc=(0.04 * s, -0.108 * s, 0.38 * s), material=mat("orange", emit=0.4))
+    glasses = box("Glasses", (0.17 * s, 0.02 * s, 0.03 * s), loc=(0, -0.125 * s, hz), material=mat("#b08d57", metal=0.8))
+    acc = join("Props", [shirt, lanyard, card, glasses])
+    parent(acc, root)
+    hp = _hand_world(_arm(root, "R"), s)
+    pad = box("Flip", (0.02 * s, 0.32 * s, 0.24 * s), loc=(hp.x, hp.y - 0.04 * s, hp.z - 0.2 * s), material=mat("paper"))
+    graph = box("Graph", (0.022 * s, 0.24 * s, 0.03 * s), loc=(hp.x - 0.002 * s, hp.y - 0.04 * s, hp.z - 0.1 * s), material=mat("plant", emit=0.4))
+    kit.tilt([graph], rx=0.5, pivot=(hp.x, hp.y - 0.04 * s, hp.z - 0.1 * s))
+    _hold(root, "R", s, [pad, graph])
+    hl = _hand_world(_arm(root, "L"), s)
+    phone = box("Phone", (0.02 * s, 0.05 * s, 0.09 * s), loc=(hl.x, hl.y - 0.03 * s, hl.z - 0.05 * s), material=mat("plastic_black"))
+    _hold(root, "L", s, [phone])
+    return root
+
+
+def b_pingpong_table():
+    """A ping-pong table, three tiles by two. Nobody has won a game since the merger."""
+    root = empty("pingpong_table")
+    top = box("Top", (2.7, 1.5, 0.05), loc=(0, 0, 0.72), material=mat("#2f6b4f", rough=0.5))
+    lines = [box("Mid", (0.02, 1.5, 0.055), loc=(0, 0, 0.72), material=mat("plastic_white")), box("Edge", (2.7, 0.03, 0.055), loc=(0, 0, 0.72), material=mat("plastic_white"))]
+    net = box("Net", (0.02, 1.6, 0.15), loc=(0, 0, 0.77), material=mat("plastic_white", alpha=0.7))
+    legs = [box(f"Leg{i}", (0.05, 0.05, 0.72), loc=(x, y, 0), material=mat("metal")) for i, (x, y) in enumerate(((-1.2, -0.6), (1.2, -0.6), (-1.2, 0.6), (1.2, 0.6)))]
+    ball_ob = ball("Ball", 0.03, loc=(0.6, 0.3, 0.8), material=mat("orange"), subdiv=1)
+    bats = [box(f"Bat{i}", (0.15, 0.12, 0.015), loc=(x, y, 0.775), material=mat("red"), rot_z=r) for i, (x, y, r) in enumerate(((-1.0, 0.4, 0.5), (1.0, -0.3, -0.3)))]
+    ob = join("pingpong_table_mesh", [top, net, ball_ob] + lines + legs + bats)
+    parent(ob, root)
+    return root
+
+
+def b_beanbag():
+    root = empty("beanbag")
+    bag = ball("Bag", 0.38, loc=(0, 0, 0.0), material=mat("orange", rough=0.95), subdiv=2, scale=(1, 1, 0.6))
+    dent = ball("Dent", 0.2, loc=(0, -0.05, 0.3), material=mat("#c96a3d", rough=0.95), subdiv=1, scale=(1, 1, 0.35))
+    ob = join("beanbag_mesh", [bag, dent])
+    parent(ob, root)
+    return root
+
+
+def b_neon_sign():
+    """The startup's neon sign on a frame, two tiles long, front to -Y."""
+    root = empty("neon_sign")
+    frame = box("Frame", (1.9, 0.12, 1.7), loc=(0, 0.1, 0), material=mat("#3b3f46"))
+    words = _text("NeonText", "MOVE FAST", 0.24, (0, 0.02, 1.15), mat("pink", emit=3.0))
+    words2 = _text("NeonText2", "BREAK THINGS", 0.18, (0, 0.02, 0.8), mat("teal", emit=3.0))
+    ob = join("neon_sign_mesh", [frame, words, words2])
+    parent(ob, root)
+    return root
+
+
+def b_moving_boxes():
+    """A stack of moving boxes, still taped shut. Clear them for Coffee."""
+    root = empty("moving_boxes")
+    parts = []
+    for i, (x, y, z, w, d, hgt, r) in enumerate(((-0.18, -0.12, 0, 0.5, 0.45, 0.4, 0.05), (0.2, 0.15, 0, 0.45, 0.45, 0.35, -0.1), (-0.05, 0.0, 0.4, 0.45, 0.4, 0.35, 0.15))):
+        parts.append(box(f"Box{i}", (w, d, hgt), loc=(x, y, z), material=mat("cardboard", rough=0.9), bevel=0.01, rot_z=r))
+        parts.append(box(f"Tape{i}", (w * 0.12, d + 0.01, 0.01), loc=(x, y, z + hgt), material=mat("#d9c9a3"), rot_z=r))
+        parts.append(box(f"Label{i}", (0.14, 0.01, 0.08), loc=(x, y - d / 2 - 0.005, z + hgt * 0.6), material=mat("paper"), rot_z=r))
+    ob = join("moving_boxes_mesh", parts)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -3008,6 +3079,11 @@ BUILDERS = {
     "tv_camera": b_tv_camera,
     "stage_screen": b_stage_screen,
     "glass_blinds": b_glass_blinds,
+    "consultant": b_consultant,
+    "pingpong_table": b_pingpong_table,
+    "beanbag": b_beanbag,
+    "neon_sign": b_neon_sign,
+    "moving_boxes": b_moving_boxes,
 }
 
 
