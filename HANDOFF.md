@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.30.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.31.0 (2026-11-13), nog niet live; alle 15 levels staan erin: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,19 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 15 Boardroom III (v0.31.0)
+- Kaart = L10 plus een achterdeur rechts (pad 2 voegt aan de rechterkant in, `splitPaths`) en een
+  champagnebar; jaloezieën elke 20 s (`every: 10`, 10 s dicht). 22 golven van de Boardroom.
+- **Your Line Manager, 360** (id `finalreview`, de golf-notatie kent alleen letters): Line
+  Manager-mechaniek plus `reviewers`: bij 66% komt de Head of Comms terug, bij 33% de Presenter, met
+  20% van hun HP (event `reviewer`, toast).
+- **OPEN, voor de maker:** (1) het ontwerp noemt "een eigen mini-game voor de laatste boss" zonder
+  invulling; het hazard-systeem kent per level één hazard (hier de jaloezieën), dus nog niet
+  gebouwd. (2) Balans: met 1100 HP + 240 schild en reviewers op 35% verloor goed spelen; rond
+  660-720 HP valt het om. Nu 600 + 150 en 20%: goed spelen 82/75 Focus en 2 sterren, eerst koffie
+  40 (seeds 1 en 2). Daarmee is de eindbaas lichter dan de Line Manager van L5 (720 + 180), maar
+  hij neemt twee reviewers mee.
 
 ### Level 14 Release Night (v0.30.0)
 - Kaart uit het ontwerp, bureau op (20, 10) (stoel). Licht `*`: in het donker `DARK_RANGE` 0,6 van

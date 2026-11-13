@@ -329,3 +329,25 @@ describe('Level 14 difficulty (Release Night)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 15 difficulty (Boardroom III)', () => {
+  const level = LEVELS[15];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.31.0): the glass room with blinds every 20 s, two doors, the
+  // Boardroom's 22 waves. Measured, seeds 1 and 2: with the final boss at 1100 HP + 240 shield
+  // and reviewers at 35% good play lost; it falls off a cliff around 660-720 HP. Now 600 + 150
+  // and reviewers at 20%: good play wins with 82 and 75 Focus, 2 stars; Coffee first with 40.
+  it('good play wins with at least two stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

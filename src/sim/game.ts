@@ -295,6 +295,7 @@ export type GameEvent =
   | { t: 'collapse'; enemyId: number }
   | { t: 'audit'; defId: string; until: number }
   | { t: 'pizza'; x: number; y: number; player: number; bonus: number }
+  | { t: 'reviewer'; enemyId: number; type: string }
   | { t: 'phone'; x: number; y: number; hung: boolean; bonus: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
@@ -2866,6 +2867,13 @@ export class Game {
       e.phase = (e.phase + 1) as 2 | 3;
       if (b.shieldRecharge) e.shield = e.maxShield;
       if (b.phaseBurst > 0) this.callIn(e, b.addType, b.phaseBurst);
+      if (b.reviewers) {
+        // An earlier boss comes back for the 360-degree review.
+        const type = e.phase === 2 ? b.reviewers.phase2 : b.reviewers.phase3;
+        const r = this.spawn(type, e.pathIndex, Math.max(0, e.dist - 1.2), true);
+        r.hp = r.maxHp = r.def.hp * b.reviewers.hpShare;
+        this.events.push({ t: 'reviewer', enemyId: r.id, type });
+      }
       this.events.push({ t: 'bossPhase', enemyId: e.id, phase: e.phase as 2 | 3, called: b.phaseBurst });
     }
   }

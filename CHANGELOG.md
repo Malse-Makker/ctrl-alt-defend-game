@@ -3,6 +3,12 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.31.0] - 2026-11-13
+
+### New
+- Level 15, Boardroom III: the same boardroom for the third time, during the most important meeting of the year. The glass room is there again, with the blinds coming down every 20 seconds now, and the board comes in through a back door on the right. Opens once you finish Release Night.
+- Your Line Manager, 360: your annual review, with feedback from everyone. At 66% The Head of Comms comes back for it, at 33% The Presenter.
+
 ## [0.30.0] - 2026-11-13
 
 ### New

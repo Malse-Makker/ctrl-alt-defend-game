@@ -50,6 +50,11 @@ export interface BossDef {
    * more for every second, up to `max`.
    */
   rush?: { perSecond: number; max: number };
+  /**
+   * Your Line Manager, 360: at phase 2 and 3 an earlier boss comes back as a peer reviewer, with
+   * this share of their HP.
+   */
+  reviewers?: { phase2: string; phase3: string; hpShare: number };
   intro: string;
 }
 
@@ -463,6 +468,37 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#f2c641',
     model: 'projectmanager',
     armSwing: 0.4,
+  },
+  finalreview: {
+    id: 'finalreview',
+    name: 'Your Line Manager, 360',
+    role: 'Final boss',
+    quote: 'Do you feel stressed? Let us talk about your 360.',
+    ability:
+      'Your annual review, with feedback from everyone. Three phases like before: a stack of agenda points, then peer reviewers, then questions while your towers near him reload slower. At 66% The Head of Comms comes back for the review, at 33% The Presenter.',
+    counter: 'Everything you have learned. Hit hard early, keep damage away from his route at the end, and keep something in reserve for the reviewers.',
+    hp: 600,
+    shield: 150,
+    speed: 1.0,
+    focus: 50,
+    rewardFlat: 60,
+    boss: {
+      kind: 'linemanager',
+      addType: 'requester',
+      addEvery: 7,
+      addCount: 2,
+      addsFromPhase: 2,
+      phaseBurst: 3,
+      phase3Speed: 1.4,
+      towerSlow: { radius: 3.2, mult: 1.4, fromPhase: 3 },
+      reviewers: { phase2: 'headofcomms', phase3: 'presenter', hpShare: 0.2 },
+      intro: 'Your 360-degree review. Earlier bosses come back as peer reviewers. Keep something in reserve.',
+    },
+    stunResist: 0.35,
+    scale: 1.2,
+    accent: '#8e6fbf',
+    model: 'linemanager',
+    armSwing: 0.3,
   },
   coldcaller: {
     id: 'coldcaller',

@@ -254,6 +254,7 @@ export const UI_TEXT = {
   pizzaArrives: 'Pizza. Click it before someone else does: Coffee, and a bit of extra light.',
   pizzaTaken: 'Pizza. +{n} Coffee, and that spot is lit for a while.',
   darkNote: 'In the dark: reaches 40% less far.',
+  reviewerArrives: '{name} is back, for your 360-degree review.',
   projWarn: 'The projector fan spins up. Three seconds: place what you want to place.',
   projStarts: 'The projector is not working. Nobody can build until someone fixes it.',
   projFixed: 'The projector works. +{n} Coffee for not calling IT.',

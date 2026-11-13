@@ -538,6 +538,10 @@ export class Session {
         this.hud?.toast(T.auditStarts.replace('{t}', `${name}s`), 'warn', 3);
         break;
       }
+      case 'reviewer':
+        sfx.play('boss', { gain: 0.7 });
+        this.hud?.toast(T.reviewerArrives.replace('{name}', COLLEAGUES[ev.type]?.name ?? ev.type), 'warn', 3);
+        break;
       case 'pizza':
         if (ev.player === this.me) {
           sfx.play('cash');
