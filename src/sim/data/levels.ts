@@ -113,7 +113,16 @@ export interface BlindsHazard {
   warn: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard;
+/** The HR form (HR Room): fill it in. While it is open for you, you cannot upgrade anything. */
+export interface FormHazard {
+  type: 'form';
+  first: number;
+  every: number;
+  window: number;
+  reward: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard | FormHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -1205,7 +1214,98 @@ const L11: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11 };
+const L12: LevelDef = {
+  id: 12,
+  name: 'HR Room',
+  block: 'senior',
+  intro: 'The HR department. After the merger comes the reorganisation.',
+  gimmick: 'The tightest floor yet: an archive full of filing cabinets, an observation room behind a one-way mirror, and the interview room where it ends at your desk. Towers in the observation room see through the mirror; nobody sees them. HR sends forms, and while you fill one in you cannot upgrade. The HR Manager does audits.',
+  size: { w: 18, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 10.5 },
+      { x: 5.5, y: 10.5 },
+      { x: 5.5, y: 1.5 },
+      { x: 14.5, y: 1.5 },
+      { x: 14.5, y: 8.0 },
+    ],
+  ],
+  desk: { x: 14, y: 8 },
+  // The level design (docs/leveldesign, level 12). m: the one-way mirror, see-through from the
+  // observation room (west of it) only.
+  grid: [
+    't.ttt...HHHH.HHH.t',
+    '.....==========...',
+    '.HHH.=.#######=###',
+    '.....=.#...m..=HH#',
+    '.HHH.=.#..tm..=..#',
+    '.....=.#..tm..=..#',
+    '.HHH.=.#..tm..=..#',
+    '.....=.#...m..=tt#',
+    '.HHH.=.#...mt.Dtt#',
+    '.....=.#t..m.....#',
+    'S=====.###########',
+    '.......tttt..HH.tt',
+  ],
+  walls: [
+    { x: 7, y: 2, w: 7, h: 1 },
+    { x: 15, y: 2, w: 3, h: 1 },
+    { x: 7, y: 3, w: 1, h: 7 },
+    { x: 17, y: 3, w: 1, h: 7 },
+    { x: 7, y: 10, w: 11, h: 1 },
+  ],
+  decor: [
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'printer', rect: { x: 2, y: 0, w: 1, h: 1 } },
+    ...run('file_boxes', 3, 0, 2, 'x'),
+    ...run('filing_cabinet', 8, 0, 4, 'x'),
+    { model: 'safe', rect: { x: 13, y: 0, w: 1, h: 1 } },
+    ...run('filing_cabinet', 14, 0, 2, 'x'),
+    { model: 'plant', rect: { x: 17, y: 0, w: 1, h: 1 } },
+    // The archive: rows of filing cabinets with narrow gaps.
+    ...[2, 4, 6, 8].flatMap((y) => run('filing_cabinet', 1, y, 3, 'x', { turn: 2 })),
+    // The observation room: a table, a camera, the mirror.
+    ...run('conference_table', 10, 4, 3, 'y', { turn: 1 }),
+    { model: 'tv_camera', rect: { x: 8, y: 9, w: 1, h: 1 }, turn: 1 },
+    ...run('one_way_mirror', 11, 3, 7, 'y', { turn: 1 }),
+    // The interview room.
+    ...run('filing_cabinet', 15, 3, 2, 'x'),
+    { model: 'conference_chair', rect: { x: 12, y: 8, w: 1, h: 1 }, turn: 1 },
+    { model: 'canteen_table', rect: { x: 15, y: 7, w: 2, h: 2 } },
+    // The corridor at the front.
+    { model: 'waiting_bench', rect: { x: 7, y: 11, w: 3, h: 1 } },
+    { model: 'complaint_box', rect: { x: 10, y: 11, w: 1, h: 1 } },
+    { model: 'printer', rect: { x: 13, y: 11, w: 1, h: 1 } },
+    { model: 'filing_cabinet', rect: { x: 14, y: 11, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 16, y: 11, w: 1, h: 1 } },
+    { model: 'cooler', rect: { x: 17, y: 11, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  // HR grey carpet, and a beige corridor.
+  look: { floorA: '#8b8f8a', floorB: '#848883', walkway: '#c9b48f', edge: '#a99572', wall: '#e3e1dc' },
+  hazard: { type: 'form', first: 50, every: 50, window: 12, reward: 6 },
+  // Senior: the Hot Desks curve on the tightest floor yet, and The HR Manager at the end.
+  waves: [
+    'intern:18@0.48 + newhire:4@0.90 + chaser:6@0.20',
+    'intern:14@0.46 + newhire:5@0.85 + coldcaller:1@1.20 + chaser:6@0.18',
+    'chaser:18@0.15 + phonecaller:1@1.20 + newhire:5@0.85 + intern:8@0.45',
+    'oldguard:2@1.80 + intern:12@0.45 + coldcaller:2@1.00 + chaser:4@0.18',
+    'impersonator:4@0.80 + newhire:8@0.80 + phonecaller:2@1.00 + chaser:10@0.16',
+    'boardmember:2@1.60 + coldcaller:2@0.95 + intern:18@0.42 + chaser:12@0.14',
+    'oldguard:2@1.60 + chatterbox:2@1.60 + phonecaller:2@0.95 + requester:3@1.00 + intern:14@0.42',
+    'chaser:44@0.10 + phonecaller:3@0.90 + newhire:10@0.75',
+    'requester:5@1.00 + boardmember:2@1.50 + coldcaller:3@0.85 + impersonator:5@0.60 + chaser:20@0.12',
+    'oldguard:3@1.40 + phonecaller:3@0.85 + coldcaller:3@0.85 + intern:22@0.38',
+    'chaser:54@0.09 + newhire:12@0.65 + phonecaller:4@0.80 + chatterbox:2@1.50',
+    'oldguard:3@1.30 + requester:5@0.95 + boardmember:2@1.30 + impersonator:6@0.55 + newhire:6@0.70',
+    'boardmember:3@1.30 + phonecaller:5@0.75 + newhire:16@0.60 + chaser:40@0.09 + coldcaller:3@0.80',
+    'oldguard:4@1.20 + phonecaller:5@0.70 + requester:6@0.90 + chaser:44@0.09 + coldcaller:4@0.80',
+    'hrmanager:1@2.00 + newhire:10@0.70 + chaser:24@0.10',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11, 12: L12 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

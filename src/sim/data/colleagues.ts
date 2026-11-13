@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant' | 'hrmanager';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -40,6 +40,11 @@ export interface BossDef {
    * of their HP and stands still for `stun` seconds: the wave collapses.
    */
   cover?: { taken: number; taken3: number; haste: number; hpShare: number; stun: number };
+  /**
+   * The HR Manager's audits: every `every` seconds (`every3` from his last phase) the tower type
+   * you spent the most on stops for `duration` seconds.
+   */
+  audit?: { every: number; every3: number; duration: number };
   intro: string;
 }
 
@@ -396,6 +401,34 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     scale: 1.1,
     accent: '#e67e3a',
     model: 'consultant',
+    armSwing: 0.3,
+  },
+  hrmanager: {
+    id: 'hrmanager',
+    name: 'The HR Manager',
+    role: 'Boss',
+    quote: 'This is just a friendly conversation. I will be taking notes.',
+    ability:
+      'Does audits. Every few seconds the kind of tower you spent the most Coffee on is called in for a review and does nothing for a while. In her last phase the audits come faster. She brings New Hires for their onboarding.',
+    counter: 'Do not put everything into one kind of tower. Spread it, so an audit only takes out part of your defence.',
+    hp: 860,
+    speed: 0.95,
+    focus: 25,
+    rewardFlat: 35,
+    boss: {
+      kind: 'hrmanager',
+      addType: 'newhire',
+      addEvery: 8,
+      addCount: 2,
+      phaseBurst: 4,
+      phase3Speed: 1.3,
+      audit: { every: 9, every3: 6, duration: 5 },
+      intro: 'She audits the kind of tower you rely on most. Spread your Coffee over different towers.',
+    },
+    stunResist: 0.4,
+    scale: 1.05,
+    accent: '#8e6fbf',
+    model: 'hrmanager',
     armSwing: 0.3,
   },
   coldcaller: {

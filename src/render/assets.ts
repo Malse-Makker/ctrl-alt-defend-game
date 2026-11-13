@@ -168,6 +168,11 @@ export const MODEL_NAMES = [
   'beanbag',
   'neon_sign',
   'moving_boxes',
+  'hrmanager',
+  'filing_cabinet',
+  'safe',
+  'complaint_box',
+  'one_way_mirror',
 ] as const;
 
 export class Assets {

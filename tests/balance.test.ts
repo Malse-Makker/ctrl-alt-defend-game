@@ -265,3 +265,25 @@ describe('Level 11 difficulty (The Merger)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 12 difficulty (HR Room)', () => {
+  const level = LEVELS[12];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // OPEN for the maker (v0.28.0). Measured, seeds 1 and 2, on the Hot Desks waves: good play and
+  // Coffee first both win with 59 Focus and 2 stars. The HR Manager and two Old Guards get
+  // through; she audits the tower type you spent the most on, and the bots lean on Auto-Replies.
+  // Lighter waves did not change it (59 at x0.85, 51 at x0.7).
+  it('good play wins with at least two stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBeGreaterThanOrEqual(2);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

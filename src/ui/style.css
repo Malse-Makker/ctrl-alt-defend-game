@@ -1914,3 +1914,19 @@ select {
     animation: none;
   }
 }
+
+/* The HR form. */
+.form-text {
+  margin: 0;
+}
+
+.form-tick {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.form-card .shake {
+  animation: phone-shake 0.1s linear 3;
+}

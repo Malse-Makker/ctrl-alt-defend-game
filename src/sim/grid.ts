@@ -31,6 +31,8 @@ export interface GridInfo {
   wifi: Uint8Array;
   /** 1 on glass with blinds (B): see-through, until the blinds come down. */
   blinds: Uint8Array;
+  /** 1 on a one-way mirror (m): you see through it from the west only (HR Room). */
+  mirror: Uint8Array;
 }
 
 export function parseGrid(grid: readonly string[], w: number, h: number): GridInfo {
@@ -41,6 +43,7 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
   const only: string[] = new Array(w * h).fill('');
   const wifi = new Uint8Array(w * h);
   const blinds = new Uint8Array(w * h);
+  const mirror = new Uint8Array(w * h);
   grid.forEach((row, y) => {
     if (row.length !== w) throw new Error(`Grid row ${y} has ${row.length} tiles, the floor is ${w} wide`);
     for (let x = 0; x < w; x++) {
@@ -50,11 +53,12 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
       if (ONLY[c]) only[y * w + x] = ONLY[c];
       if (c === 'f') wifi[y * w + x] = 1;
       if (c === 'B') blinds[y * w + x] = 1;
+      if (c === 'm') mirror[y * w + x] = 1;
       if (SIGHT.has(c)) sight[y * w + x] = 1;
       if (c === 'G') gates.push({ x, y });
     }
   });
-  return { build, sight, gates, only, wifi, blinds };
+  return { build, sight, gates, only, wifi, blinds, mirror };
 }
 
 /** Is this letter part of the walkway? (Used to check a grid against its path.) */

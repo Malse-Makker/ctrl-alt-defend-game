@@ -26,6 +26,7 @@ import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
 import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
 import { dinoGame } from './ui/dino';
+import { formGame } from './ui/form';
 import { phoneGame } from './ui/phone';
 import { projectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
@@ -245,7 +246,8 @@ export class Session {
       const solve = () => this.run({ c: 'solve' });
       const say = (msg: string) => this.refuse(msg);
       const type = g.level.hazard?.type;
-      this.qte = type === 'phone' ? phoneGame((hang) => this.run({ c: 'phone', hang })) : type === 'nointernet' ? dinoGame(solve, say) : projectorGame(solve, say);
+      this.qte =
+        type === 'phone' ? phoneGame((hang) => this.run({ c: 'phone', hang })) : type === 'form' ? formGame(solve) : type === 'nointernet' ? dinoGame(solve, say) : projectorGame(solve, say);
       this.root.append(this.qte.el);
     } else if (!want && this.qte) {
       this.qte.close();
@@ -453,6 +455,11 @@ export class Session {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
           }
+        } else if (ev.kind === 'form') {
+          if (ev.on) {
+            sfx.play('upgrade', { pitch: 0.7 });
+            this.hud?.toast(T.formArrives, 'warn', 3);
+          } else if (!g.hazardSolved.includes(this.me)) this.hud?.toast(T.formTimeout, '', 2.5);
         } else if (ev.kind === 'blinds') {
           if (!ev.on) this.hud?.toast(T.blindsUp, '', 2);
         } else if (ev.kind === 'firealarm') {
@@ -515,6 +522,12 @@ export class Session {
           this.hud?.toast(T.boxesCleared, '', 2);
         }
         break;
+      case 'audit': {
+        const name = TOWERS[ev.defId]?.name ?? ev.defId;
+        sfx.play('bossphase', { pitch: 1.2, gain: 0.6 });
+        this.hud?.toast(T.auditStarts.replace('{t}', `${name}s`), 'warn', 3);
+        break;
+      }
       case 'collapse':
         sfx.play('bossphase', { pitch: 0.7 });
         this.hud?.toast(T.consultantGone, 'good', 3);
@@ -545,7 +558,8 @@ export class Session {
           const net = g.level.hazard?.type === 'nointernet';
           if (ev.player === this.me) {
             sfx.play('upgrade', { pitch: 1.2 });
-            this.hud?.toast((net ? T.netFixed : T.projFixed).replace('{n}', String(ev.bonus)), 'good', 3);
+            const form = g.level.hazard?.type === 'form';
+            this.hud?.toast(form ? T.formDone : (net ? T.netFixed : T.projFixed).replace('{n}', String(ev.bonus)), 'good', 3);
           } else if (this.mp) {
             this.hud?.toast((net ? T.netOtherFixed : T.projOtherFixed).replace('{name}', this.nameOf(ev.player)), '', 2.2);
           }

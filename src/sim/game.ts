@@ -126,7 +126,7 @@ export interface Tower {
   /** A Chatterbox is talking next to it: it does nothing this tick. */
   silenced: boolean;
   /** Why it is quiet: a Chatterbox, a crying Baby, or no internet. Null when it works. */
-  quiet: 'chat' | 'cry' | 'net' | 'phone' | null;
+  quiet: 'chat' | 'cry' | 'net' | 'phone' | 'audit' | null;
   /** Seconds left of a crying fit it has to sit through. */
   hushed: number;
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
@@ -293,6 +293,7 @@ export type GameEvent =
   | { t: 'reserved'; desks: number[][] }
   | { t: 'boxes'; x: number; y: number; player: number }
   | { t: 'collapse'; enemyId: number }
+  | { t: 'audit'; defId: string; until: number }
   | { t: 'phone'; x: number; y: number; hung: boolean; bonus: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
@@ -358,7 +359,7 @@ export interface TowerSnap {
   dmg: number;
   kills: number;
   coffee: number;
-  /** Why it is quiet: 0 working, 1 a Chatterbox, 2 a crying Baby, 3 no internet, 4 stuck on the phone. */
+  /** Why it is quiet: 0 working, 1 a Chatterbox, 2 a crying Baby, 3 no internet, 4 stuck on the phone, 5 audited. */
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
@@ -660,6 +661,8 @@ export class Game {
   stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
+  /** 1 on a one-way mirror (HR Room): see-through looking east, a wall looking west. */
+  private mirror: Uint8Array | null = null;
   /** 1 on glass with blinds (Boardroom II). */
   private blinds: Uint8Array | null = null;
   /** 1 on a tribune step (Town Hall). */
@@ -719,6 +722,7 @@ export class Game {
       this.bare = Uint8Array.from(level.grid.join(''), (c) => (c === '-' ? 1 : 0));
       this.wifi = g.wifi.some((v) => v === 1) ? g.wifi : null;
       this.blinds = g.blinds.some((v) => v === 1) ? g.blinds : null;
+      this.mirror = g.mirror.some((v) => v === 1) ? g.mirror : null;
       const raised = Uint8Array.from(level.grid.join(''), (c) => (c === '^' ? 1 : 0));
       this.raised = raised.some((v) => v === 1) ? raised : null;
       this.gates = this.gatesOnPaths(g.gates);
@@ -864,6 +868,18 @@ export class Game {
 
   /** Can a tower at a see a colleague at b, or is there a wall or furniture in between? */
   lineOfSight(ax: number, ay: number, bx: number, by: number): boolean {
+    if (this.mirror) {
+      // A one-way mirror: you see through it looking east (out of the observation room); looking
+      // west it is a wall.
+      const d = Math.hypot(bx - ax, by - ay);
+      const steps = Math.ceil(d / 0.2);
+      for (let i = 1; i < steps; i++) {
+        const k = i / steps;
+        const tx = Math.floor(ax + (bx - ax) * k);
+        const ty = Math.floor(ay + (by - ay) * k);
+        if (this.inBounds(tx, ty) && this.mirror[ty * this.level.size.w + tx] === 1 && bx <= ax) return false;
+      }
+    }
     if (this.blindsDown) {
       const d = Math.hypot(bx - ax, by - ay);
       const steps = Math.ceil(d / 0.2);
@@ -1010,6 +1026,14 @@ export class Game {
     return a;
   }
 
+  /**
+   * Does this colleague know the tower is there? Only matters behind a one-way mirror (HR Room):
+   * colleagues in the interview room do not see the towers in the observation room.
+   */
+  private seenBy(e: { x: number; y: number }, t: { x: number; y: number }): boolean {
+    return !this.mirror || this.lineOfSight(e.x, e.y, t.x, t.y);
+  }
+
   /** Boardroom II: the blinds are down, and nobody sees through the glass room. */
   get blindsDown(): boolean {
     return this.hazardOn && this.level.hazard?.type === 'blinds';
@@ -1149,6 +1173,7 @@ export class Game {
     const cost = this.pathCostFor(t, path)!;
     if (this.over) return { ok: false, reason: 'The day is over.', cost };
     if (!this.canControl(t, player)) return { ok: false, reason: 'That is not your tower.', cost };
+    if (this.level.hazard?.type === 'form' && this.hazardOpenFor(player)) return { ok: false, reason: 'Fill in the form first. HR is waiting.', cost };
     if (this.walletOf(player) < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
     return { ok: true, cost };
   }
@@ -1318,7 +1343,7 @@ export class Game {
         dmg: Math.round(t.stats.damage),
         kills: t.stats.kills,
         coffee: r3(t.stats.coffee),
-        sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : t.quiet === 'phone' ? 4 : 1,
+        sil: !t.silenced ? 0 : t.quiet === 'cry' ? 2 : t.quiet === 'net' ? 3 : t.quiet === 'phone' ? 4 : t.quiet === 'audit' ? 5 : 1,
         mop: t.mopped > 0 ? 1 : 0,
         dir: t.dir,
         roll: r3(t.roll),
@@ -1423,7 +1448,7 @@ export class Game {
       t.stats.kills = ts.kills;
       t.stats.coffee = ts.coffee;
       t.silenced = ts.sil > 0;
-      t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 4 ? 'phone' : ts.sil === 1 ? 'chat' : null;
+      t.quiet = ts.sil === 2 ? 'cry' : ts.sil === 3 ? 'net' : ts.sil === 4 ? 'phone' : ts.sil === 5 ? 'audit' : ts.sil === 1 ? 'chat' : null;
       t.mopped = ts.mop === 1 ? 1 : 0;
       t.dir = ts.dir ?? 0;
       t.roll = ts.roll ?? 0;
@@ -1510,7 +1535,7 @@ export class Game {
   /** Is there a mini-game waiting for this player (the projector, or getting back online)? */
   hazardOpenFor(player: number): boolean {
     const type = this.level.hazard?.type;
-    return this.hazardOn && (type === 'projector' || type === 'nointernet' || type === 'phone') && !this.hazardSolved.includes(player);
+    return this.hazardOn && (type === 'projector' || type === 'nointernet' || type === 'phone' || type === 'form') && !this.hazardSolved.includes(player);
   }
 
   /** Lunch break: everyone on the floor walks faster while it lasts. */
@@ -1546,7 +1571,7 @@ export class Game {
   /** A player solved the mini-game: Coffee for them, and it closes once everyone has. */
   solveHazard(player: number): Check {
     const hz = this.level.hazard;
-    if (!hz || (hz.type !== 'projector' && hz.type !== 'nointernet') || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
+    if (!hz || (hz.type !== 'projector' && hz.type !== 'nointernet' && hz.type !== 'form') || !this.hazardOn) return { ok: false, reason: 'There is nothing to fix right now.' };
     if (this.hazardSolved.includes(player)) return { ok: false, reason: 'You already did your part.' };
     this.hazardSolved.push(player);
     const bonus = hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time));
@@ -1889,15 +1914,16 @@ export class Game {
       for (const b of buffs) if (b.id !== t.id && Math.hypot(t.x - b.x, t.y - b.y) <= b.r) r = Math.min(r, b.f);
       for (const n of nags) {
         const ts = n.def.boss!.towerSlow!;
-        if (Math.hypot(t.x - n.x, t.y - n.y) <= ts.radius) r *= ts.mult;
+        if (Math.hypot(t.x - n.x, t.y - n.y) <= ts.radius && this.seenBy(n, t)) r *= ts.mult;
       }
       t.rateBuff = r;
       // Quiet for one of four reasons. Coffee Machines never are.
       t.quiet = null;
       if (this.stuckDesk && this.stuckDesk.x === t.tx && this.stuckDesk.y === t.ty) t.quiet = 'phone';
+      else if (this.audit && this.audit.defId === t.defId && this.time < this.audit.until) t.quiet = 'audit';
       else if (t.def.role !== 'economy') {
         const proof = this.liveStats(t).silenceProof;
-        if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence!)) t.quiet = 'chat';
+        if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence! && this.seenBy(e, t))) t.quiet = 'chat';
         else if (!proof && t.hushed > 0) t.quiet = 'cry';
         else if (offline && t.def.damageClass === 'digital' && !this.hazardSolved.includes(t.owner)) t.quiet = 'net';
       }
@@ -1948,6 +1974,17 @@ export class Game {
       const b = e.def.boss;
       if (!e.alive || !b) continue;
       if (b.sweep && this.onFloor(e)) this.sweep(e, b.sweep);
+      if (b.audit && this.onFloor(e) && (e.cryTimer -= dt) <= 0) {
+        // The HR Manager audits the tower type you put the most Coffee into.
+        e.cryTimer = e.phase >= 3 ? b.audit.every3 : b.audit.every;
+        const spent = new Map<string, number>();
+        for (const t of this.towers) if (t.def.role !== 'economy') spent.set(t.defId, (spent.get(t.defId) ?? 0) + t.invested);
+        const top = [...spent.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0];
+        if (top) {
+          this.audit = { defId: top[0], until: this.time + b.audit.duration };
+          this.events.push({ t: 'audit', defId: top[0], until: this.audit.until });
+        }
+      }
       if (b.smoke && this.onFloor(e) && (e.cryTimer -= dt) <= 0) {
         // The Smoking Colleague leaves a cloud wherever he stops for a puff.
         e.cryTimer = b.smoke.cloudEvery;
@@ -1958,7 +1995,7 @@ export class Game {
         // A crying fit: every tower nearby has to stop and look. Noise Cancelling does not hear it.
         e.cryTimer = b.cry.every;
         for (const t of this.towers) {
-          if (t.def.role === 'economy' || Math.hypot(t.x - e.x, t.y - e.y) > b.cry.radius || this.liveStats(t).silenceProof) continue;
+          if (t.def.role === 'economy' || Math.hypot(t.x - e.x, t.y - e.y) > b.cry.radius || this.liveStats(t).silenceProof || !this.seenBy(e, t)) continue;
           t.hushed = Math.max(t.hushed, b.cry.duration);
         }
         this.events.push({ t: 'cry', enemyId: e.id, x: e.x, y: e.y, radius: b.cry.radius });
@@ -2612,7 +2649,7 @@ export class Game {
       // Walls and furniture: nothing that aims at someone sees through them, Office Artillery included.
       if ((this.walls || this.blindsDown) && !this.lineOfSight(t.x, t.y, e.x, e.y)) continue;
       // All the attention: towers close to a taunting colleague aim at him first.
-      const taunt = e.def.taunt !== undefined && d <= e.def.taunt ? 1e6 : 0;
+      const taunt = e.def.taunt !== undefined && d <= e.def.taunt && this.seenBy(e, t) ? 1e6 : 0;
       cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });
     }
     cands.sort((a, b) => b.score - a.score || a.e.id - b.e.id);
@@ -2764,6 +2801,9 @@ export class Game {
     }
     this.events.push({ t: 'collapse', enemyId: e.id });
   }
+
+  /** The HR Manager's audit: this tower type does nothing until then. */
+  audit: { defId: string; until: number } | null = null;
 
   /** The Consultant is on the floor: what everyone else takes, and how much faster they walk. */
   private cover: { taken: number; haste: number } | null = null;

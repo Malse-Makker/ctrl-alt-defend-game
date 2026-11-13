@@ -2920,6 +2920,75 @@ def b_moving_boxes():
     return root
 
 
+# ---------------------------------------------------------------- level 12: HR Room
+
+def b_hrmanager():
+    """The HR Manager: a cardigan, a lanyard, and a folder with your name on it."""
+    s = 1.45
+    root, body, hz = person("hrmanager", "#8e6fbf", "charcoal", "skin_1", "hair_red", style="bob", h=s)
+    lanyard = box("Lanyard", (0.02 * s, 0.012 * s, 0.2 * s), loc=(0, -0.107 * s, 0.5 * s), material=mat("teal"))
+    card = box("Card", (0.06 * s, 0.012 * s, 0.08 * s), loc=(0, -0.108 * s, 0.38 * s), material=mat("plastic_white"))
+    glasses = box("Glasses", (0.17 * s, 0.02 * s, 0.03 * s), loc=(0, -0.125 * s, hz), material=mat("red"))
+    acc = join("Props", [lanyard, card, glasses])
+    parent(acc, root)
+    hp = _hand_world(_arm(root, "R"), s)
+    folder = box("Folder", (0.03 * s, 0.24 * s, 0.3 * s), loc=(hp.x, hp.y - 0.02 * s, hp.z - 0.2 * s), material=mat("red", rough=0.6))
+    tab = box("Tab", (0.032 * s, 0.06 * s, 0.03 * s), loc=(hp.x, hp.y - 0.1 * s, hp.z - 0.04 * s), material=mat("yellow"))
+    _hold(root, "R", s, [folder, tab])
+    hl = _hand_world(_arm(root, "L"), s)
+    pen = cyl("Pen", 0.01 * s, 0.12 * s, loc=(hl.x, hl.y - 0.03 * s, hl.z - 0.08 * s), material=mat("blue"), verts=6)
+    _hold(root, "L", s, [pen])
+    return root
+
+
+def b_filing_cabinet():
+    """A tall filing cabinet, four drawers, front to -Y."""
+    root = empty("filing_cabinet")
+    body = box("Body", (0.8, 0.6, 1.5), loc=(0, 0.1, 0), material=mat("#8a9199", metal=0.4, rough=0.5), bevel=0.01)
+    parts = [body]
+    for i in range(4):
+        z = 0.08 + i * 0.36
+        parts.append(box(f"Drawer{i}", (0.72, 0.01, 0.3), loc=(0, -0.205, z), material=mat("#9aa1a9", metal=0.4, rough=0.5)))
+        parts.append(box(f"Handle{i}", (0.2, 0.02, 0.03), loc=(0, -0.215, z + 0.2), material=mat("metal_light", metal=0.8, rough=0.3)))
+        parts.append(box(f"Label{i}", (0.14, 0.012, 0.06), loc=(0, -0.212, z + 0.08), material=mat("paper")))
+    ob = join("filing_cabinet_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_safe():
+    root = empty("safe")
+    body = box("Body", (0.8, 0.7, 1.1), loc=(0, 0.05, 0), material=mat("#3b3f46", metal=0.6, rough=0.4), bevel=0.02)
+    door = box("Door", (0.66, 0.02, 0.9), loc=(0, -0.31, 0.1), material=mat("#4a4f57", metal=0.6, rough=0.35))
+    dial = cyl("Dial", 0.08, 0.04, loc=(0.1, -0.33, 0.6), material=mat("metal_light", metal=0.8), verts=16)
+    kit.tilt([dial], rx=math.pi / 2, pivot=(0.1, -0.33, 0.6))
+    handle = box("Handle", (0.04, 0.04, 0.2), loc=(-0.15, -0.34, 0.45), material=mat("metal_light", metal=0.8))
+    ob = join("safe_mesh", [body, door, dial, handle])
+    parent(ob, root)
+    return root
+
+
+def b_complaint_box():
+    root = empty("complaint_box")
+    post = box("Post", (0.08, 0.08, 0.85), loc=(0, 0, 0), material=mat("metal"))
+    boxo = box("Box", (0.4, 0.3, 0.32), loc=(0, 0, 0.85), material=mat("red", rough=0.5), bevel=0.02)
+    slot = box("Slot", (0.24, 0.01, 0.03), loc=(0, -0.155, 1.1), material=mat("plastic_black"))
+    label = box("Label", (0.26, 0.012, 0.08), loc=(0, -0.156, 0.94), material=mat("plastic_white", emit=0.3))
+    ob = join("complaint_box_mesh", [post, boxo, slot, label])
+    parent(ob, root)
+    return root
+
+
+def b_one_way_mirror():
+    """One tile of the one-way mirror, along X: dark, shiny glass in a frame."""
+    root = empty("one_way_mirror")
+    frame = box("Frame", (1.0, 0.12, 1.5), loc=(0, 0, 0), material=mat("#3b3f46"))
+    glass = box("Glass", (0.92, 0.13, 1.3), loc=(0, 0, 0.1), material=mat("#5d6b7a", rough=0.05, metal=0.8, alpha=0.75))
+    ob = join("one_way_mirror_mesh", [frame, glass])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -3084,6 +3153,11 @@ BUILDERS = {
     "beanbag": b_beanbag,
     "neon_sign": b_neon_sign,
     "moving_boxes": b_moving_boxes,
+    "hrmanager": b_hrmanager,
+    "filing_cabinet": b_filing_cabinet,
+    "safe": b_safe,
+    "complaint_box": b_complaint_box,
+    "one_way_mirror": b_one_way_mirror,
 }
 
 

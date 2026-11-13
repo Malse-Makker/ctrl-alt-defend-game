@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.28.0] - 2026-11-13
+
+### New
+- Level 12, HR Room: the tightest floor yet. An archive full of filing cabinets, an observation room behind a one-way mirror, and the interview room where it all ends at your desk. Towers in the observation room see through the mirror; nobody in the interview room sees them. Opens once you finish The Merger.
+- The HR form: three pages, three ticks, one signature. While it is open you cannot upgrade anything.
+- The HR Manager does audits: every so often the kind of tower you spent the most Coffee on is called in for a review and does nothing for a while. Spread your Coffee.
+
 ## [0.27.0] - 2026-11-13
 
 ### New

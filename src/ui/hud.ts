@@ -692,7 +692,7 @@ export class Hud {
       parts.push(card);
     });
 
-    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : T.silencedNote }));
+    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : t.quiet === 'audit' ? T.auditNote : T.silencedNote }));
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
     else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
     else if (g.slowWifi(t)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.wifiNote }));

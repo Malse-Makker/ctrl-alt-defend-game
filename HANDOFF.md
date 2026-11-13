@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.27.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.28.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,23 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 12 HR Room (v0.28.0)
+- Kaart uit het ontwerp, muren uit het raster als `walls`. Bureau (14, 8) aan de gesprekstafel.
+- Doorkijkspiegel `m`: in `lineOfSight` doorzichtig als je naar het oosten kijkt, een muur naar
+  het westen. Collega-effecten op torens (Chatterbox, huilende Baby, Line Manager-rem, taunt) eisen
+  op zo'n kaart dat de collega de toren ziet (`seenBy`). Let op: vanuit de observatiekamer reikt
+  alleen lang bereik tot het pad (Artillery, Pomodoro), een Auto-Reply niet.
+- Formulier (hazard `form`, eerst 50 s, elke 50 s, 12 s): mini-game `src/ui/form.ts` (drie
+  pagina's, vinkje, tekenen); zolang hij openstaat kun je niet upgraden (`canUpgrade`). Bots
+  vullen hem in na 5 s.
+- **The HR Manager** (nieuwe boss, bijbel): elke 9 s (6 s in fase 3) wordt de torensoort waar je
+  het meeste Coffee in stak 5 s geaudit (`quiet = 'audit'`, sil 5, event `audit`, toast).
+- Nieuwe modellen: `hrmanager` (+ icoon), `filing_cabinet`, `safe`, `complaint_box`,
+  `one_way_mirror`.
+- **OPEN, balans L12:** op de Hot Desks-golven winnen goed spelen en eerst koffie met 59 Focus en 2
+  sterren (seeds 1 en 2); de HR Manager en twee Old Guards komen door. Lichtere golven
+  veranderden het niet (de bots leunen op Auto-Replies, precies wat zij audit).
 
 ### Level 11 The Merger (v0.27.0)
 - Volgorde gewisseld met HR Room (ontwerp): `LEVEL_NAMES` aangepast.

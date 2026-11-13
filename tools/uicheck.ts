@@ -585,6 +585,106 @@ async function level10Flow(browser: import('puppeteer-core').Browser, errors: st
   return total;
 }
 
+async function level12Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 12)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l12: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3, '5': 3, '6': 3, '7': 3, '8': 3, '9': 3, '10': 3, '11': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'HR Room');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    waveIndex: number;
+    phase: string;
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    enemies: { type: string; pathIndex: number; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    const want: [string, number, number, number][] = [
+      ['autoreply', 4, 3, 0],
+      ['delegation', 6, 5, 0],
+      ['artillery', 10, 7, 0],
+      ['pomodoro', 9, 3, 1],
+      ['thumbtacks', 13, 3, 0],
+      ['poster', 4, 5, 1],
+      ['replyall', 15, 5, 0],
+      ['headphones', 13, 6, 0],
+    ];
+    const out = want.map(([d, x, y, p]) => {
+      const r = g.place(d, x, y);
+      if (r.tower) for (let i = 0; i < 3; i++) g.upgrade(r.tower.id, p);
+      return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
+    });
+    out.push(`on the mirror: ${g.place('autoreply', 11, 5).reason}`);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  total += await check(page, 'l12-hr', size);
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    s.selected = s.game.towers.find((t) => t.defId === 'poster')!.id;
+  });
+  total += await check(page, 'l12-panel-poster', size);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'alarm' && g.hazardOn) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard');
+      g.events.push(...keep.slice(-3));
+      const lanes = new Set(g.enemies.map((e) => e.pathIndex)).size;
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)} lanes busy=${lanes}`;
+    }, stop);
+  console.log(`  ${await ff('alarm')}`);
+  await new Promise((r) => setTimeout(r, 600));
+  await page.waitForSelector('.form-card', { timeout: 5000 }).catch(() => errors.push('l12: the form did not open'));
+  total += await check(page, 'l12-form', size);
+  // Fill it in: tick, next, tick, next, tick, sign.
+  for (let i = 0; i < 3; i++) {
+    await page.click('.form-tick input');
+    await page.click('.form-card .btn.primary');
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  const still = await page
+    .waitForFunction(() => !document.querySelector('.form-card'), { timeout: 3000, polling: 100 })
+    .then(() => false)
+    .catch(() => true);
+  if (still) {
+    const why = await page.evaluate(() => {
+      const g = (window as unknown as { cad: { session: { game: { hazardOn: boolean; hazardSolved: number[]; phase: string } } } }).cad.session.game;
+      return `${document.querySelector('.form-body .faint')?.textContent} on=${g.hazardOn} solved=${g.hazardSolved} ${g.phase}`;
+    });
+    errors.push(`l12: signing the form did not close it (${why})`);
+  }
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l12-boss', size);
+  await page.close();
+  return total;
+}
+
 async function level11Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   const size = '1600x900';
   console.log(`\n${size} (level 11)`);
@@ -1250,6 +1350,10 @@ async function run(): Promise<void> {
       total += await level6Flow(browser, errors);
       throw new Done();
     }
+    if (args.includes('--l12-only')) {
+      total += await level12Flow(browser, errors);
+      throw new Done();
+    }
     if (args.includes('--l11-only')) {
       total += await level11Flow(browser, errors);
       throw new Done();
@@ -1439,6 +1543,7 @@ async function run(): Promise<void> {
     total += await level9Flow(browser, errors);
     total += await level10Flow(browser, errors);
     total += await level11Flow(browser, errors);
+    total += await level12Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

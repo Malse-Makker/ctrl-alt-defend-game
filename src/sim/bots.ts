@@ -511,6 +511,38 @@ SCRIPTS[11] = [
   { up: 'autoreply', path: 1, all: true },
 ];
 
+SCRIPTS[12] = [
+  // HR Room: one long way round the archive and into the interview room, with filing cabinets
+  // blocking almost every view. Office Artillery in the observation room sees the last stretch.
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'view' },
+  { up: 'pomodoro', path: 1 },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'): Spot | undefined {
   if (kind === 'view') {
     // The tile that sees the most walkway at the tower's full reach (Office Artillery on a floor
@@ -658,6 +690,8 @@ export const solidBot: Bot = {
 function reconnect(g: Game): void {
   const hz = g.level.hazard;
   if (hz?.type === 'nointernet' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 8) g.solveHazard(0);
+  // The HR form: three ticks and a signature, about five seconds.
+  if (hz?.type === 'form' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 5) g.solveHazard(0);
   // The desk phone: a good player hangs up after a couple of seconds.
   if (hz?.type === 'phone' && g.hazardOn && g.time >= g.hazardUntil - hz.window + 2) g.answerPhone(0, true);
 }
