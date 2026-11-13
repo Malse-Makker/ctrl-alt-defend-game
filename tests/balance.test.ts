@@ -308,3 +308,24 @@ describe('Level 13 difficulty (Server Room)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 14 difficulty (Release Night)', () => {
+  const level = LEVELS[14];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // Measured (v0.30.0, seeds 1 and 2): at 70% of the Hot Desks count good play wins with 97 Focus
+  // and 3 stars, Coffee first with 89 and 2. On the full count: 65 and 2 stars for both.
+  it('good play wins with three stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(r.focus).toBeGreaterThanOrEqual(90);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

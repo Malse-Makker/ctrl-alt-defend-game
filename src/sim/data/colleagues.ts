@@ -7,7 +7,7 @@
 import type { DamageClass } from './towers';
 
 export interface BossDef {
-  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant' | 'hrmanager';
+  kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant' | 'hrmanager' | 'projectmanager';
   /** Colleague type he calls in. */
   addType: string;
   addEvery: number;
@@ -45,6 +45,11 @@ export interface BossDef {
    * you spent the most on stops for `duration` seconds.
    */
   audit?: { every: number; every3: number; duration: number };
+  /**
+   * The Project Manager: the longer he is on the floor, the faster everyone walks: `perSecond`
+   * more for every second, up to `max`.
+   */
+  rush?: { perSecond: number; max: number };
   intro: string;
 }
 
@@ -430,6 +435,34 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     accent: '#8e6fbf',
     model: 'hrmanager',
     armSwing: 0.3,
+  },
+  projectmanager: {
+    id: 'projectmanager',
+    name: 'The Project Manager',
+    role: 'Boss',
+    quote: 'Where are we on this?',
+    ability:
+      'It is release night and he wants it live. The longer he is on the floor, the faster everyone walks, himself included, until they all run. He brings Chasers to check on progress.',
+    counter: 'Deal with him fast. Everything you have on him the moment he walks in: the longer he stays, the worse it gets.',
+    hp: 900,
+    speed: 0.9,
+    focus: 25,
+    rewardFlat: 40,
+    boss: {
+      kind: 'projectmanager',
+      addType: 'chaser',
+      addEvery: 6,
+      addCount: 3,
+      phaseBurst: 5,
+      phase3Speed: 1.2,
+      rush: { perSecond: 0.025, max: 1.8 },
+      intro: 'The longer he stays, the faster everything moves. Deal with him fast.',
+    },
+    stunResist: 0.4,
+    scale: 1.05,
+    accent: '#f2c641',
+    model: 'projectmanager',
+    armSwing: 0.4,
   },
   coldcaller: {
     id: 'coldcaller',

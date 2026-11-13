@@ -136,7 +136,22 @@ export interface OverheatHazard {
   rangeMult: number;
 }
 
-export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard | FormHazard | OverheatHazard;
+/**
+ * Pizza (Release Night): the delivery guy leaves a pizza on a free tile. Click it in time: Coffee,
+ * and the spot is lit for a while (the box lid glows).
+ */
+export interface PizzaHazard {
+  type: 'pizza';
+  first: number;
+  every: number;
+  window: number;
+  reward: number;
+  /** Seconds the pizza's spot stays lit, and how far the light reaches. */
+  light: number;
+  radius: number;
+}
+
+export type HazardDef = ProjectorHazard | LunchHazard | NoInternetHazard | SmokeHazard | PhoneHazard | FireAlarmHazard | BlindsHazard | FormHazard | OverheatHazard | PizzaHazard;
 
 /** How a floor looks: two floor colours (checkered), the walkway and its edge, and the walls. */
 export interface LevelLook {
@@ -1404,7 +1419,92 @@ const L13: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11, 12: L12, 13: L13 };
+const L14: LevelDef = {
+  id: 14,
+  name: 'Release Night',
+  block: 'senior',
+  intro: 'Release night. The office is dark, the deploy is running, and there is pizza.',
+  gimmick: 'A long winding run through the dark office. Only the desk lamps give light: towers in the dark reach 40% less far. Now and then a pizza turns up: grab it in time for Coffee and a bit of extra light. The Project Manager wants it live, and the longer he stays, the faster everything moves.',
+  size: { w: 22, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 10.5 },
+      { x: 4.5, y: 10.5 },
+      { x: 4.5, y: 2.5 },
+      { x: 9.5, y: 2.5 },
+      { x: 9.5, y: 8.5 },
+      { x: 14.5, y: 8.5 },
+      { x: 14.5, y: 2.5 },
+      { x: 19.5, y: 2.5 },
+      { x: 19.5, y: 10.5 },
+      { x: 20.0, y: 10.5 },
+    ],
+  ],
+  desk: { x: 20, y: 10 },
+  // The level design (docs/leveldesign, level 14). *: in the light of a desk lamp. Your desk one
+  // tile in from the edge so the chair fits behind it.
+  grid: [
+    'HHHH..tt..HHH..***..HH',
+    'HH........***.......HH',
+    '....======....======..',
+    '****=....=....=....=tt',
+    '*tt*=....=....=....=tt',
+    '*tt*=....=****=....=..',
+    '****=****=*tt*=....=t.',
+    '....=*tt*=****=****=t.',
+    '....=*tt*======*tt*=..',
+    '....=****......*tt*=..',
+    'S====..........****=D.',
+    'ttt...tttttt..HHH.....',
+  ],
+  decor: [
+    { model: 'whiteboard', rect: { x: 0, y: 0, w: 3, h: 1 } },
+    { model: 'bookshelf', rect: { x: 3, y: 0, w: 1, h: 1 } },
+    ...run('server_rack', 0, 1, 2, 'x'),
+    ...run('pizza_boxes', 6, 0, 2, 'x'),
+    // The deploy screen under the strip light.
+    { model: 'noc_wall', rect: { x: 10, y: 0, w: 3, h: 1 } },
+    ...run('vending', 20, 0, 2, 'x'),
+    ...run('fridge', 20, 1, 2, 'x'),
+    // Desks with a lamp at every bend.
+    ...[4, 5].flatMap((y) => run('lamp_desk', 1, y, 2, 'x')),
+    ...[7, 8].flatMap((y) => run('lamp_desk', 6, y, 2, 'x')),
+    ...run('lamp_desk', 11, 6, 2, 'x'),
+    ...[8, 9].flatMap((y) => run('lamp_desk', 16, y, 2, 'x')),
+    // Where the team spends the night.
+    ...[3, 4].flatMap((y) => run('beanbag', 20, y, 2, 'x')),
+    ...run('pizza_boxes', 20, 6, 2, 'y'),
+    ...run('beanbag', 0, 11, 3, 'x'),
+    ...run('flex_desk', 6, 11, 6, 'x', { turn: 2 }),
+    ...run('server_rack', 14, 11, 3, 'x', { turn: 2 }),
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro', 'poster'],
+  startFocus: 100,
+  // The office at night: dark carpet, a dim walkway.
+  look: { floorA: '#2f333b', floorB: '#2b2f36', walkway: '#4a4f5c', edge: '#3a3e48', wall: '#5a5e66' },
+  hazard: { type: 'pizza', first: 40, every: 40, window: 8, reward: 5, light: 20, radius: 1.5 },
+  // Senior: the Hot Desks curve at 70% of the count (in the dark most of your towers reach less
+  // far; measured, see HANDOFF), and The Project Manager at the end.
+  waves: [
+    'intern:13@0.48 + newhire:3@0.90 + chaser:4@0.20',
+    'intern:10@0.46 + newhire:4@0.85 + coldcaller:1@1.20 + chaser:4@0.18',
+    'chaser:13@0.15 + phonecaller:1@1.20 + newhire:4@0.85 + intern:6@0.45',
+    'oldguard:1@1.80 + intern:8@0.45 + coldcaller:1@1.00 + chaser:3@0.18',
+    'impersonator:3@0.80 + newhire:6@0.80 + phonecaller:1@1.00 + chaser:7@0.16',
+    'boardmember:1@1.60 + coldcaller:1@0.95 + intern:13@0.42 + chaser:8@0.14',
+    'oldguard:1@1.60 + chatterbox:1@1.60 + phonecaller:1@0.95 + requester:2@1.00 + intern:10@0.42',
+    'chaser:31@0.10 + phonecaller:2@0.90 + newhire:7@0.75',
+    'requester:4@1.00 + boardmember:1@1.50 + coldcaller:2@0.85 + impersonator:4@0.60 + chaser:14@0.12',
+    'oldguard:2@1.40 + phonecaller:2@0.85 + coldcaller:2@0.85 + intern:15@0.38',
+    'chaser:38@0.09 + newhire:8@0.65 + phonecaller:3@0.80 + chatterbox:1@1.50',
+    'oldguard:2@1.30 + requester:4@0.95 + boardmember:1@1.30 + impersonator:4@0.55 + newhire:4@0.70',
+    'boardmember:2@1.30 + phonecaller:4@0.75 + newhire:11@0.60 + chaser:28@0.09 + coldcaller:2@0.80',
+    'oldguard:3@1.20 + phonecaller:4@0.70 + requester:4@0.90 + chaser:31@0.09 + coldcaller:3@0.80',
+    'projectmanager:1@2.00 + newhire:7@0.70 + chaser:17@0.10',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8, 9: L9, 10: L10, 11: L11, 12: L12, 13: L13, 14: L14 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

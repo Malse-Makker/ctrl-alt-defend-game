@@ -35,6 +35,8 @@ export interface GridInfo {
   mirror: Uint8Array;
   /** 1 in the cold (k): towers there fire slower (Server Room). */
   cold: Uint8Array;
+  /** 1 in the light (*): on a floor with lights, towers anywhere else reach less far (Release Night). */
+  light: Uint8Array;
 }
 
 export function parseGrid(grid: readonly string[], w: number, h: number): GridInfo {
@@ -47,6 +49,7 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
   const blinds = new Uint8Array(w * h);
   const mirror = new Uint8Array(w * h);
   const cold = new Uint8Array(w * h);
+  const light = new Uint8Array(w * h);
   grid.forEach((row, y) => {
     if (row.length !== w) throw new Error(`Grid row ${y} has ${row.length} tiles, the floor is ${w} wide`);
     for (let x = 0; x < w; x++) {
@@ -58,11 +61,12 @@ export function parseGrid(grid: readonly string[], w: number, h: number): GridIn
       if (c === 'B') blinds[y * w + x] = 1;
       if (c === 'm') mirror[y * w + x] = 1;
       if (c === 'k') cold[y * w + x] = 1;
+      if (c === '*') light[y * w + x] = 1;
       if (SIGHT.has(c)) sight[y * w + x] = 1;
       if (c === 'G') gates.push({ x, y });
     }
   });
-  return { build, sight, gates, only, wifi, blinds, mirror, cold };
+  return { build, sight, gates, only, wifi, blinds, mirror, cold, light };
 }
 
 /** Is this letter part of the walkway? (Used to check a grid against its path.) */

@@ -62,6 +62,9 @@ export class World {
   private readonly signs: THREE.Object3D[] = [];
   private readonly reservedTint: THREE.Mesh[] = [];
   private phoneObj: THREE.Object3D | null = null;
+  /** Release Night: the pizza on the floor, and the glow of one you took. */
+  private pizzaObj: THREE.Object3D | null = null;
+  private pizzaGlow: THREE.Mesh | null = null;
   private assetsRef: Assets;
   /** The Merger: a stack of moving boxes per x tile, gone once cleared. */
   private readonly boxViews: { x: number; y: number; obj: THREE.Object3D }[] = [];
@@ -228,6 +231,19 @@ export class World {
         if (rule === 'trap') lane.push({ x, y });
         else if (rule === 'physical') concrete.push({ x, y });
       }
+    // Release Night: warm pools of light under the desk lamps; everything else is dark.
+    if (level.grid) {
+      const lit: { x: number; y: number }[] = [];
+      level.grid.forEach((row, y) => [...row].forEach((c, x) => c === '*' && lit.push({ x, y })));
+      if (lit.length) {
+        const mat = new THREE.MeshBasicMaterial({ color: '#f2c641', transparent: true, opacity: 0.22, depthWrite: false });
+        const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, lit.length);
+        const m = new THREE.Matrix4();
+        lit.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation(c.x + 0.5, 0.004, c.y + 0.5)));
+        mesh.renderOrder = 1;
+        g.add(mesh);
+      }
+    }
     // Server Room: the cold room is white and blue, and cables run across the floor.
     const coldTiles: { x: number; y: number }[] = [];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isColdFloor(x, y)) coldTiles.push({ x, y });
@@ -326,6 +342,7 @@ export class World {
     this.clock += dt;
     this.updateBeamer(game);
     this.updateDesks(game);
+    this.updatePizza(game);
     for (const b of this.boxViews) b.obj.visible = game.isBoxes(b.x, b.y);
     // Each rack blinks at its own pace; overheating makes them all flicker.
     const hot = game.hazardOn && game.level.hazard?.type === 'overheat';
@@ -386,6 +403,36 @@ export class World {
         const shake = ringing ? Math.sin(this.clock * 60) * 0.12 : 0;
         this.phoneObj.position.set(at.x + 0.5, 1.05 + (ringing ? Math.abs(Math.sin(this.clock * 12)) * 0.08 : 0), at.y + 0.5);
         this.phoneObj.rotation.set(0, shake, ringing ? shake * 0.5 : 0);
+      }
+    }
+  }
+
+  private updatePizza(game: Game): void {
+    if (game.level.hazard?.type !== 'pizza') return;
+    if (game.pizza && !this.pizzaObj) {
+      this.pizzaObj = this.assetsRef.clone('pizza');
+      this.shared.add(this.pizzaObj);
+      this.group.add(this.pizzaObj);
+    }
+    if (this.pizzaObj) {
+      this.pizzaObj.visible = game.pizza !== null;
+      if (game.pizza) {
+        this.pizzaObj.position.set(game.pizza.x + 0.5, 0.02 + Math.abs(Math.sin(this.clock * 5)) * 0.06, game.pizza.y + 0.5);
+        this.pizzaObj.rotation.y = this.clock * 0.6;
+      }
+    }
+    const p = game.pizzaLight;
+    const on = !!p && game.time < p.until;
+    if (on && !this.pizzaGlow) {
+      this.pizzaGlow = new THREE.Mesh(new THREE.CircleGeometry(1, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#f2c641', transparent: true, opacity: 0.25, depthWrite: false }));
+      this.pizzaGlow.renderOrder = 1;
+      this.group.add(this.pizzaGlow);
+    }
+    if (this.pizzaGlow) {
+      this.pizzaGlow.visible = on;
+      if (p && on) {
+        this.pizzaGlow.position.set(p.x, 0.005, p.y);
+        this.pizzaGlow.scale.setScalar(p.r);
       }
     }
   }

@@ -4,7 +4,7 @@
 
 import type { LevelDef } from './data/levels';
 import { TOWERS, pathBlock } from './data/towers';
-import { Game, needsSight, type Tower } from './game';
+import { DARK_RANGE, Game, needsSight, type Tower } from './game';
 
 export interface BotResult {
   bot: string;
@@ -59,9 +59,11 @@ export function rankSpots(g: Game, range: number, sighted = true): Spot[] {
     for (let tx = 0; tx < g.level.size.w; tx++) {
       if (g.isPathTile(tx, ty) || g.isBlockedTile(tx, ty)) continue;
       const c = { x: tx + 0.5, y: ty + 0.5 };
+      // Release Night: in the dark a tower reaches less far.
+      const r = g.isLit(tx, ty) ? range : range * DARK_RANGE;
       // For towers that aim, only walkway they can actually see counts: walls and furniture are
       // in the way. Zones, pulses, piles and the chair do not care.
-      const cover = sighted ? seenCoverage(g, c, range) : g.paths.reduce((s, p) => s + p.coverage(c, range, 0.25), 0);
+      const cover = sighted ? seenCoverage(g, c, r) : g.paths.reduce((s, p) => s + p.coverage(c, r, 0.25), 0);
       if (cover > 0) spots.push({ tx, ty, cover });
     }
   }
@@ -579,6 +581,38 @@ SCRIPTS[13] = [
   { up: 'autoreply', path: 1, all: true },
 ];
 
+SCRIPTS[14] = [
+  // Release Night: a long winding run in the dark. Towers in the light of a desk lamp reach
+  // further; the Pomodoro Timer and Office Artillery do not care about the dark.
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'far' },
+  { up: 'pomodoro', path: 1 },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk' | 'support' | 'view'): Spot | undefined {
   if (kind === 'view') {
     // The tile that sees the most walkway at the tower's full reach (Office Artillery on a floor
@@ -726,6 +760,8 @@ export const solidBot: Bot = {
 function reconnect(g: Game): void {
   const hz = g.level.hazard;
   if (hz?.type === 'nointernet' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 8) g.solveHazard(0);
+  // Pizza: a good player grabs it within a couple of seconds.
+  if (hz?.type === 'pizza' && g.hazardOn && g.pizza && g.time >= g.hazardUntil - hz.window + 2) g.takePizza(0);
   // The HR form: three ticks and a signature, about five seconds.
   if (hz?.type === 'form' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 5) g.solveHazard(0);
   // The desk phone: a good player hangs up after a couple of seconds.

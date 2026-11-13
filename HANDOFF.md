@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.29.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
+## Stand: v0.30.0 (2026-11-13), nog niet live: release vanavond 19:00 (besluit maker)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,21 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 14 Release Night (v0.30.0)
+- Kaart uit het ontwerp, bureau op (20, 10) (stoel). Licht `*`: in het donker `DARK_RANGE` 0,6 van
+  het bereik (niet voor `global`), `isLit` (ook binnen de lichtcirkel van een gepakte pizza),
+  notitie in het paneel, gele lichtplekken, donkere vloer.
+- Pizza (hazard `pizza`, eerst 40 s, elke 40 s, 8 s): een pizza op een vrije tegel binnen 2 van het
+  pad; klik hem (opdracht `pizza`, `takePizza`): 5 + resterende seconden Coffee en 20 s licht in
+  straal 1,5. In de snapshot (`hz.pz`, `hz.pl`). Bots pakken hem na 2 s.
+- **The Project Manager** (nieuwe boss, bijbel): hoe langer hij op de vloer is, hoe sneller
+  iedereen loopt: +2,5% per seconde tot x1,8 (`rush`).
+- Bots tellen voor plekken nu het effectieve bereik in het donker (`rankSpots`), anders bouwden ze
+  in het donker. Eerdere levels ongewijzigd.
+- Nieuwe modellen: `projectmanager` (+ icoon), `lamp_desk`, `pizza_boxes`, `pizza`.
+- Balans (seeds 1 en 2): op 70% van de Hot Desks-aantallen wint goed spelen met 97 Focus en 3
+  sterren, eerst koffie met 89 en 2. Op 100%: 65 en 2 sterren voor allebei.
 
 ### Level 13 Server Room (v0.29.0)
 - Kaart uit het ontwerp (34x9), bureau op (32, 4) (stoel). `k` koud: `COLD_RATE` 0,5 (herlaad x2)

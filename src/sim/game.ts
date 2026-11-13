@@ -294,6 +294,7 @@ export type GameEvent =
   | { t: 'boxes'; x: number; y: number; player: number }
   | { t: 'collapse'; enemyId: number }
   | { t: 'audit'; defId: string; until: number }
+  | { t: 'pizza'; x: number; y: number; player: number; bonus: number }
   | { t: 'phone'; x: number; y: number; hung: boolean; bonus: number }
   | { t: 'tacks'; towerId: number; pileId: number; x: number; y: number }
   | { t: 'swept'; enemyId: number; count: number }
@@ -398,7 +399,7 @@ export interface Snapshot {
   smoke?: number[][];
   stats: RoundStats;
   /** next: when the next mini-game starts (-1: not planned), so a copy can show the warning. */
-  hz: { on: boolean; until: number; solved: number[]; next?: number; ph?: number[]; st?: number[]; rs?: number[][] };
+  hz: { on: boolean; until: number; solved: number[]; next?: number; ph?: number[]; st?: number[]; rs?: number[][]; pz?: number[]; pl?: number[] };
   /** Moving boxes cleared so far (The Merger). */
   cl?: number[][];
 }
@@ -437,6 +438,9 @@ export function chairTile(level: LevelDef): { x: number; y: number } {
 
 /** What it costs to clear a stack of moving boxes (The Merger). */
 export const BOX_COST = 40;
+
+/** In the dark (Release Night) towers reach this share of their range: 40% less. */
+export const DARK_RANGE = 0.6;
 
 /** In the cold server room towers fire at this share of their rate: 50% slower. */
 export const COLD_RATE = 0.5;
@@ -664,6 +668,11 @@ export class Game {
   stuckDesk: { x: number; y: number; until: number } | null = null;
   /** 1 on bare floor you may not build on (grid letter -): there is nothing there, it is just not yours. */
   private bare: Uint8Array | null = null;
+  /** 1 in the light (Release Night). */
+  private light: Uint8Array | null = null;
+  /** Release Night: the pizza on the floor, and the spot it lights after you took it. */
+  pizza: { x: number; y: number } | null = null;
+  pizzaLight: { x: number; y: number; r: number; until: number } | null = null;
   /** 1 in the cold (Server Room). */
   private cold: Uint8Array | null = null;
   /** 1 on a one-way mirror (HR Room): see-through looking east, a wall looking west. */
@@ -729,6 +738,7 @@ export class Game {
       this.blinds = g.blinds.some((v) => v === 1) ? g.blinds : null;
       this.mirror = g.mirror.some((v) => v === 1) ? g.mirror : null;
       this.cold = g.cold.some((v) => v === 1) ? g.cold : null;
+      this.light = g.light.some((v) => v === 1) ? g.light : null;
       const raised = Uint8Array.from(level.grid.join(''), (c) => (c === '^' ? 1 : 0));
       this.raised = raised.some((v) => v === 1) ? raised : null;
       this.gates = this.gatesOnPaths(g.gates);
@@ -1000,6 +1010,8 @@ export class Game {
     if (this.slowWifi(t)) s.interval /= BAD_WIFI;
     // The cold server room: everything in it fires at half speed, unless the cooling has failed.
     if (this.isCold(t.tx, t.ty)) s.interval /= COLD_RATE;
+    // Release Night: in the dark a tower reaches less far.
+    if (this.light && Number.isFinite(s.range) && !this.isLit(t.tx, t.ty)) s.range *= DARK_RANGE;
     // The tribune (Town Hall): whoever sits up high sees further.
     if (this.isRaised(t.tx, t.ty) && Number.isFinite(s.range)) s.range *= RAISED_RANGE;
     // Motivational Posters nearby: the best one of each kind counts.
@@ -1054,6 +1066,14 @@ export class Game {
   /** The tribune steps (Town Hall): towers there reach RAISED_RANGE further. */
   isRaised(tx: number, ty: number): boolean {
     return this.raised !== null && this.inBounds(tx, ty) && this.raised[ty * this.level.size.w + tx] === 1;
+  }
+
+  /** Release Night: is this tile in the light (a lamp, or a pizza you took)? */
+  isLit(tx: number, ty: number): boolean {
+    if (!this.light || !this.inBounds(tx, ty)) return true;
+    if (this.light[ty * this.level.size.w + tx] === 1) return true;
+    const p = this.pizzaLight;
+    return !!p && this.time < p.until && Math.hypot(tx + 0.5 - p.x, ty + 0.5 - p.y) <= p.r;
   }
 
   /** Is it cold on this tile right now? Not while the cooling is down (overheating). */
@@ -1404,6 +1424,8 @@ export class Game {
         ...(this.phone ? { ph: [this.phone.x, this.phone.y] } : {}),
         ...(this.stuckDesk ? { st: [this.stuckDesk.x, this.stuckDesk.y, r3(this.stuckDesk.until)] } : {}),
         ...(this.reserved.length ? { rs: this.reserved.map((d) => [d.x, d.y]) } : {}),
+        ...(this.pizza ? { pz: [this.pizza.x, this.pizza.y] } : {}),
+        ...(this.pizzaLight ? { pl: [r3(this.pizzaLight.x), r3(this.pizzaLight.y), this.pizzaLight.r, r3(this.pizzaLight.until)] } : {}),
       },
     };
   }
@@ -1426,6 +1448,8 @@ export class Game {
     this.phone = s.hz.ph ? { x: s.hz.ph[0], y: s.hz.ph[1] } : null;
     this.stuckDesk = s.hz.st ? { x: s.hz.st[0], y: s.hz.st[1], until: s.hz.st[2] } : null;
     this.reserved = (s.hz.rs ?? []).map((d) => ({ x: d[0], y: d[1] }));
+    this.pizza = s.hz.pz ? { x: s.hz.pz[0], y: s.hz.pz[1] } : null;
+    this.pizzaLight = s.hz.pl ? { x: s.hz.pl[0], y: s.hz.pl[1], r: s.hz.pl[2], until: s.hz.pl[3] } : null;
     const old = new Map(this.towers.map((t) => [t.id, t]));
     this.towers = s.towers.map((ts) => {
       const def = TOWERS[ts.def];
@@ -1589,6 +1613,20 @@ export class Game {
     return { ok: true, cost: -bonus };
   }
 
+  /** Release Night: take the pizza. Coffee for you, and its spot is lit for a while. */
+  takePizza(player: number): Check {
+    const hz = this.level.hazard;
+    if (!hz || hz.type !== 'pizza' || !this.hazardOn || !this.pizza) return { ok: false, reason: 'There is no pizza. There never is.' };
+    const at = this.pizza;
+    const bonus = this.earnFor(player, hz.reward + Math.max(0, Math.ceil(this.hazardUntil - this.time)));
+    this.stats.coffeeFromBonus += bonus;
+    this.pizzaLight = { x: at.x + 0.5, y: at.y + 0.5, r: hz.radius, until: this.time + hz.light };
+    this.events.push({ t: 'pizza', x: at.x, y: at.y, player, bonus });
+    this.hazardSolved = [player];
+    this.endHazard();
+    return { ok: true, cost: -bonus };
+  }
+
   private stickDesk(at: { x: number; y: number }, seconds: number): void {
     this.stuckDesk = { x: at.x, y: at.y, until: this.time + seconds };
   }
@@ -1610,6 +1648,7 @@ export class Game {
   private endHazard(): void {
     this.hazardOn = false;
     this.phone = null;
+    this.pizza = null;
     this.hazardNext = this.time + (this.level.hazard?.every ?? Infinity);
     this.events.push({ t: 'hazard', kind: this.level.hazard?.type ?? '', on: false, until: this.time });
   }
@@ -1656,6 +1695,17 @@ export class Game {
           }
         }
         this.pending.sort((a, b) => a.at - b.at || a.seq - b.seq);
+      }
+      if (hz.type === 'pizza') {
+        // The delivery guy leaves it on a free tile next to the walkway.
+        const free: { x: number; y: number }[] = [];
+        for (let y = 0; y < this.level.size.h; y++)
+          for (let x = 0; x < this.level.size.w; x++) if (!this.isBlockedTile(x, y) && !this.isPathTile(x, y) && !this.towerAt(x, y) && this.minPathDistance({ x: x + 0.5, y: y + 0.5 }) < 2) free.push({ x, y });
+        if (!free.length) {
+          this.hazardNext = this.time + hz.every;
+          return;
+        }
+        this.pizza = free[Math.floor(this.rng.next() * free.length) % free.length];
       }
       if (hz.type === 'phone') {
         // It rings on a flex desk with something on it, if there is one: that is where it hurts.
@@ -1925,6 +1975,11 @@ export class Game {
     }
     const hurry = this.enemies.filter((e) => e.alive && e.def.boss?.haste);
     const consultant = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.boss?.cover);
+    const pm = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.boss?.rush);
+    if (pm) {
+      pm.cryTimer += TICK;
+      this.rush = Math.min(pm.def.boss!.rush!.max, 1 + pm.cryTimer * pm.def.boss!.rush!.perSecond);
+    } else this.rush = 1;
     this.cover = consultant ? { taken: consultant.phase >= 3 ? consultant.def.boss!.cover!.taken3 : consultant.def.boss!.cover!.taken, haste: consultant.def.boss!.cover!.haste } : null;
     for (const e of this.enemies) {
       let f = 1;
@@ -1937,6 +1992,8 @@ export class Game {
       }
       // The Consultant: everyone walks with a bit more purpose while he is around.
       if (this.cover && !e.def.boss) h = Math.max(h, this.cover.haste);
+      // The Project Manager: the longer he is here, the faster everything moves. Him included.
+      if (this.rush > 1) h = Math.max(h, this.rush);
       e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
@@ -2837,6 +2894,9 @@ export class Game {
     }
     this.events.push({ t: 'collapse', enemyId: e.id });
   }
+
+  /** The Project Manager: how much faster everyone walks right now (1 = not at all). */
+  rush = 1;
 
   /** The HR Manager's audit: this tower type does nothing until then. */
   audit: { defId: string; until: number } | null = null;

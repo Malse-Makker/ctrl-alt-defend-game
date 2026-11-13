@@ -3066,6 +3066,69 @@ def b_noc_wall():
     return root
 
 
+# ---------------------------------------------------------------- level 14: Release Night
+
+def b_projectmanager():
+    """The Project Manager: rolled-up sleeves, a headset, a laptop with the burndown chart."""
+    s = 1.45
+    root, body, hz = person("projectmanager", "#3e7cc9", "denim", "skin_3", "hair_blond", style="short", h=s)
+    headset = box("Headset", (0.2 * s, 0.04 * s, 0.03 * s), loc=(0, 0, hz + 0.1 * s), material=mat("plastic_black"))
+    mic = box("Mic", (0.02 * s, 0.1 * s, 0.02 * s), loc=(0.09 * s, -0.08 * s, hz - 0.05 * s), material=mat("plastic_black"))
+    acc = join("Props", [headset, mic])
+    parent(acc, root)
+    hp = _hand_world(_arm(root, "R"), s)
+    lap = box("Laptop", (0.02 * s, 0.3 * s, 0.22 * s), loc=(hp.x, hp.y - 0.03 * s, hp.z - 0.18 * s), material=mat("metal_light", metal=0.6))
+    chart = box("Chart", (0.022 * s, 0.24 * s, 0.03 * s), loc=(hp.x - 0.002 * s, hp.y - 0.03 * s, hp.z - 0.1 * s), material=mat("red", emit=0.8))
+    kit.tilt([chart], rx=-0.4, pivot=(hp.x, hp.y - 0.03 * s, hp.z - 0.1 * s))
+    _hold(root, "R", s, [lap, chart])
+    hl = _hand_world(_arm(root, "L"), s)
+    can = cyl("Can", 0.035 * s, 0.11 * s, loc=(hl.x, hl.y - 0.04 * s, hl.z - 0.08 * s), material=mat("plant", emit=0.4), verts=10)
+    _hold(root, "L", s, [can])
+    return root
+
+
+def b_lamp_desk():
+    """A desk at night: a desk lamp is the only light, and someone left their laptop open."""
+    root = empty("lamp_desk")
+    top = box("Top", (0.95, 0.65, 0.04), loc=(0, 0.05, 0.7), material=mat("wood", rough=0.5))
+    legs = [box(f"Leg{i}", (0.04, 0.6, 0.7), loc=(x, 0.05, 0), material=_metal()) for i, x in enumerate((-0.43, 0.43))]
+    parts = [top] + legs + _laptop(-0.1, 0.0, 0.74)
+    base = cyl("LampBase", 0.07, 0.03, loc=(0.3, 0.18, 0.74), material=mat("plastic_black"), verts=12)
+    arm = box("LampArm", (0.025, 0.025, 0.35), loc=(0.3, 0.18, 0.77), material=mat("plastic_black"))
+    kit.tilt([arm], ry=-0.4, pivot=(0.3, 0.18, 0.77))
+    shade = cyl("LampShade", 0.09, 0.1, loc=(0.18, 0.18, 1.0), material=mat("yellow", emit=1.0), verts=12, radius_top=0.04)
+    bulb = ball("Bulb", 0.05, loc=(0.18, 0.18, 0.98), material=mat("yellow", emit=4.0), subdiv=1)
+    mug = cyl("Mug", 0.035, 0.08, loc=(-0.35, 0.15, 0.74), material=mat("red"), verts=10)
+    ob = join("lamp_desk_mesh", parts + [base, arm, shade, bulb, mug])
+    parent(ob, root)
+    return root
+
+
+def b_pizza_boxes():
+    """Empty pizza boxes, stacked a bit crooked."""
+    root = empty("pizza_boxes")
+    parts = []
+    for i in range(4):
+        parts.append(box(f"Box{i}", (0.5, 0.5, 0.06), loc=(0.02 * i, -0.015 * i, i * 0.065), material=mat("#d9c9a3", rough=0.9), rot_z=0.12 * (i % 2 - 0.5)))
+        parts.append(box(f"Logo{i}", (0.18, 0.18, 0.005), loc=(0.02 * i, -0.015 * i, i * 0.065 + 0.06), material=mat("red"), rot_z=0.12 * (i % 2 - 0.5)))
+    ob = join("pizza_boxes_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_pizza():
+    """A fresh pizza, box open, glowing a little: take it."""
+    root = empty("pizza")
+    base = box("Box", (0.55, 0.55, 0.05), loc=(0, 0, 0), material=mat("#d9c9a3", rough=0.9))
+    lid = box("Lid", (0.55, 0.03, 0.5), loc=(0, 0.28, 0.05), material=mat("#d9c9a3", rough=0.9))
+    kit.tilt([lid], rx=-0.4, pivot=(0, 0.28, 0.05))
+    pie = cyl("Pie", 0.24, 0.03, loc=(0, 0, 0.05), material=mat("yellow", emit=0.6), verts=20)
+    tops = [cyl(f"Top{i}", 0.04, 0.01, loc=(0.12 * math.cos(i * 1.3), 0.12 * math.sin(i * 1.3), 0.08), material=mat("red"), verts=10) for i in range(6)]
+    ob = join("pizza_mesh", [base, lid, pie] + tops)
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -3240,6 +3303,10 @@ BUILDERS = {
     "cable_reel": b_cable_reel,
     "floor_cables": b_floor_cables,
     "noc_wall": b_noc_wall,
+    "projectmanager": b_projectmanager,
+    "lamp_desk": b_lamp_desk,
+    "pizza_boxes": b_pizza_boxes,
+    "pizza": b_pizza,
 }
 
 

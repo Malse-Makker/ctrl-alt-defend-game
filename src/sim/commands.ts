@@ -16,7 +16,8 @@ export type Command =
   | { c: 'gift'; to: number; amount: number }
   | { c: 'next' }
   | { c: 'solve' }
-  | { c: 'phone'; hang: boolean };
+  | { c: 'phone'; hang: boolean }
+  | { c: 'pizza' };
 
 const int = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
 
@@ -48,6 +49,8 @@ export function parseCommand(raw: unknown): Command | null {
       return { c: 'solve' };
     case 'phone':
       return typeof o.hang === 'boolean' ? { c: 'phone', hang: o.hang } : null;
+    case 'pizza':
+      return { c: 'pizza' };
     default:
       return null;
   }
@@ -80,6 +83,8 @@ export function applyCommand(game: Game, player: number, cmd: Command): Check {
       return game.gift(player, cmd.to, cmd.amount);
     case 'next':
       return game.callNextWave() ? { ok: true } : { ok: false, reason: 'No more waves to call.' };
+    case 'pizza':
+      return game.takePizza(player);
     case 'phone':
       return game.answerPhone(player, cmd.hang);
     case 'solve':

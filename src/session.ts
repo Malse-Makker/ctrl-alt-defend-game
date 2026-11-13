@@ -455,6 +455,11 @@ export class Session {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
           }
+        } else if (ev.kind === 'pizza') {
+          if (ev.on) {
+            sfx.play('gate', { pitch: 0.8 });
+            this.hud?.toast(T.pizzaArrives, 'warn', 3);
+          }
         } else if (ev.kind === 'overheat') {
           if (ev.on) {
             sfx.play('alarm', { pitch: 1.3, gain: 0.6 });
@@ -533,6 +538,12 @@ export class Session {
         this.hud?.toast(T.auditStarts.replace('{t}', `${name}s`), 'warn', 3);
         break;
       }
+      case 'pizza':
+        if (ev.player === this.me) {
+          sfx.play('cash');
+          this.hud?.toast(T.pizzaTaken.replace('{n}', String(ev.bonus)), 'good', 2.5);
+        }
+        break;
       case 'collapse':
         sfx.play('bossphase', { pitch: 0.7 });
         this.hud?.toast(T.consultantGone, 'good', 3);
@@ -876,6 +887,11 @@ export class Session {
       this.run({ c: 'place', def: this.placing, tx: tile.tx, ty: tile.ty });
       const cost = check.cost ?? 0;
       if (!e.shiftKey || this.game.walletOf(this.me) - cost < this.game.placeCostFor(this.placing, this.me)) this.placing = null;
+      return;
+    }
+    // Release Night: click the pizza to take it.
+    if (tile && this.game.pizza && this.game.pizza.x === tile.tx && this.game.pizza.y === tile.ty) {
+      this.run({ c: 'pizza' });
       return;
     }
     // The Merger: click a stack of moving boxes to clear it.

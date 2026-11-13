@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.30.0] - 2026-11-13
+
+### New
+- Level 14, Release Night: a long winding run through the dark office. Only the desk lamps give light, and towers in the dark reach 40% less far. Opens once you finish the Server Room.
+- Pizza: now and then a pizza turns up next to the walkway. Click it in time for Coffee, and its spot is lit for a while.
+- The Project Manager wants it live tonight. The longer he is on the floor, the faster everyone walks.
+
 ## [0.29.0] - 2026-11-13
 
 ### New

@@ -178,6 +178,10 @@ export const MODEL_NAMES = [
   'cable_reel',
   'floor_cables',
   'noc_wall',
+  'projectmanager',
+  'lamp_desk',
+  'pizza_boxes',
+  'pizza',
 ] as const;
 
 export class Assets {
