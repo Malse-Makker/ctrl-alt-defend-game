@@ -3,7 +3,7 @@
 import changelog from '../../CHANGELOG.md?raw';
 import { LEVELS, LEVEL_NAMES } from '../sim/data/levels';
 import { PERKS, type PerkId } from '../meta/perks';
-import type { SaveData } from '../meta/save';
+import { resetTips, type SaveData } from '../meta/save';
 import { BUILD_LABEL } from '../version';
 import { h, icon } from './dom';
 import { UI_TEXT as T } from './text';
@@ -212,6 +212,15 @@ function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLEl
     return help ? h('div', {}, row, h('div', { class: 'faint', attrs: { style: 'font-size:12px' }, text: help })) : row;
   };
   const status = h('div', { class: 'status ok' });
+  const tipsBox = check(T.settingsTips, st.tips, (v) => (st.tips = v), T.settingsTipsHelp);
+  const resetTipsBtn = h('button', { class: 'btn small' }, icon('rotate-left'), h('span', { text: ` ${T.settingsResetTips}` }));
+  resetTipsBtn.addEventListener('click', () => {
+    resetTips(save);
+    const box = tipsBox.querySelector('input');
+    if (box) box.checked = true;
+    act.change();
+    status.textContent = T.settingsResetTipsDone;
+  });
   let reset: HTMLElement | null = null;
   if (act.reset) {
     const doReset = act.reset;
@@ -232,7 +241,8 @@ function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLEl
     slider(T.settingsAmbience, st.ambience, (v) => (st.ambience = v)),
     check(T.settingsDamageNumbers, st.damageNumbers, (v) => (st.damageNumbers = v)),
     check(T.settingsShareStats, st.shareStats, (v) => (st.shareStats = v), T.settingsShareStatsHelp),
-    reset ? h('div', { class: 'row-buttons' }, reset) : null,
+    tipsBox,
+    h('div', { class: 'row-buttons' }, resetTipsBtn, reset),
     status,
     h('div', {}, h('button', { class: 'btn', on: { click: act.back } }, icon('arrow-left'), h('span', { text: T.back }))),
   );

@@ -175,7 +175,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     counter: 'Hit him early, with towers further down the route ready for the two halves.',
     short: 'Deal with him and two Chasers come out.',
     helps: 'Hit him early. Keep something behind for the Chasers.',
-    counters: ['delegation', 'quickreply', 'shredder'],
+    counters: ['autoreply', 'delegation', 'shredder'],
     hp: 16,
     speed: 2.0,
     focus: 3,

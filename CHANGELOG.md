@@ -3,6 +3,16 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.32.0] - 2026-11-13
+
+### New
+- The card for a new colleague is short now: what he does, what helps, and the towers that help, with the rest behind "More". It sits in the middle of the screen.
+- The first time you ever meet a colleague, the game waits until you click "Got it" (or press Space). After that his card shows once per level without stopping anything.
+- Tips can be switched off in Settings, and right on the end screen before you play a level again. "Show all tips again" in Settings brings every card and hint back.
+
+### Fixed
+- On fast screens the colleague card was gone after about four seconds instead of ten, and it ran out while the game was paused.
+
 ## [0.31.1] - 2026-11-13
 
 ### Changed

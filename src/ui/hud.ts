@@ -20,6 +20,7 @@ import {
 import { earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
+import { cardCountdown, colleagueCard } from './colleaguecard';
 import { fmt, h, icon, img, setText, toggle } from './dom';
 import { UI_TEXT as T } from './text';
 
@@ -58,6 +59,8 @@ export interface HudState {
   mp: { players: MpPlayer[]; host: number } | null;
   /** Smoke Breaks in your pocket (single player only; null hides the button). */
   smokes: number | null;
+  /** Real seconds since the last frame. */
+  dt: number;
 }
 
 export const SPEEDS = [1, 2, 4, 8];
@@ -209,12 +212,10 @@ export class Hud {
       this.colleagueList,
       this.nextWave,
     );
-    this.infoCard = h('div', { class: 'info-card panel' });
-    this.infoCard.hidden = true;
     this.playersList = h('div', { class: 'players-list' });
     this.playersBox = h('div', { class: 'section panel' }, h('div', { class: 'section-head' }, h('span', { class: 'label', text: T.mpPlayers })), this.playersList);
     this.playersBox.hidden = true;
-    this.left = h('div', { class: 'left' }, this.playersBox, floor, this.infoCard);
+    this.left = h('div', { class: 'left' }, this.playersBox, floor);
     this.root.append(this.left);
   }
 
@@ -226,7 +227,10 @@ export class Hud {
     this.bossBar = h('div', { class: 'boss-bar panel' }, h('div', { class: 'row' }, this.bossName, this.bossPhase), track);
     this.bossBar.hidden = true;
     this.toasts = h('div', { class: 'toasts', attrs: { role: 'status', 'aria-live': 'polite' } });
-    this.root.append(h('div', { class: 'center' }, this.bossBar, this.toasts));
+    // The colleague card sits in the middle: the one place a player looks during a wave.
+    this.infoCard = h('div', { class: 'info-card panel' });
+    this.infoCard.hidden = true;
+    this.root.append(h('div', { class: 'center' }, this.bossBar, this.infoCard, this.toasts));
   }
 
   private buildRight(): void {
@@ -334,7 +338,7 @@ export class Hud {
     this.updateTowerPanel(st.selected);
     this.updateBoss();
     if (this.infoTimer > 0) {
-      this.infoTimer -= 1 / 60;
+      this.infoTimer = cardCountdown(this.infoTimer, st.dt, st.paused);
       if (this.infoTimer <= 0) this.infoCard.hidden = true;
     }
   }
@@ -408,29 +412,32 @@ export class Hud {
     }
   }
 
-  /** Show who a colleague is and what beats him. seconds = 0 keeps it open until replaced. */
-  showColleague(def: ColleagueDef, seconds: number, isNew = false): void {
-    this.infoCard.replaceChildren(
-      h('div', { class: 'section-head' }, h('span', { class: 'label', text: isNew ? T.newColleague : def.role }), h('button', { class: 'icon-btn', title: 'Close', on: { click: () => (this.infoCard.hidden = true) } }, icon('xmark'))),
-      h('div', { class: 'tp-head', attrs: { style: 'grid-template-columns: 52px minmax(0,1fr)' } }, img(`icons/${def.model}.png`, def.name), h('div', {}, h('div', { class: 'tp-name', text: def.name }), h('div', { class: 'quote wrap', text: `"${def.quote}"` }))),
-      h('div', { class: 'wrap', attrs: { style: 'font-size:13px' }, text: def.ability }),
-      h('div', { class: 'counter wrap', attrs: { style: 'font-size:13px' }, text: def.counter }),
-      h(
-        'div',
-        { class: 'kv' },
-        h('span', { class: 'k', text: 'HP' }),
-        h('span', { class: 'v', text: String(def.hp) }),
-        def.shield ? h('span', { class: 'k shield-k', text: 'Shield' }) : null,
-        def.shield ? h('span', { class: 'v shield-v', text: String(def.shield) }) : null,
-        h('span', { class: 'k', text: 'Speed' }),
-        h('span', { class: 'v', text: def.speed.toFixed(1) }),
-        h('span', { class: 'k', text: 'Focus if he reaches you' }),
-        h('span', { class: 'v', text: String(def.focus) }),
-      ),
-    );
-    if (def.shieldMinHit) this.infoCard.append(h('div', { class: 'shield-note wrap', text: `Hits under ${def.shieldMinHit} bounce off the shield. Check "Shields" on your towers.` }));
+  /**
+   * Show who a colleague is and what beats him. seconds = 0 keeps it open until closed. With gotIt
+   * the game is waiting for the player, so the card stays until they click it.
+   */
+  showColleague(def: ColleagueDef, seconds: number, isNew = false, gotIt?: () => void): void {
+    const close = () => {
+      this.infoCard.hidden = true;
+      this.infoTimer = 0;
+      gotIt?.();
+    };
+    this.infoCard.replaceChildren(...colleagueCard(def, { label: isNew ? T.newColleague : def.role, close, gotIt: gotIt ? close : undefined }));
+    toggle(this.infoCard, 'waiting', gotIt !== undefined);
     this.infoCard.hidden = false;
-    this.infoTimer = seconds;
+    this.infoTimer = gotIt ? 0 : seconds;
+  }
+
+  /** The card is open and the game waits for "Got it". */
+  get cardWaiting(): boolean {
+    return !this.infoCard.hidden && this.infoCard.classList.contains('waiting');
+  }
+
+  /** Close the card (Space on a waiting card). */
+  closeCard(): void {
+    const btn = this.infoCard.querySelector<HTMLButtonElement>('.row-buttons .primary');
+    if (btn) btn.click();
+    else this.infoCard.hidden = true;
   }
 
   private updateTowerPanel(id: number | null): void {

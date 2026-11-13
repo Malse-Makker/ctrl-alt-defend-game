@@ -13,6 +13,7 @@ import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer, { type Page } from 'puppeteer-core';
+import { COLLEAGUES } from '../src/sim/data/colleagues';
 
 const args = process.argv.slice(2);
 const arg = (name: string, def: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : def);
@@ -25,10 +26,11 @@ mkdirSync(OUT, { recursive: true });
 
 // Runs before the page: tsx (esbuild) wraps functions in __name(), so functions sent to the page
 // need it to exist. And a fresh save with round stats switched off and sound muted, so a check
-// against the live site never ends up in the playtest data.
+// against the live site never ends up in the playtest data. Every colleague card has already
+// stopped the game once (tipsSeen), so flows are not held up; level 2 checks the waiting card.
 const SETUP = `window.__name = (f) => f;
 try {
-  localStorage.setItem('ctrl-alt-defend.save.v1', JSON.stringify({ v: 1, settings: { shareStats: false, volume: 0, sfx: 0, damageNumbers: true } }));
+  localStorage.setItem('ctrl-alt-defend.save.v1', JSON.stringify({ v: 1, settings: { shareStats: false, volume: 0, sfx: 0, damageNumbers: true }, tipsSeen: ${JSON.stringify(Object.keys(COLLEAGUES))} }));
 } catch (e) {}`;
 
 interface Problem {
@@ -290,7 +292,22 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   });
   console.log(`  placed: ${placed}`);
   total += await check(page, 'l2-kitchen', size);
+  // A colleague nobody has met yet: the card stops the game until "Got it" (or Space).
+  await page.evaluate(() => {
+    (window as unknown as { cad: { session: { host: { save: { tipsSeen: string[] } } } } }).cad.session.host.save.tipsSeen = [];
+  });
   await page.keyboard.press('Space');
+  await page.waitForFunction(() => document.querySelector('.info-card.waiting:not([hidden])'), { timeout: 20000 });
+  const held = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: { time: number } } } }).cad.session.game;
+    return g.time;
+  });
+  await new Promise((r) => setTimeout(r, 600));
+  const still = await page.evaluate(() => (window as unknown as { cad: { session: { game: { time: number } } } }).cad.session.game.time);
+  if (still !== held) errors.push(`l2: the game kept running behind a waiting colleague card (${held} -> ${still})`);
+  total += await check(page, 'l2-new-colleague', size);
+  await page.keyboard.press('Space');
+  await page.waitForFunction(() => !document.querySelector('.info-card.waiting:not([hidden])'), { timeout: 5000 });
   const ff = (stop: string) =>
     page.evaluate((what) => {
       const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;

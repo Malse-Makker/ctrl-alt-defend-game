@@ -938,6 +938,71 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: min(400px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.info-card.waiting {
+  border-color: var(--warn, #f2c641);
+  box-shadow: 0 0 0 2px rgba(242, 198, 65, 0.35), 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.info-card .card-who {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.info-card .card-who img {
+  width: 52px;
+  height: 52px;
+}
+
+.info-card .card-does {
+  font-size: 15px;
+}
+
+.info-card .card-towers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.info-card .card-tower {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 2px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.info-card .card-tower img {
+  width: 26px;
+  height: 26px;
+}
+
+.info-card .card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.info-card .card-details[hidden] {
+  display: none;
+}
+
+.tips-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .info-card .quote {

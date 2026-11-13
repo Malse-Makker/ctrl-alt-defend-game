@@ -75,6 +75,10 @@ export class Session {
   private qte: { el: HTMLElement; setTimeLeft(s: number): void; close(): void; wantsSpace?: boolean } | null = null;
   private speed = 1;
   private paused = false;
+  /** A new-colleague card is waiting for "Got it": the simulation stands still (single player). */
+  private cardHold = false;
+  /** Colleagues whose card this level already showed. */
+  private readonly cardsShown = new Set<string>();
   private selected: number | null = null;
   private placing: string | null = null;
   /** A Pomodoro Timer waiting for the next floor click to pick its tile. */
@@ -200,7 +204,7 @@ export class Session {
       const animDt = this.paused ? 0 : running ? dt * this.speed : dt;
       this.actors.sync(g, this.prev, Math.min(1, this.sinceSnap / SNAP_INTERVAL), animDt);
     } else {
-      const blocked = this.paused || (this.overlay !== null && !this.ended);
+      const blocked = this.paused || this.cardHold || (this.overlay !== null && !this.ended);
       if (running && !blocked) {
         this.acc += dt * this.speed;
         this.realTime += dt;
@@ -229,6 +233,7 @@ export class Session {
       paused: this.paused,
       mp: this.room ? { players: this.room.players, host: this.room.host } : null,
       smokes: this.mp ? null : this.host.save.smokes,
+      dt: this.paused || this.overlay !== null ? 0 : dt,
     });
     this.updatePreview();
     this.updateHazard();
@@ -407,11 +412,24 @@ export class Session {
         break;
       case 'spawn': {
         const e = g.enemy(ev.enemyId);
-        if (e && !this.host.save.seenColleagues.includes(e.type)) {
-          this.host.save.seenColleagues.push(e.type);
-          store(this.host.save);
+        if (!e) break;
+        const save = this.host.save;
+        if (!save.seenColleagues.includes(e.type)) {
+          save.seenColleagues.push(e.type);
+          store(save);
           this.hud?.newBadges.add(e.type);
-          if (!e.def.boss) this.hud?.showColleague(e.def, 10, true);
+        }
+        if (e.def.boss || this.cardsShown.has(e.type) || !save.settings.tips || this.attract) break;
+        this.cardsShown.add(e.type);
+        if (!this.mp && !save.tipsSeen.includes(e.type)) {
+          // The very first time: the game waits until the player has read it.
+          save.tipsSeen.push(e.type);
+          store(save);
+          this.cardHold = true;
+          this.hud?.showColleague(e.def, 0, true, () => (this.cardHold = false));
+        } else {
+          // Seen before: once per level, without stopping anything.
+          this.hud?.showColleague(e.def, 8, true);
         }
         break;
       }
@@ -636,6 +654,15 @@ export class Session {
     const screen = endScreen(this.game, summary, result, {
       retry: () => this.host.retry(this.game.level.id),
       career: () => this.host.toCareer(),
+      tips: this.mp
+        ? undefined
+        : {
+            on: this.host.save.settings.tips,
+            set: (on) => {
+              this.host.save.settings.tips = on;
+              store(this.host.save);
+            },
+          },
     });
     if (this.mp) {
       // Multiplayer: the host takes everyone back to the lobby; anyone can leave.
@@ -935,6 +962,11 @@ export class Session {
       return;
     }
     if (this.overlay) return;
+    if (k === ' ' && this.hud?.cardWaiting) {
+      e.preventDefault();
+      this.hud.closeCard();
+      return;
+    }
     if (k === ' ' && this.qte?.wantsSpace) return;
     if (k === ' ') {
       this.startOrNext();

@@ -10,6 +10,8 @@ export interface Settings {
   shareStats: boolean;
   /** The typing in the background. */
   ambience: number;
+  /** Cards and hints that explain things. Off for players who know the floor. */
+  tips: boolean;
 }
 
 export interface SaveData {
@@ -22,6 +24,8 @@ export interface SaveData {
   perks: string[];
   smokes: number;
   seenColleagues: string[];
+  /** Colleagues whose card already stopped the game once. Reset tips empties it. */
+  tipsSeen: string[];
   hintsDone: string[];
   lastSeenVersion: string;
   /** Name used in multiplayer lobbies. */
@@ -51,10 +55,11 @@ export function defaults(): SaveData {
     perks: [],
     smokes: 0,
     seenColleagues: [],
+    tipsSeen: [],
     hintsDone: [],
     lastSeenVersion: '',
     mpName: '',
-    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true, ambience: 0.5 },
+    settings: { volume: 0.8, sfx: 0.8, damageNumbers: true, shareStats: true, ambience: 0.5, tips: true },
   };
 }
 
@@ -69,6 +74,8 @@ export function load(): SaveData {
       ...base,
       ...d,
       settings: { ...base.settings, ...(d.settings ?? {}) },
+      // Saves from before tips: whoever already met a colleague has had his card.
+      tipsSeen: Array.isArray(d.tipsSeen) ? d.tipsSeen : Array.isArray(d.seenColleagues) ? [...d.seenColleagues] : [],
       perks: Array.isArray(d.perks) ? d.perks.filter((p): p is string => typeof p === 'string') : [],
       smokes: typeof d.smokes === 'number' && d.smokes >= 0 ? Math.floor(d.smokes) : 0,
       playerId: typeof d.playerId === 'string' && /^[0-9a-f]{16}$/.test(d.playerId) ? d.playerId : base.playerId,
@@ -76,6 +83,13 @@ export function load(): SaveData {
   } catch {
     return base;
   }
+}
+
+/** Show every explanation again, as for a new player. Progress stays. */
+export function resetTips(s: SaveData): void {
+  s.tipsSeen = [];
+  s.hintsDone = [];
+  s.settings.tips = true;
 }
 
 export function store(s: SaveData): void {

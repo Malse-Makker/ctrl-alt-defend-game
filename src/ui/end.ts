@@ -11,6 +11,8 @@ import { UI_TEXT as T } from './text';
 export interface EndActions {
   retry(): void;
   career(): void;
+  /** Single player: switch the explanations off before playing again (or back on). */
+  tips?: { on: boolean; set(on: boolean): void };
 }
 
 export function endScreen(game: Game, summary: RoundSummary, result: LevelResult | null, act: EndActions): HTMLElement {
@@ -150,7 +152,15 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
       { class: 'row-buttons' },
       h('button', { class: 'btn', on: { click: () => act.retry() } }, icon('rotate-right'), h('span', { text: ` ${T.restart}` })),
       h('button', { class: 'btn', on: { click: () => act.career() } }, icon('briefcase'), h('span', { text: ` ${T.quitToCareer}` })),
+      act.tips ? tipsToggle(act.tips) : null,
     ),
   );
   return h('div', { class: 'overlay' }, card);
+}
+
+function tipsToggle(tips: { on: boolean; set(on: boolean): void }): HTMLElement {
+  const input = h('input', { type: 'checkbox' });
+  input.checked = tips.on;
+  input.addEventListener('change', () => tips.set(input.checked));
+  return h('label', { class: 'tips-toggle', title: T.settingsTipsHelp }, input, h('span', { text: ` ${T.settingsTips}` }));
 }

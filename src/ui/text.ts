@@ -76,6 +76,10 @@ export const UI_TEXT = {
   nobodyYet: 'Nobody yet. Enjoy it.',
   newBadge: 'NEW',
   newColleague: 'New colleague',
+  cardMore: 'More',
+  cardLess: 'Less',
+  cardGotIt: 'Got it (Space)',
+  cardFocus: 'Focus if he reaches you',
 
   upgrade: 'Upgrade',
   maxed: 'Fully upgraded',
@@ -134,6 +138,10 @@ export const UI_TEXT = {
   settingsShareStats: 'Share anonymous round stats',
   settingsShareStatsHelp: 'After every round the game sends the numbers (level, waves, what leaked, what you built) without your name. It is how the balance gets fixed.',
   settingsReset: 'Reset progress',
+  settingsTips: 'Tips',
+  settingsTipsHelp: 'Cards that explain a new colleague, and other hints. The first card of each colleague pauses the game.',
+  settingsResetTips: 'Show all tips again',
+  settingsResetTipsDone: 'Tips are back, as for a new player.',
   settingsResetConfirm: 'Delete all stars and Recognition on this browser?',
   settingsResetDone: 'Progress reset.',
 
