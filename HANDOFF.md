@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.31.0 (2026-11-13), nog niet live; alle 15 levels staan erin: release vanavond 19:00 (besluit maker)
+## Stand: v0.33.0 (2026-11-13), nog niet live (live: 0.24.0); alle 15 levels staan erin; review stap 1-3 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -50,6 +50,13 @@ De review staat lokaal in `/home/mick/projecten/CTRL-ALT-DEFEND/docs/review/TORE
 12. Quick Reply wordt de zwerm-toren: opbouw weg, KEEP TYPING krijgt een ander effect.
 13. Eerst tier-stippen uit de code, daarna voorwerpjes per pad (ik).
 14. Reply All: grotere straal, minder schade per mail.
+
+Voortgang: stap 1 teksten (0.31.1), stap 2 kaart + tips (0.32.0), stap 3 briefing (0.33.0). Volgende:
+stap 4 "zeggen wat niet werkt" (iconen boven collega's, idle-reden per toren in de snapshot, zes
+stil-iconen, kring van de Chatterbox). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
+Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
+ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.
 
 ### Level 15 Boardroom III (v0.31.0)
 - Kaart = L10 plus een achterdeur rechts (pad 2 voegt aan de rechterkant in, `splitPaths`) en een
