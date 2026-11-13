@@ -112,6 +112,12 @@ export class Actors {
   private barrierViews = new Map<number, THREE.Object3D>();
   /** Smoke: a few soft grey puffs per cloud, drawn from a shared pool. */
   private smokeViews: THREE.Mesh[] = [];
+  /** Pomodoro Timer: tomatoes in the air, burning patches, and where the selected one aims. */
+  private lobs: { mesh: THREE.Object3D; fx: number; fy: number; tx: number; ty: number; t: number; dur: number }[] = [];
+  private craterViews: THREE.Mesh[] = [];
+  private readonly craterGeo = new THREE.CircleGeometry(1, 28).rotateX(-Math.PI / 2);
+  private readonly craterMat = new THREE.MeshBasicMaterial({ color: '#e2553f', transparent: true, opacity: 0.35, depthWrite: false });
+  private aimRing: THREE.Group | null = null;
   private readonly smokeGeo = new THREE.SphereGeometry(1, 12, 8);
   private readonly smokeMat = new THREE.MeshStandardMaterial({ color: '#b9bec6', transparent: true, opacity: 0.32, depthWrite: false, roughness: 1 });
   readonly ghostTile: THREE.Mesh;
@@ -342,9 +348,65 @@ export class Actors {
     this.syncTacks(game);
     this.syncBarriers(game);
     this.syncSmoke(game);
+    this.syncCraters(game);
+    this.updateLobs(dt);
     this.updateShots(dt);
     this.updateScraps(dt);
     this.updatePulses(dt);
+  }
+
+  /** Burning patches from a Pomodoro Timer: a flickering red disc, fading as it burns out. */
+  private syncCraters(game: Game): void {
+    let n = 0;
+    for (const c of game.craters) {
+      let m = this.craterViews[n];
+      if (!m) {
+        m = new THREE.Mesh(this.craterGeo, this.craterMat);
+        m.renderOrder = 2;
+        this.craterViews.push(m);
+        this.group.add(m);
+      }
+      m.visible = true;
+      m.position.set(c.x, 0.02, c.y);
+      m.scale.setScalar(c.r * (0.92 + Math.sin(this.clock * 9 + n) * 0.06) * Math.min(1, c.life + 0.3));
+      n++;
+    }
+    for (let i = n; i < this.craterViews.length; i++) this.craterViews[i].visible = false;
+  }
+
+  /** A tomato in a high arc, from the timer to the tile. */
+  private updateLobs(dt: number): void {
+    const keep: typeof this.lobs = [];
+    for (const l of this.lobs) {
+      l.t += dt;
+      const k = Math.min(1, l.t / l.dur);
+      l.mesh.position.set(l.fx + (l.tx - l.fx) * k, 0.7 + Math.sin(k * Math.PI) * 2.4, l.fy + (l.ty - l.fy) * k);
+      l.mesh.rotation.x += dt * 9;
+      if (k >= 1) this.group.remove(l.mesh);
+      else keep.push(l);
+    }
+    this.lobs = keep;
+  }
+
+  /** The tile the selected Pomodoro Timer aims at, and how wide it hits. Null hides it. */
+  showAim(x: number | null, y = 0, r = 0): void {
+    if (!this.aimRing) {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({ color: '#e2553f', transparent: true, opacity: 0.85, depthWrite: false });
+      g.add(new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 48).rotateX(-Math.PI / 2), mat));
+      for (const a of [0, Math.PI / 2]) {
+        const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.5).rotateX(-Math.PI / 2), mat);
+        bar.rotation.y = a;
+        g.add(bar);
+      }
+      g.renderOrder = 4;
+      this.aimRing = g;
+      this.group.add(g);
+    }
+    this.aimRing.visible = x !== null;
+    if (x === null) return;
+    this.aimRing.position.set(x, 0.03, y);
+    this.aimRing.scale.setScalar(r);
   }
 
   /** Smoke clouds: five puffs each, gently drifting, thinning out as the cloud runs out. */
@@ -423,7 +485,28 @@ export class Actors {
 
   onEvent(ev: GameEvent, game: Game): void {
     switch (ev.t) {
+      case 'lob': {
+        const mesh = this.assets.clone('tomato_shell');
+        this.group.add(mesh);
+        this.lobs.push({ mesh, fx: ev.fx, fy: ev.fy, tx: ev.x, ty: ev.y, t: 0, dur: ev.flight });
+        const tv = this.towers.get(ev.towerId);
+        if (tv) tv.recoil = 1;
+        break;
+      }
+      case 'boom':
+        this.burst(ev.x, 0.2, ev.y, 10, '#e2553f');
+        this.burst(ev.x, 0.2, ev.y, 4, '#5d8b4b');
+        break;
       case 'shot': {
+        if (game.tower(ev.towerId)?.def.role === 'mortar') {
+          // The tomato already landed: no flying envelope, just the knock.
+          const v = this.enemies.get(ev.enemyId);
+          if (v) {
+            v.squash = Math.max(v.squash, 1.2);
+            if (ev.killed) v.dieIn = 0;
+          }
+          break;
+        }
         if (ev.kind === 'tack') {
           // Stepped on: no projectile, just a hop.
           const v = this.enemies.get(ev.enemyId);

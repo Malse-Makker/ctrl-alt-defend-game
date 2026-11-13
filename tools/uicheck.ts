@@ -322,6 +322,100 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   return total;
 }
 
+/** Level 8: flex desks, a reserved desk, the Pomodoro Timer and its aim, the desk phone, the boss. */
+async function level8Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (level 8)`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`l8: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", "v: 1, stars: { '1': 3, '2': 3, '3': 3, '4': 3, '5': 3, '6': 3, '7': 3 }, seenColleagues: [], settings:"));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, 'Hot Desks');
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  type G = {
+    coffee: number;
+    focus: number;
+    time: number;
+    hazardOn: boolean;
+    waveIndex: number;
+    phase: string;
+    phone: unknown;
+    reserved: unknown[];
+    place(d: string, x: number, y: number): { ok: boolean; reason?: string; tower?: { id: number } };
+    upgrade(id: number, p: number): { ok: boolean };
+    step(): void;
+    enemies: { type: string; def: { boss?: unknown } }[];
+    events: { t: string }[];
+    drainEvents(): { t: string }[];
+    towers: { id: number; defId: string }[];
+  };
+  const placed = await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+    g.coffee = 5000;
+    const want: [string, number, number, number][] = [
+      ['autoreply', 5, 2, 0],
+      ['thumbtacks', 12, 3, 0],
+      ['pomodoro', 6, 5, 1],
+      ['delegation', 12, 6, 0],
+      ['replyall', 5, 8, 0],
+      ['artillery', 14, 9, 0],
+      ['autoreply', 14, 2, 1],
+    ];
+    const out = want.map(([d, x, y, p]) => {
+      const r = g.place(d, x, y);
+      if (r.tower) for (let i = 0; i < 3; i++) g.upgrade(r.tower.id, p);
+      return `${d}@${x},${y}:${r.ok ? 'ok' : r.reason}`;
+    });
+    out.push(`on the floor: ${g.place('autoreply', 9, 3).reason}`);
+    return out.join(' ');
+  });
+  console.log(`  placed: ${placed}`);
+  total += await check(page, 'l8-desks', size);
+  // The Pomodoro Timer: its panel, then picking a tile.
+  await page.evaluate(() => {
+    const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
+    s.selected = s.game.towers.find((t) => t.defId === 'pomodoro')!.id;
+  });
+  total += await check(page, 'l8-panel-pomodoro', size);
+  await clickText(page, 'Pick a tile');
+  await page.mouse.move(700, 420);
+  await new Promise((r) => setTimeout(r, 400));
+  total += await check(page, 'l8-aim', size);
+  await page.mouse.click(700, 420);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Space');
+  const ff = (stop: string) =>
+    page.evaluate((what) => {
+      const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
+      for (let i = 0; i < 60 * 900 && g.phase === 'running'; i++) {
+        g.step();
+        g.focus = Math.max(g.focus, 50);
+        if (what === 'phone' && g.hazardOn && g.phone) break;
+        if (what === 'boss' && g.enemies.some((e) => e.def.boss)) break;
+      }
+      const keep = g.drainEvents().filter((e) => e.t === 'end' || e.t === 'wave' || e.t === 'hazard' || e.t === 'reserved');
+      g.events.push(...keep.slice(-3));
+      return `${g.phase} wave ${g.waveIndex} t=${Math.round(g.time)} reserved=${g.reserved.length}`;
+    }, stop);
+  console.log(`  ${await ff('phone')}`);
+  await page.waitForSelector('.phone-card', { timeout: 5000 }).catch(() => errors.push('l8: the phone did not slide in'));
+  await new Promise((r) => setTimeout(r, 500));
+  total += await check(page, 'l8-phone', size);
+  await clickText(page, 'Hang up');
+  await new Promise((r) => setTimeout(r, 400));
+  const after = await page.evaluate(() => (window as unknown as { cad: { session: { game: G } } }).cad.session.game.hazardOn);
+  if (after) errors.push('l8: hanging up did not stop the phone');
+  console.log(`  ${await ff('boss')}`);
+  await new Promise((r) => setTimeout(r, 1500));
+  total += await check(page, 'l8-boss', size);
+  await page.close();
+  return total;
+}
+
 /** Level 3: the projector mini-game (both ways of plugging in), then The Presenter. */
 async function level3Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   const size = '1600x900';
@@ -891,6 +985,10 @@ async function run(): Promise<void> {
       total += await level6Flow(browser, errors);
       throw new Done();
     }
+    if (args.includes('--l8-only')) {
+      total += await level8Flow(browser, errors);
+      throw new Done();
+    }
     if (args.includes('--l7-only')) {
       total += await level7Flow(browser, errors);
       throw new Done();
@@ -1060,6 +1158,7 @@ async function run(): Promise<void> {
     total += await level5Flow(browser, errors);
     total += await level6Flow(browser, errors);
     total += await level7Flow(browser, errors);
+    total += await level8Flow(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

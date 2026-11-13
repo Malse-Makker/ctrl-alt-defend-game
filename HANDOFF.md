@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.23.0 (2026-11-13)
+## Stand: v0.24.0 (2026-11-13)
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -23,6 +23,31 @@ Reply, Thumbtacks, Self-Service. `tests/assets.test.ts` faalt als een model of i
 **Volgorde van de maker (2026-11-08): upgrades (klaar) -> multiplayer (klaar) -> levels 2-15
 (level 2 t/m 5 klaar; volgende: de meta-shop met Recognition en de promotie na L5, looks per pad
 voor de overige torens, daarna levels 6-15).**
+
+### Level 8 Hot Desks (v0.24.0), keuzes maker met knoppen
+- **Pomodoro Timer** (rol `mortar`, PHYSICAL, L8): richt op een tegel, hele vloer, **geen zicht
+  nodig** (keuze maker). Elke 3 s een tomaat, landt na `MORTAR_FLIGHT` (0,7 s) op iedereen binnen
+  `aoe` (1 tegel) van de tegel. Standaard gericht op het dichtstbijzijnde looppad. Paden (mijn
+  ontwerp): FOCUS SPRINT (sneller; T3 twee tomaten `doubleShot`; T4 nog sneller +5), DEEP WORK
+  (harder; T2 door schilden; T3 brandende plek `crater` 3 s 5/s; T4 x2,5 en 5 s 9/s), BREAK TIME
+  (wijder; T2 stilzetten 0,4 s; T3 terugduwen 1 tegel; T4 wekker 1,2 s stil, 1,6 terug, wijder).
+  Opdracht `aim`, knop "Pick a tile" in het paneel, rode richtcirkel. Snapshot: `ax/ay`, `craters`.
+- **Flexbureaus** `b`: alleen daar bouwen. Op elke `b`-tegel staat een leeg `flex_desk`-model dat
+  verdwijnt als er een toren staat (een toren staat dus nooit op een tafel). `level.reserve` = 3
+  lege bureaus per golf gereserveerd (seeded, event `reserved`, rood bordje en rode tint, in de
+  snapshot `hz.rs`).
+- **Telefoon** (keuze maker: klik + mini-game): hazard `phone` (eerst 50 s, elke 45 s, 6 s
+  overgaan). Gaat over op een bureau met een toren. Schuift in beeld (`src/ui/phone.ts`): rood
+  ophangen = 5 + resterende seconden Coffee; groen opnemen of laten liggen = dat bureau 15 s
+  "stuck on the phone" (toren `quiet = 'phone'`, sil 4, niet bouwen). Opdracht `phone {hang}`.
+  Bots hangen na 2 s op.
+- Boss: Head of Comms met `level.bossHpMult` 1,8.
+- Nieuwe modellen: `pomodoro_1-3` (+ iconen), `tomato_shell`, `flex_desk`, `lockers`, `phone_booth`,
+  `desk_phone`, `reserved_sign`. Geluiden `phone`, `tick`, `splat`.
+- Bureau op (18, 10) in plaats van tegen de rand (stoel).
+- Balans (seeds 1 en 2): goed spelen 92 Focus, 3 sterren; eerst koffie 88, 2 sterren; beginner,
+  spam, idle verliezen. Nieuw script (punaises vroeg, Pomodoro als tweede zwaargewicht). Tests in
+  balance.test.ts zoals L7.
 
 ### Level 7 The Car Park (v0.23.0)
 - Kaart uit het ontwerp (26x17, auto 2x3). Bureau op (24, 13) in plaats van tegen de rand (stoel),

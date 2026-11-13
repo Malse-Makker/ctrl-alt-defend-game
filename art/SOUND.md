@@ -29,3 +29,6 @@ Een nieuw geluid: maak het met de MCP-server direct in `public/sfx/<naam>.wav`, 
 | cry | The Baby krijgt een huilbui | preset `alarm`, profiel `soft-notification`, 620 Hz met trillende toonhoogte |
 | gate | een collega scant zijn pasje bij het poortje (Reception) | preset `blip`, profiel `bright-ui-tick`, 1650 Hz sinus, toon omhoog, 0,16 s |
 | projector | de beamer slaat aan, 3 s voor de projector-mini-game (Presentation Room) | preset `engine`, profiel `mechanical-click`, 180 Hz blok omhoog met tremolo, plus een fluittoon van 900 Hz, 1,4 s |
+| phone | de bureautelefoon gaat over (Hot Desks) | preset `alarm`, profiel `soft-notification`, 1150 Hz sinus met tremolo en een blokgolf-LFO van 2,5 Hz (tring-tring), 1,3 s |
+| tick | een Pomodoro Timer lanceert een tomaat | preset `click`, profiel `mechanical-click`, 1900 Hz, herhaling 70 ms (tikken) |
+| splat | een tomaat landt | preset `hit`, profiel `punchy-impact`, 220 Hz omlaag, veel ruis, crackle |

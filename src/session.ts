@@ -26,6 +26,7 @@ import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
 import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
 import { dinoGame } from './ui/dino';
+import { phoneGame } from './ui/phone';
 import { projectorGame } from './ui/projector';
 import { UI_TEXT as T } from './ui/text';
 
@@ -75,6 +76,9 @@ export class Session {
   private paused = false;
   private selected: number | null = null;
   private placing: string | null = null;
+  /** A Pomodoro Timer waiting for the next floor click to pick its tile. */
+  private aiming: number | null = null;
+  private toldReserved = false;
   private hover: { tx: number; ty: number } | null = null;
   private acc = 0;
   private prev = new Map<number, { x: number; y: number }>();
@@ -150,6 +154,12 @@ export class Session {
         smoke: () => this.smokeBreak(),
         dir: (id, dir) => {
           this.run({ c: 'dir', id, dir });
+          this.host.sfx.play('click');
+        },
+        aim: (id) => {
+          this.aiming = id;
+          this.placing = null;
+          this.hud?.toast(T.aimNow, '', 2.5);
           this.host.sfx.play('click');
         },
       },
@@ -234,7 +244,8 @@ export class Session {
     if (want && !this.qte) {
       const solve = () => this.run({ c: 'solve' });
       const say = (msg: string) => this.refuse(msg);
-      this.qte = g.level.hazard?.type === 'nointernet' ? dinoGame(solve, say) : projectorGame(solve, say);
+      const type = g.level.hazard?.type;
+      this.qte = type === 'phone' ? phoneGame((hang) => this.run({ c: 'phone', hang })) : type === 'nointernet' ? dinoGame(solve, say) : projectorGame(solve, say);
       this.root.append(this.qte.el);
     } else if (!want && this.qte) {
       this.qte.close();
@@ -442,6 +453,11 @@ export class Session {
             sfx.play('mop', { pitch: 0.6, gain: 0.7 });
             this.hud?.toast(T.smokeStarts, 'warn', 3);
           }
+        } else if (ev.kind === 'phone') {
+          if (ev.on) {
+            sfx.play('phone');
+            this.hud?.toast(T.phoneRings, 'warn', 3);
+          }
         } else if (ev.kind === 'nointernet') {
           if (ev.on) {
             sfx.play('bossphase', { pitch: 0.8, gain: 0.6 });
@@ -481,6 +497,22 @@ export class Session {
       case 'mopped':
         sfx.play('mop');
         this.toastOnce('mopped', T.zoneMopped, 12);
+        break;
+      case 'phone':
+        if (ev.hung) sfx.play('cash');
+        this.hud?.toast(ev.hung ? T.phoneHung : T.phoneStuck, ev.hung ? '' : 'warn', 2.5);
+        break;
+      case 'reserved':
+        if (!this.toldReserved) {
+          this.toldReserved = true;
+          this.hud?.toast(T.reservedDesks, '', 3);
+        }
+        break;
+      case 'lob':
+        sfx.play('tick', { gain: 0.6 });
+        break;
+      case 'boom':
+        sfx.play('splat', { gain: 0.7 });
         break;
       case 'hazardWarn':
         sfx.play('projector');
@@ -789,6 +821,13 @@ export class Session {
     }
     if (e.button !== 0) return;
     const tile = this.tileAt(e.clientX, e.clientY);
+    if (this.aiming !== null) {
+      if (!tile) return;
+      this.run({ c: 'aim', id: this.aiming, tx: tile.tx, ty: tile.ty });
+      this.host.sfx.play('click');
+      this.aiming = null;
+      return;
+    }
     if (this.placing) {
       if (!tile) return;
       const check = this.game.canPlace(this.placing, tile.tx, tile.ty, this.me);
@@ -809,7 +848,8 @@ export class Session {
     this.drag = null;
     if (wasClick && e.button === 2) {
       // Right click without dragging: cancel whatever is going on.
-      if (this.placing) this.placing = null;
+      if (this.aiming !== null) this.aiming = null;
+      else if (this.placing) this.placing = null;
       else this.select(null);
     }
   }
@@ -821,6 +861,7 @@ export class Session {
     const k = e.key;
     if (k === 'Escape') {
       if (this.overlay) this.togglePauseMenu();
+      else if (this.aiming !== null) this.aiming = null;
       else if (this.placing) this.placing = null;
       else if (this.selected !== null) this.select(null);
       else this.togglePause();
@@ -878,6 +919,13 @@ export class Session {
     }
     this.actors.showGhost(null, 0, 0, false, 0);
     this.actors.showBlind(null);
+    // Pomodoro Timer: where it lobs (or, while picking, where it would).
+    const aimer = this.aiming !== null ? g.tower(this.aiming) : this.selected !== null ? g.tower(this.selected) : undefined;
+    if (aimer && aimer.def.role === 'mortar') {
+      const r = g.liveStats(aimer).aoe;
+      if (this.aiming !== null && this.hover) this.actors.showAim(this.hover.tx + 0.5, this.hover.ty + 0.5, r);
+      else this.actors.showAim(aimer.aimX, aimer.aimY, r);
+    } else this.actors.showAim(null);
     const sel = this.selected !== null ? g.tower(this.selected) : undefined;
     const hov = this.hover ? g.towerAt(this.hover.tx, this.hover.ty) : undefined;
     const t = sel ?? hov;

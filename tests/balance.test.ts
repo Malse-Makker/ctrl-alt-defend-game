@@ -178,3 +178,23 @@ describe('Level 7 difficulty (The Car Park)', () => {
     expect(runBot(level, greedyBot).won).toBe(true);
   });
 });
+
+describe('Level 8 difficulty (Hot Desks)', () => {
+  const level = LEVELS[8];
+
+  it('Auto-Replies alone are not enough', () => {
+    expect(runBot(level, spamBot).won).toBe(false);
+  });
+
+  // Measured (v0.24.0, seeds 1 and 2): good play 92 Focus and 3 stars, Coffee first 88 and 2.
+  it('good play wins with three stars', () => {
+    const r = runBot(level, solidBot);
+    expect(r.won).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(r.focus).toBeGreaterThanOrEqual(90);
+  });
+
+  it('going for Coffee first still wins', () => {
+    expect(runBot(level, greedyBot).won).toBe(true);
+  });
+});

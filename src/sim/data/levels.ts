@@ -838,7 +838,80 @@ const L7: LevelDef = {
   ],
 };
 
-export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7 };
+const L8: LevelDef = {
+  id: 8,
+  name: 'Hot Desks',
+  block: 'medior',
+  intro: 'Nobody has a desk of their own any more. Everyone wants the one by the window.',
+  gimmick: 'A zigzag through rows of flex desks. You can only build on a desk, and every wave a few are reserved. The desk phone rings. The Pomodoro Timer arrives, and The Head of Comms is back, heavier.',
+  size: { w: 20, h: 12 },
+  paths: [
+    [
+      { x: -1.5, y: 1.5 },
+      { x: 17.5, y: 1.5 },
+      { x: 17.5, y: 4.5 },
+      { x: 2.5, y: 4.5 },
+      { x: 2.5, y: 7.5 },
+      { x: 17.5, y: 7.5 },
+      { x: 17.5, y: 10.5 },
+      { x: 18.0, y: 10.5 },
+    ],
+  ],
+  desk: { x: 18, y: 10 },
+  // The level design (docs/leveldesign, level 8). b: a flex desk, the only place you may build.
+  // Your desk sits one tile in from the edge so the chair fits behind it.
+  grid: [
+    't------------------t',
+    'S=================--',
+    '---bbbbbb-bbbbbb-=-H',
+    '---bbbbbb-bbbbbb-=-H',
+    '--================-H',
+    'H-=-bbbbb--bbbbb---H',
+    'H-=-bbbbb--bbbbb---H',
+    'H-================-H',
+    'H--bbbbbb-bbbbbb-=-H',
+    '---bbbbbb-bbbbbb-=--',
+    '-----------------=D-',
+    '-----HH---HH-HH-----',
+  ],
+  decor: [
+    { model: 'plant', rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { model: 'plant', rect: { x: 19, y: 0, w: 1, h: 1 } },
+    ...run('lockers', 19, 2, 7, 'y', { turn: 3 }),
+    ...run('lockers', 0, 5, 4, 'y', { turn: 1 }),
+    { model: 'phone_booth', rect: { x: 5, y: 11, w: 2, h: 1 } },
+    { model: 'phone_booth', rect: { x: 10, y: 11, w: 2, h: 1 } },
+    { model: 'printer', rect: { x: 13, y: 11, w: 1, h: 1 } },
+    { model: 'lockers', rect: { x: 14, y: 11, w: 1, h: 1 } },
+  ],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation', 'pomodoro'],
+  startFocus: 100,
+  // Carpet tiles in two greys, and a blue walkway.
+  look: { floorA: '#8c939c', floorB: '#848b94', walkway: '#4a6d94', edge: '#3a5675', wall: '#e3e1dc' },
+  hazard: { type: 'phone', first: 50, every: 45, window: 6, reward: 5, block: 15 },
+  reserve: 3,
+  bossHpMult: 1.8,
+  // Medior, a step up from The Car Park. The Head of Comms comes back with 1.8x his HP.
+  waves: [
+    'intern:18@0.48 + newhire:4@0.90 + chaser:6@0.20',
+    'intern:14@0.46 + newhire:5@0.85 + coldcaller:1@1.20 + chaser:6@0.18',
+    'chaser:18@0.15 + phonecaller:1@1.20 + newhire:5@0.85 + intern:8@0.45',
+    'oldguard:2@1.80 + intern:12@0.45 + coldcaller:2@1.00 + chaser:4@0.18',
+    'impersonator:4@0.80 + newhire:8@0.80 + phonecaller:2@1.00 + chaser:10@0.16',
+    'boardmember:2@1.60 + coldcaller:2@0.95 + intern:18@0.42 + chaser:12@0.14',
+    'oldguard:2@1.60 + chatterbox:2@1.60 + phonecaller:2@0.95 + requester:3@1.00 + intern:14@0.42',
+    'chaser:44@0.10 + phonecaller:3@0.90 + newhire:10@0.75',
+    'requester:5@1.00 + boardmember:2@1.50 + coldcaller:3@0.85 + impersonator:5@0.60 + chaser:20@0.12',
+    'oldguard:3@1.40 + phonecaller:3@0.85 + coldcaller:3@0.85 + intern:22@0.38',
+    'chaser:54@0.09 + newhire:12@0.65 + phonecaller:4@0.80 + chatterbox:2@1.50',
+    'oldguard:3@1.30 + requester:5@0.95 + boardmember:2@1.30 + impersonator:6@0.55 + newhire:6@0.70',
+    'boardmember:3@1.30 + phonecaller:5@0.75 + newhire:16@0.60 + chaser:40@0.09 + coldcaller:3@0.80',
+    'oldguard:4@1.20 + phonecaller:5@0.70 + requester:6@0.90 + chaser:44@0.09 + coldcaller:4@0.80',
+    'headofcomms:1@2.00 + newhire:10@0.70 + chaser:20@0.12',
+  ],
+};
+
+export const LEVELS: Record<number, LevelDef> = { 1: L1, 2: L2, 3: L3, 4: L4, 5: L5, 6: L6, 7: L7, 8: L8 };
 
 /** All fifteen level names, so the level select can show what is coming. */
 export const LEVEL_NAMES: readonly string[] = [

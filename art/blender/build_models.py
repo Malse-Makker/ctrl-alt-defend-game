@@ -2639,6 +2639,80 @@ def b_tomato_shell():
     return root
 
 
+# ---------------------------------------------------------------- level 8: hot desks
+
+def b_flex_desk():
+    """An empty flex desk: a monitor, a dock, a chair pushed in. A tower you place takes its spot."""
+    root = empty("flex_desk")
+    top = box("Top", (0.92, 0.62, 0.04), loc=(0, 0.06, 0.7), material=mat("plastic_white", rough=0.4))
+    legs = [box(f"Leg{i}", (0.04, 0.55, 0.7), loc=(x, 0.06, 0), material=_metal()) for i, x in enumerate((-0.42, 0.42))]
+    parts = [top] + legs + _monitor(0, 0.25, 0.74, w=0.4, hgt=0.25)
+    dock = box("Dock", (0.2, 0.1, 0.03), loc=(0.25, 0.0, 0.74), material=mat("plastic_black"))
+    card = box("Card", (0.14, 0.02, 0.08), loc=(-0.25, -0.05, 0.74), material=mat("plant", emit=0.5))
+    parts += [dock, card] + _chair("charcoal", "charcoal", s=0.85)[0:0]
+    seat = box("Seat", (0.38, 0.38, 0.06), loc=(0, -0.42, 0.42), material=mat("charcoal"), bevel=0.02)
+    back = box("Back", (0.38, 0.05, 0.36), loc=(0, -0.6, 0.46), material=mat("charcoal"), bevel=0.02)
+    post = cyl("Post", 0.025, 0.42, loc=(0, -0.42, 0), material=_metal(), verts=8)
+    ob = join("flex_desk_mesh", parts + [seat, back, post])
+    parent(ob, root)
+    return root
+
+
+def b_lockers():
+    """One tile of lockers, tall, doors to -Y."""
+    root = empty("lockers")
+    body = box("Body", (0.96, 0.5, 1.85), loc=(0, 0.2, 0), material=mat("#5f7f96", rough=0.5), bevel=0.01)
+    parts = [body]
+    for i, x in enumerate((-0.24, 0.24)):
+        for j, z in enumerate((0.05, 0.95)):
+            parts.append(box(f"Door{i}{j}", (0.44, 0.01, 0.85), loc=(x, -0.055, z), material=mat("#6f91aa", rough=0.5)))
+            parts.append(box(f"Vent{i}{j}", (0.2, 0.012, 0.06), loc=(x, -0.06, z + 0.7), material=mat("charcoal")))
+            parts.append(box(f"Lock{i}{j}", (0.04, 0.015, 0.06), loc=(x + 0.15, -0.065, z + 0.4), material=mat("metal_light", metal=0.8)))
+    ob = join("lockers_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_phone_booth():
+    """A quiet booth, two tiles wide: glass front, someone's coat on the hook. Front -Y."""
+    root = empty("phone_booth")
+    shell = box("Shell", (1.9, 0.9, 1.95), loc=(0, 0.05, 0), material=mat("#3b3f46", rough=0.7), bevel=0.03)
+    glass = box("Glass", (1.6, 0.02, 1.6), loc=(0, -0.41, 0.15), material=mat("window", rough=0.05, alpha=0.45))
+    light = box("Light", (1.2, 0.3, 0.03), loc=(0, 0.05, 1.9), material=mat("plastic_white", emit=1.2))
+    seat = box("Seat", (0.8, 0.4, 0.42), loc=(0, 0.2, 0.0), material=mat("teal", rough=0.8))
+    shelf = box("Shelf", (0.6, 0.25, 0.03), loc=(0, 0.3, 0.75), material=mat("wood"))
+    ob = join("phone_booth_mesh", [shell, glass, light, seat, shelf])
+    parent(ob, root)
+    return root
+
+
+def b_desk_phone():
+    """An old desk phone, ringing. Drawn on top of whatever stands on the desk."""
+    root = empty("desk_phone")
+    base = box("Base", (0.3, 0.24, 0.08), loc=(0, 0, 0), material=mat("plastic_black"), bevel=0.02, taper=0.8)
+    pad = box("Keys", (0.14, 0.12, 0.01), loc=(0.04, -0.03, 0.08), material=mat("metal_light"))
+    hand = box("Handset", (0.34, 0.08, 0.06), loc=(0, 0.07, 0.1), material=mat("red"), bevel=0.02)
+    cord = cyl("Cord", 0.01, 0.12, loc=(-0.17, 0.05, 0.0), material=mat("red"), verts=6)
+    light = box("RingLight", (0.04, 0.04, 0.02), loc=(-0.1, -0.08, 0.08), material=mat("red", emit=3.0))
+    ob = join("desk_phone_mesh", [base, pad, hand, cord, light])
+    parent(ob, root)
+    return root
+
+
+def b_reserved_sign():
+    """A folded card on the desk: RESERVED."""
+    root = empty("reserved_sign")
+    card = box("Card", (0.36, 0.02, 0.16), loc=(0, 0, 0), material=mat("red", emit=0.4))
+    kit.tilt([card], rx=0.35, pivot=(0, 0, 0))
+    back = box("CardBack", (0.36, 0.02, 0.16), loc=(0, 0.06, 0), material=mat("red", emit=0.4))
+    kit.tilt([back], rx=-0.35, pivot=(0, 0.06, 0))
+    words = _text("ReservedText", "RESERVED", 0.05, (0, -0.03, 0.08), mat("plastic_white", emit=1.0))
+    kit.tilt([words], rx=0.35, pivot=(0, -0.03, 0.0))
+    ob = join("reserved_sign_mesh", [card, back, words])
+    parent(ob, root)
+    return root
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -2784,6 +2858,11 @@ BUILDERS = {
     "pomodoro_2": b_pomodoro_2,
     "pomodoro_3": b_pomodoro_3,
     "tomato_shell": b_tomato_shell,
+    "flex_desk": b_flex_desk,
+    "lockers": b_lockers,
+    "phone_booth": b_phone_booth,
+    "desk_phone": b_desk_phone,
+    "reserved_sign": b_reserved_sign,
 }
 
 

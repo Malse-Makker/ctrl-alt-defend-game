@@ -711,13 +711,16 @@ button:disabled {
 
 .tp-sub {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 2px;
   font-size: 12px;
   color: var(--muted);
 }
 
 .tp-sub .tiers {
   color: var(--text);
+  white-space: nowrap;
 }
 
 .path {
@@ -1853,4 +1856,61 @@ select {
   font-size: 12px;
   line-height: 22px;
   color: var(--text);
+}
+
+/* The desk phone: slides in from the side and shakes, but does not stop the game. */
+.phone-layer {
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.phone-card {
+  width: min(300px, 100%);
+  animation: phone-in 0.25s ease-out, phone-shake 0.12s linear 0.25s infinite;
+  pointer-events: auto;
+}
+
+.phone-caller {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.phone-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.phone-btn.hang {
+  border-color: #e5534b;
+  color: #e5534b;
+}
+
+.phone-btn.pick {
+  border-color: #6fcf7f;
+  color: #6fcf7f;
+}
+
+@keyframes phone-in {
+  from {
+    transform: translateX(-120%);
+  }
+}
+
+@keyframes phone-shake {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-card {
+    animation: none;
+  }
 }

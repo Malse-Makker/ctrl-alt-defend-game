@@ -149,6 +149,11 @@ export const MODEL_NAMES = [
   'pomodoro_2',
   'pomodoro_3',
   'tomato_shell',
+  'flex_desk',
+  'lockers',
+  'phone_booth',
+  'desk_phone',
+  'reserved_sign',
 ] as const;
 
 export class Assets {

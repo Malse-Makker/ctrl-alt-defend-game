@@ -37,6 +37,8 @@ export interface HudActions {
   settings(): void;
   leave(): void;
   dir(id: number, dir: number): void;
+  /** Pomodoro Timer: the next click on the floor picks its tile. */
+  aim(id: number): void;
   smoke(): void;
 }
 
@@ -567,6 +569,24 @@ export class Hud {
       const dealt = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
       dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
+    } else if (def.role === 'mortar') {
+      stats.append(
+        h('span', { class: 'k', text: T.damage }),
+        h('span', { class: 'v', text: fmt(s.damage, 1) }),
+        h('span', { class: 'k', text: 'Splat' }),
+        h('span', { class: 'v', text: `${fmt(s.aoe, 1)} tiles` }),
+        h('span', { class: 'k', text: 'Every' }),
+        h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
+        h('span', { class: 'k', text: T.range }),
+        h('span', { class: 'v', text: 'any tile' }),
+      );
+      const sl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      const extra = [s.doubleShot ? 'two tomatoes' : '', s.crater ? `burns ${s.crater.time}s` : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.knockback > 0 ? 'pushes back' : ''].filter(Boolean);
+      if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
+      const dealt = h('span', { class: 'v' });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
     } else if (def.role === 'damage') {
       const extra = [s.targets >= 50 ? 'everyone in range' : s.targets > 1 ? `${s.targets} targets` : '', s.splash ? 'splash' : '', s.bounce ? `${s.bounce} bounces` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : '', s.slowAura < 1 ? 'slows' : '', s.seesHidden ? 'sees hidden' : ''].filter(Boolean);
       stats.append(
@@ -657,7 +677,7 @@ export class Hud {
       parts.push(card);
     });
 
-    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : T.silencedNote }));
+    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : T.silencedNote }));
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
     else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
     else if (g.slowWifi(t)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.wifiNote }));
@@ -678,6 +698,9 @@ export class Hud {
         arrows.append(h('button', { class: `btn small${t.dir === a.dir ? ' active' : ''}`, title: `Roll ${a.label}`, attrs: { 'aria-label': `Roll ${a.label}` }, on: { click: () => this.act.dir(t.id, a.dir) } }, i));
       }
       parts.push(h('div', { class: 'label', text: T.chairDirection }), arrows);
+    }
+    if (def.role === 'mortar') {
+      parts.push(h('button', { class: 'btn aim-btn', title: T.aimHelp, on: { click: () => this.act.aim(t.id) } }, icon('crosshairs'), ` ${T.aimPick}`));
     }
     if (def.role === 'damage' || def.role === 'trap') {
       const trap = def.role === 'trap';

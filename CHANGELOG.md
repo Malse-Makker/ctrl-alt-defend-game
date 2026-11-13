@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.24.0] - 2026-11-13
+
+### New
+- Level 8, Hot Desks: a zigzag through rows of flex desks. Nobody has a desk of their own, so you can only build on a flex desk, and every wave a few of them are reserved for someone else. Opens once you finish The Car Park.
+- The desk phone: it rings on a desk with something on it. Hang up and you get a bit of Coffee. Pick up, or let it ring, and that desk is stuck on the call for a while.
+- The Pomodoro Timer: lobs a tomato at a tile you pick, anywhere on the floor, over walls and furniture. FOCUS SPRINT lobs faster and sends two at a time, DEEP WORK hits harder and leaves a burning patch, BREAK TIME stops colleagues and pushes them back. Select it and click Pick a tile.
+- The Head of Comms is back for the end of Hot Desks, and heavier.
+
+### Changed
+- The tower panel no longer squeezes the tower name and its tiers onto one line.
+
 ## [0.23.0] - 2026-11-13
 
 ### New

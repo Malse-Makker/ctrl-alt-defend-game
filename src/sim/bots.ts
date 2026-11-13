@@ -372,6 +372,38 @@ SCRIPTS[7] = [
   { up: 'artillery', path: 1, all: true },
 ];
 
+SCRIPTS[8] = [
+  // Hot Desks: build on the flex desks only, a few booked every wave. Every desk sits right by
+  // the walkway; the Pomodoro Timer lobs over everything at the busiest bend.
+  { place: 'autoreply', spot: 'cover' },
+  { place: 'thumbtacks', spot: 'cover' },
+  { place: 'autoreply', spot: 'cover' },
+  { up: 'autoreply', path: 1, all: true },
+  { place: 'coffee', spot: 'far' },
+  { up: 'thumbtacks', path: 0 },
+  { place: 'pomodoro', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'pomodoro', path: 1 },
+  { place: 'artillery', spot: 'far' },
+  { up: 'pomodoro', path: 1 },
+  { place: 'delegation', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'thumbtacks', path: 0 },
+  { up: 'delegation', path: 0 },
+  { place: 'replyall', spot: 'cover' },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { place: 'thumbtacks', spot: 'cover' },
+  { up: 'thumbtacks', path: 0, all: true },
+  { up: 'delegation', path: 1 },
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'artillery', path: 0 },
+  { up: 'pomodoro', path: 1 },
+  { up: 'replyall', path: 0 },
+  { up: 'autoreply', path: 1, all: true },
+];
+
 function spotFor(g: Game, def: string, kind: 'cover' | 'far' | 'zone' | 'desk'): Spot | undefined {
   if (kind === 'desk') {
     // The best spot that still covers the last stretch before your desk.
@@ -478,6 +510,8 @@ export const solidBot: Bot = {
 function reconnect(g: Game): void {
   const hz = g.level.hazard;
   if (hz?.type === 'nointernet' && g.hazardOpenFor(0) && g.time >= g.hazardUntil - hz.window + 8) g.solveHazard(0);
+  // The desk phone: a good player hangs up after a couple of seconds.
+  if (hz?.type === 'phone' && g.hazardOn && g.time >= g.hazardUntil - hz.window + 2) g.answerPhone(0, true);
 }
 
 /** The Level 1 way of playing: Auto-Replies, one machine, cheapest planned upgrade first. */

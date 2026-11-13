@@ -49,6 +49,12 @@ export class World {
   /** The projector and its screen (Presentation Room): they act up before the mini-game. */
   private readonly beamer: { lamp: THREE.Mesh[]; beam: THREE.Object3D[]; slide: THREE.Object3D[]; noSignal: THREE.Object3D[] } = { lamp: [], beam: [], slide: [], noSignal: [] };
   private clock = 0;
+  /** Hot Desks: an empty flex desk per b tile (hidden under a tower), reserved signs, the phone. */
+  private readonly flexDesks: { x: number; y: number; obj: THREE.Object3D }[] = [];
+  private readonly signs: THREE.Object3D[] = [];
+  private readonly reservedTint: THREE.Mesh[] = [];
+  private phoneObj: THREE.Object3D | null = null;
+  private assetsRef: Assets;
 
   constructor(level: LevelDef, game: Game, assets: Assets, me = 0) {
     const { w, h } = level.size;
@@ -158,6 +164,23 @@ export class World {
         }
       }
     }
+    // Flex desks (Hot Desks): an empty desk on every b tile. A tower you place takes its spot.
+    this.assetsRef = assets;
+    if (level.grid) {
+      level.grid.forEach((row, y) =>
+        [...row].forEach((c, x) => {
+          if (c !== 'b') return;
+          const obj = assets.clone('flex_desk');
+          obj.position.set(x + 0.5, 0, y + 0.5);
+          // Face the nearest walkway, like someone working there would.
+          const up = game.isPathTile(x, y - 1);
+          obj.rotation.y = up ? Math.PI : 0;
+          this.shared.add(obj);
+          g.add(obj);
+          this.flexDesks.push({ x, y, obj });
+        }),
+      );
+    }
     // Bad wifi (the bedroom): a soft carpet, so you can see where the signal gives up.
     const wifi: { x: number; y: number }[] = [];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.isBadWifi(x, y)) wifi.push({ x, y });
@@ -238,10 +261,55 @@ export class World {
   update(dt: number, game: Game): void {
     this.clock += dt;
     this.updateBeamer(game);
+    this.updateDesks(game);
     for (const gv of this.gates) {
       const through = game.enemies.some((e) => e.alive && !(e.gateHold && e.gateHold > 0) && Math.hypot(e.x - gv.x, e.y - gv.y) < 0.75);
       gv.open += ((through ? 1 : 0) - gv.open) * Math.min(1, dt * 10);
       gv.flap.rotation.y = gv.sign * gv.open * (Math.PI / 2);
+    }
+  }
+
+  /**
+   * Hot Desks: hide a flex desk under a tower, put a RESERVED sign and a red tint on booked desks,
+   * and the desk phone where it rings (shaking) or where someone is stuck on a call (still).
+   */
+  private updateDesks(game: Game): void {
+    if (!this.flexDesks.length) return;
+    for (const d of this.flexDesks) d.obj.visible = !game.towerAt(d.x, d.y);
+    game.reserved.forEach((d, i) => {
+      if (!this.signs[i]) {
+        const sign = this.assetsRef.clone('reserved_sign');
+        this.shared.add(sign);
+        this.group.add(sign);
+        this.signs.push(sign);
+        const tint = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: PAL.bad, transparent: true, opacity: 0.3, depthWrite: false }));
+        tint.renderOrder = 2;
+        this.group.add(tint);
+        this.reservedTint.push(tint);
+      }
+      this.signs[i].visible = true;
+      this.signs[i].position.set(d.x + 0.5, 0.75, d.y + 0.5);
+      this.reservedTint[i].visible = true;
+      this.reservedTint[i].position.set(d.x + 0.5, 0.012, d.y + 0.5);
+    });
+    for (let i = game.reserved.length; i < this.signs.length; i++) {
+      this.signs[i].visible = false;
+      this.reservedTint[i].visible = false;
+    }
+    const at = game.phone ?? game.stuckDesk;
+    if (at && !this.phoneObj) {
+      this.phoneObj = this.assetsRef.clone('desk_phone');
+      this.shared.add(this.phoneObj);
+      this.group.add(this.phoneObj);
+    }
+    if (this.phoneObj) {
+      this.phoneObj.visible = at !== null;
+      if (at) {
+        const ringing = game.phone !== null;
+        const shake = ringing ? Math.sin(this.clock * 60) * 0.12 : 0;
+        this.phoneObj.position.set(at.x + 0.5, 1.05 + (ringing ? Math.abs(Math.sin(this.clock * 12)) * 0.08 : 0), at.y + 0.5);
+        this.phoneObj.rotation.set(0, shake, ringing ? shake * 0.5 : 0);
+      }
     }
   }
 
