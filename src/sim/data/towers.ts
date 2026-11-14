@@ -272,6 +272,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 1,
     accent: '#c8423b',
     models: ['coffee_1', 'coffee_2', 'coffee_3'],
+    pathModels: [
+      ['coffee_p0_3', 'coffee_p0_4'],
+      ['coffee_p1_3', 'coffee_p1_4'],
+      ['coffee_p2_3', 'coffee_p2_4'],
+    ],
     base: { cost: 20, range: 2.5, coffeeAmount: 1, coffeeInterval: 5 },
     paths: [
       {
@@ -330,6 +335,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 1,
     accent: '#3e7cc9',
     models: ['autoreply_1', 'autoreply_2', 'autoreply_3'],
+    pathModels: [
+      ['autoreply_p0_3', 'autoreply_p0_4'],
+      ['autoreply_p1_3', 'autoreply_p1_4'],
+      ['autoreply_p2_3', 'autoreply_p2_4'],
+    ],
     base: { cost: 14, range: 3.375, interval: 0.45, damage: 1.4 },
     paths: [
       {
@@ -382,6 +392,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 2,
     accent: '#6fcf7f',
     models: ['headphones_1', 'headphones_2', 'headphones_3'],
+    pathModels: [
+      ['headphones_p0_3', 'headphones_p0_4'],
+      ['headphones_p1_3', 'headphones_p1_4'],
+      ['headphones_p2_3', 'headphones_p2_4'],
+    ],
     base: { cost: 20, range: 3.0, interval: 3.5, stun: 0.6 },
     paths: [
       {
@@ -435,6 +450,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 2,
     accent: '#e5534b',
     models: ['artillery_1', 'artillery_2', 'artillery_3'],
+    pathModels: [
+      ['artillery_p0_3', 'artillery_p0_4'],
+      ['artillery_p1_3', 'artillery_p1_4'],
+      ['artillery_p2_3', 'artillery_p2_4'],
+    ],
     base: { cost: 25, range: 99, interval: 3.2, damage: 15, global: true },
     paths: [
       {
@@ -536,6 +556,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 3,
     accent: '#8fa0b4',
     models: ['quickreply_1', 'quickreply_2', 'quickreply_3'],
+    pathModels: [
+      ['quickreply_p0_3', 'quickreply_p0_4'],
+      ['quickreply_p1_3', 'quickreply_p1_4'],
+      ['quickreply_p2_3', 'quickreply_p2_4'],
+    ],
     base: { cost: 16, range: 2.875, interval: 0.25, damage: 0.6, targets: 3 },
     paths: [
       {
@@ -584,6 +609,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 4,
     accent: '#d24b4b',
     models: ['thumbtacks_1', 'thumbtacks_2', 'thumbtacks_3'],
+    pathModels: [
+      ['thumbtacks_p0_3', 'thumbtacks_p0_4'],
+      ['thumbtacks_p1_3', 'thumbtacks_p1_4'],
+      ['thumbtacks_p2_3', 'thumbtacks_p2_4'],
+    ],
     base: { cost: 22, range: 2.0, interval: 1.7, damage: 2, pierce: 5, pileLife: 22 },
     paths: [
       {
@@ -632,6 +662,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 3,
     accent: '#3fa7a0',
     models: ['selfservice_1', 'selfservice_2', 'selfservice_3'],
+    pathModels: [
+      ['selfservice_p0_3', 'selfservice_p0_4'],
+      ['selfservice_p1_3', 'selfservice_p1_4'],
+      ['selfservice_p2_3', 'selfservice_p2_4'],
+    ],
     base: { cost: 25, range: 1.8, interval: 0.8, damage: 1.0, targets: 99, slowAura: 0.6 },
     paths: [
       {

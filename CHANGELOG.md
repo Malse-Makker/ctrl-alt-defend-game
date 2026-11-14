@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.43.0] - 2026-11-14
+
+### New
+- Seven towers look different on every path from tier 3: the Coffee Machine, Auto-Reply, Headphones, Office Artillery, Quick Reply, Thumbtacks and Self-Service. A barista station or a coffee cart, a sorting rack full of mail, studio speakers or a turntable, a nail gun or a supply crate on a parachute, a party parrot, a supply closet, a kiosk with a robot head. Each in the colour of its path.
+
 ## [0.42.0] - 2026-11-14
 
 ### Changed

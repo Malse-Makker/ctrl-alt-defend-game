@@ -254,6 +254,65 @@ async function briefingFlow(browser: import('puppeteer-core').Browser, errors: s
   return total;
 }
 
+/** The looks per path: four towers, each path at tier 3 and then tier 4, next to each other. */
+async function looksFlow(browser: import('puppeteer-core').Browser, errors: string[], towers: string[], label: string): Promise<number> {
+  const size = '1600x900';
+  console.log(`\n${size} (looks per path: ${label})`);
+  let total = 0;
+  const page = await browser.newPage();
+  page.on('pageerror', (e) => errors.push(`looks: ${String(e)}`));
+  await page.setViewport({ width: 1600, height: 900 });
+  const stars = Object.fromEntries(Array.from({ length: 4 }, (_, i) => [String(i + 1), 3]));
+  await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", `v: 1, stars: ${JSON.stringify(stars)}, settings:`));
+  await page.goto(URL_, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
+  await clickText(page, 'Clock in');
+  await clickText(page, LEVELS[5].name);
+  await page.waitForFunction(() => document.querySelector('.hud'));
+  const placed = await page.evaluate((towers) => {
+    type Any = any;
+    const g = (window as unknown as { cad: { session: { game: Any } } }).cad.session.game;
+    g.wallets[0] = 99999;
+    let n = 0;
+    for (const def of towers) {
+      for (let p = 0; p < 3; p++) {
+        let done = false;
+        for (let y = 0; y < g.level.size.h && !done; y++) {
+          for (let x = 0; x < g.level.size.w && !done; x++) {
+            if (!g.canPlace(def, x, y).ok) continue;
+            const r = g.place(def, x, y);
+            if (r.ok) {
+              r.tower.tiers = [0, 0, 0];
+              r.tower.tiers[p] = 3;
+              n++;
+              done = true;
+            }
+          }
+        }
+      }
+    }
+    return n;
+  }, towers);
+  console.log(`  placed ${placed} towers`);
+  if (placed !== towers.length * 3) errors.push(`looks: placed ${placed} of ${towers.length * 3} towers`);
+  await new Promise((r) => setTimeout(r, 800));
+  total += await check(page, `looks-${label}-tier3`, size);
+  await page.evaluate(() => {
+    const g = (window as unknown as { cad: { session: { game: { towers: { tiers: number[] }[] } } } }).cad.session.game;
+    for (const t of g.towers) t.tiers = t.tiers.map((n) => (n === 3 ? 4 : n));
+  });
+  await new Promise((r) => setTimeout(r, 800));
+  total += await check(page, `looks-${label}-tier4`, size);
+  await page.close();
+  return total;
+}
+
+async function looksAll(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
+  let total = await looksFlow(browser, errors, ['coffee', 'autoreply', 'headphones', 'artillery'], 'a');
+  total += await looksFlow(browser, errors, ['quickreply', 'thumbtacks', 'selfservice'], 'b');
+  return total;
+}
+
 async function level2Flow(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   const size = '1600x900';
   console.log(`\n${size} (level 2)`);
@@ -1709,6 +1768,10 @@ async function run(): Promise<void> {
       total += await briefingFlow(browser, errors);
       throw new Done();
     }
+    if (args.includes('--looks-only')) {
+      total += await looksAll(browser, errors);
+      throw new Done();
+    }
     if (args.includes('--l2-only')) {
       total += await level2Flow(browser, errors);
       throw new Done();
@@ -1927,6 +1990,7 @@ async function run(): Promise<void> {
     total += await level14Flow(browser, errors);
     total += await level15Flow(browser, errors);
     total += await briefingFlow(browser, errors);
+    total += await looksAll(browser, errors);
     if (args.includes('--mp')) total += await mpFlowLogged(browser, errors);
   } catch (e) {
     if (!(e instanceof Done)) throw e;

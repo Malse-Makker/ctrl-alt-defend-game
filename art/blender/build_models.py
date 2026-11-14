@@ -3129,6 +3129,1228 @@ def b_pizza():
     return root
 
 
+
+# ---------------------------------------------------------------- Auto-Reply looks per path
+# Path colours from towers.ts: TEMPLATES #e5a04b, RULES #7fb6e3, READ RECEIPTS #b48ce0.
+AR_T, AR_R, AR_P = "#e5a04b", "#7fb6e3", "#b48ce0"
+
+
+def b_autoreply_p0_3():
+    """TEMPLATES tier 3, Out of Office: a big orange sign, and replies bouncing on to the next."""
+    root = empty("autoreply_p0_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood")
+    parts += _laptop(-0.08, 0.04, h)
+    sign = box("Sign", (0.34, 0.03, 0.2), loc=(0.2, -0.06, h + 0.16), material=mat(AR_T), bevel=0.01)
+    post = box("SignPost", (0.03, 0.03, 0.18), loc=(0.2, -0.06, h), material=mat("metal"))
+    lines = [box(f"SignLine{i}", (0.24 - i * 0.06, 0.034, 0.025), loc=(0.2, -0.065, h + 0.29 - i * 0.05), material=mat("plastic_white")) for i in range(3)]
+    hops = []
+    for i, (x, z, t) in enumerate(((-0.05, 0.62, -0.3), (0.12, 0.72, 0.2), (0.3, 0.64, 0.5))):
+        hops += _envelope(x, -0.02, z, scale=1.1, tilt=t)
+    ob = join("autoreply_p0_3_mesh", parts + [sign, post] + lines + hops)
+    parent(ob, root)
+    return root
+
+
+def b_autoreply_p0_4():
+    """TEMPLATES tier 4, Inbox Zero: one big screen with a tick, empty trays, a zen plant."""
+    root = empty("autoreply_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_white")
+    parts += _monitor(0, 0.12, h, w=0.62, hgt=0.38, screen_key="screen_glow", emit=1.6)
+    check1 = box("Check1", (0.08, 0.006, 0.03), loc=(-0.06, 0.08, h + 0.3), material=mat(AR_T, emit=1.4))
+    kit.tilt(check1, ry=0.8)
+    check2 = box("Check2", (0.18, 0.006, 0.03), loc=(0.04, 0.075, h + 0.33), material=mat(AR_T, emit=1.4))
+    kit.tilt(check2, ry=-0.9)
+    trays = []
+    for i in range(3):
+        trays.append(box(f"Tray{i}", (0.2, 0.15, 0.03), loc=(-0.28, -0.18, h + i * 0.07), material=mat(AR_T if i == 2 else "plastic_black"), bevel=0.004))
+    pot = cyl("Pot", 0.05, 0.07, loc=(0.3, -0.2, h), material=mat("plastic_white"), verts=8)
+    succ = ball("Succulent", 0.06, loc=(0.3, -0.2, h + 0.1), material=mat("plant"), subdiv=1, scale=(1, 1, 0.7))
+    halo = box("Halo", (0.8, 0.014, 0.014), loc=(0, 0.16, h + 0.5), material=mat(AR_T, emit=2.0))
+    ob = join("autoreply_p0_4_mesh", parts + [check1, check2] + trays + [pot, succ, halo])
+    parent(ob, root)
+    return root
+
+
+def b_autoreply_p1_3():
+    """RULES tier 3, Auto-Forward: two screens angled apart, a blue forward arrow between them."""
+    root = empty("autoreply_p1_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood")
+    parts += _monitor(-0.2, 0.12, h, w=0.32, rot=0.35, screen_key="screen", emit=1.2)
+    parts += _monitor(0.2, 0.12, h, w=0.32, rot=-0.35, screen_key="screen", emit=1.2)
+    shaft = box("ArrowShaft", (0.16, 0.02, 0.04), loc=(-0.02, -0.08, h + 0.32), material=mat(AR_R, emit=1.0))
+    head = box("ArrowHead", (0.08, 0.02, 0.1), loc=(0.09, -0.08, h + 0.29), material=mat(AR_R, emit=1.0), taper=0.1)
+    kit.tilt(head, ry=-math.pi / 2, pivot=(0.09, -0.08, h + 0.34))
+    env = _envelope(-0.2, -0.04, h + 0.42, scale=1.0, tilt=0.1) + _envelope(0.2, -0.04, h + 0.42, scale=1.0, tilt=-0.1)
+    kb = box("Keyboard", (0.32, 0.1, 0.018), loc=(0, -0.18, h), material=mat("plastic_white"), bevel=0.005)
+    ob = join("autoreply_p1_3_mesh", parts + [shaft, head, kb] + env)
+    parent(ob, root)
+    return root
+
+
+def b_autoreply_p1_4():
+    """RULES tier 4, Filter Everything: a sorting rack, envelopes in every slot, a funnel on top."""
+    root = empty("autoreply_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_white")
+    rack = box("Rack", (0.62, 0.22, 0.4), loc=(0, 0.12, h), material=mat("metal_light"), bevel=0.01)
+    slots = []
+    for row in range(3):
+        for col in range(4):
+            x = -0.225 + col * 0.15
+            z = h + 0.05 + row * 0.12
+            slots.append(box(f"Slot{row}{col}", (0.13, 0.02, 0.1), loc=(x, 0.005, z), material=mat("charcoal")))
+            if (row + col) % 3 != 2:
+                slots.append(box(f"Mail{row}{col}", (0.1, 0.03, 0.07), loc=(x, 0.0, z + 0.015), material=mat("plastic_white", emit=0.3)))
+    funnel = cyl("Funnel", 0.14, 0.12, loc=(0, 0.12, h + 0.4), material=mat(AR_R, emit=0.6), verts=12, radius_top=0.05)
+    kit.tilt(funnel, rx=math.pi, pivot=(0, 0.12, h + 0.46))
+    lamp = box("Light", (0.5, 0.014, 0.014), loc=(0, -0.02, h + 0.42), material=mat(AR_R, emit=2.0))
+    ob = join("autoreply_p1_4_mesh", parts + [rack, funnel, lamp] + slots)
+    parent(ob, root)
+    return root
+
+
+def b_autoreply_p2_3():
+    """READ RECEIPTS tier 3, CC Your Manager: a framed photo of the boss and a purple CC plate."""
+    root = empty("autoreply_p2_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood")
+    parts += _laptop(-0.12, 0.04, h)
+    frame = box("Frame", (0.18, 0.025, 0.22), loc=(0.24, 0.08, h), material=mat("wood_dark"), bevel=0.006)
+    photo = box("Photo", (0.14, 0.004, 0.17), loc=(0.24, 0.066, h + 0.025), material=mat("plastic_white"))
+    head = ball("BossHead", 0.035, loc=(0.24, 0.06, h + 0.13), material=mat("#d9a87a"), subdiv=1)
+    tie = box("BossTie", (0.02, 0.004, 0.06), loc=(0.24, 0.062, h + 0.05), material=mat(AR_P))
+    kit.tilt([frame, photo, head, tie], rx=-0.2, pivot=(0.24, 0.08, h))
+    plate = box("Plate", (0.2, 0.06, 0.06), loc=(0.12, -0.24, h), material=mat(AR_P, emit=0.4), bevel=0.008, taper=0.7)
+    cc = [box(f"C{i}", (0.03, 0.064, 0.025), loc=(0.09 + i * 0.06, -0.245, h + 0.02), material=mat("plastic_white")) for i in range(2)]
+    phone = box("Phone", (0.12, 0.16, 0.05), loc=(-0.3, -0.18, h), material=mat("plastic_black"), bevel=0.01)
+    ob = join("autoreply_p2_3_mesh", parts + [frame, photo, head, tie, plate, phone] + cc)
+    parent(ob, root)
+    return root
+
+
+def b_autoreply_p2_4():
+    """READ RECEIPTS tier 4, Legal Hold: purple binders under a padlock, and a gavel."""
+    root = empty("autoreply_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood_dark")
+    binders = []
+    for i in range(5):
+        binders.append(box(f"Binder{i}", (0.08, 0.26, 0.3), loc=(-0.2 + i * 0.09, 0.1, h), material=mat(AR_P if i % 2 == 0 else "navy"), bevel=0.006))
+        binders.append(box(f"Label{i}", (0.05, 0.004, 0.08), loc=(-0.2 + i * 0.09, -0.032, h + 0.16), material=mat("plastic_white")))
+    strap = box("Strap", (0.5, 0.28, 0.03), loc=(0, 0.1, h + 0.14), material=mat("metal", metal=0.6))
+    lock = box("Lock", (0.1, 0.05, 0.09), loc=(0, -0.05, h + 0.1), material=mat("yellow", metal=0.6, rough=0.3), bevel=0.01)
+    shackle = box("Shackle", (0.07, 0.02, 0.06), loc=(0, -0.05, h + 0.19), material=mat("metal_light", metal=0.8))
+    handle = cyl("GavelHandle", 0.012, 0.22, loc=(0.24, -0.22, h + 0.03), material=mat("wood"), verts=8, rot=(0, math.pi / 2, 0.5))
+    gavel = cyl("GavelHead", 0.035, 0.12, loc=(0.16, -0.17, h + 0.035), material=mat("wood_dark"), verts=10, rot=(math.pi / 2, 0, 0.5))
+    block = cyl("Block", 0.06, 0.02, loc=(0.3, -0.12, h), material=mat("wood_dark"), verts=12)
+    ob = join("autoreply_p2_4_mesh", parts + binders + [strap, lock, shackle, handle, gavel, block])
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Office Artillery looks per path
+# Path colours from towers.ts: HEAVY DUTY #e5534b, RAPID FIRE #e5a04b, PRECISION #b48ce0.
+AT_H, AT_R, AT_P = "#e5534b", "#e5a04b", "#b48ce0"
+
+
+def b_artillery_p0_3():
+    """HEAVY DUTY tier 3, Industrial Tacker: a heavy red tacker on a stand, a sheet pinned flat."""
+    root = empty("artillery_p0_3")
+    h = 0.42
+    parts = side_desk("Desk", top="metal")
+    legs = [cyl(f"Leg{i}", 0.014, 0.2, loc=(0.09 * math.cos(a), 0.06 + 0.09 * math.sin(a), h), material=mat("metal"), verts=6, rot=(0.3 * math.sin(a), -0.3 * math.cos(a), 0)) for i, a in enumerate((0.5, 2.6, 4.7))]
+    body = box("Tacker", (0.15, 0.34, 0.12), loc=(0, 0.02, h + 0.18), material=mat(AT_H, rough=0.4), bevel=0.02)
+    head = box("TackerHead", (0.1, 0.1, 0.14), loc=(0, -0.16, h + 0.13), material=mat("metal_light", metal=0.8, rough=0.3), bevel=0.01)
+    grip = box("TackerGrip", (0.07, 0.07, 0.14), loc=(0, 0.14, h + 0.06), material=mat("plastic_black"), bevel=0.01)
+    sheet = box("Pinned", (0.22, 0.16, 0.004), loc=(-0.18, -0.2, h), material=mat("paper"), rot_z=0.3)
+    nails = [cyl(f"Nail{i}", 0.008, 0.03, loc=(-0.24 + i * 0.06, -0.22 + 0.02 * i, h), material=mat("metal_light", metal=0.9), verts=6) for i in range(3)]
+    ob = join("artillery_p0_3_mesh", parts + legs + [body, head, grip, sheet] + nails)
+    parent(ob, root)
+    return root
+
+
+def b_artillery_p0_4():
+    """HEAVY DUTY tier 4, Nail Gun: a long red gun on a turret, with a belt of nails."""
+    root = empty("artillery_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="metal")
+    turret = cyl("Turret", 0.18, 0.08, loc=(0, 0.04, h), material=mat("charcoal"), verts=14)
+    ring = cyl("TurretRing", 0.2, 0.02, loc=(0, 0.04, h + 0.08), material=mat(AT_H), verts=14)
+    gun = box("Gun", (0.18, 0.5, 0.16), loc=(0, -0.02, h + 0.1), material=mat(AT_H, rough=0.35), bevel=0.03)
+    barrel = cyl("Barrel", 0.04, 0.22, loc=(0, -0.26, h + 0.18), material=mat("metal_light", metal=0.85, rough=0.25), verts=12, rot=(math.pi / 2, 0, 0))
+    grip = box("Grip", (0.08, 0.09, 0.2), loc=(0, 0.18, h + 0.02), material=mat("plastic_black"), bevel=0.01)
+    belt = [box(f"Belt{i}", (0.05, 0.03, 0.06), loc=(0.14, 0.12 - i * 0.07, h + 0.14 - 0.03 * (i % 2)), material=mat("yellow" if i % 2 else "metal_light", metal=0.5)) for i in range(6)]
+    stripe = box("Stripe", (0.19, 0.4, 0.02), loc=(0, -0.02, h + 0.25), material=mat("plastic_black"))
+    ob = join("artillery_p0_4_mesh", parts + [turret, ring, gun, barrel, grip, stripe] + belt)
+    parent(ob, root)
+    return root
+
+
+def b_artillery_p1_3():
+    """RAPID FIRE tier 3, Staple Spray: three staplers fanned out on a turntable."""
+    root = empty("artillery_p1_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    plate = cyl("Turntable", 0.24, 0.03, loc=(0, 0.02, h), material=mat(AT_R), verts=16)
+    staplers = []
+    for i, a in enumerate((-0.5, 0, 0.5)):
+        st = _stapler(0, 0.02, h + 0.03, 0.85, mat("red", rough=0.4), mat("metal_light", metal=0.7, rough=0.3))
+        kit.tilt(st, rz=a, pivot=(0, 0.1, h))
+        staplers += st
+    box_ = box("StapleBox", (0.1, 0.06, 0.04), loc=(0.3, -0.24, h), material=mat("yellow"))
+    ob = join("artillery_p1_3_mesh", parts + [plate, box_] + staplers)
+    parent(ob, root)
+    return root
+
+
+def b_artillery_p1_4():
+    """RAPID FIRE tier 4, Auto Stapler: a stapler with a motor and a hopper full of staples."""
+    root = empty("artillery_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="metal")
+    parts += _stapler(0, 0.0, h, 1.3, mat(AT_R, rough=0.4), mat("metal_light", metal=0.7, rough=0.3))
+    motor = cyl("Motor", 0.07, 0.16, loc=(0.1, 0.2, h + 0.06), material=mat("charcoal"), verts=12, rot=(0, math.pi / 2, 0))
+    hopper = box("Hopper", (0.16, 0.16, 0.16), loc=(0, 0.06, h + 0.18), material=mat("window", rough=0.1, alpha=0.6), taper=1.4)
+    fill = box("Staples", (0.13, 0.13, 0.08), loc=(0, 0.06, h + 0.19), material=mat("metal_light", metal=0.8))
+    cable = cyl("Cable", 0.012, 0.3, loc=(0.2, 0.25, h), material=mat("plastic_black"), verts=6, rot=(0, 1.2, 0.4))
+    light = box("Light", (0.03, 0.03, 0.03), loc=(-0.12, 0.2, h + 0.12), material=mat(AT_R, emit=2.0))
+    ob = join("artillery_p1_4_mesh", parts + [motor, hopper, fill, cable, light])
+    parent(ob, root)
+    return root
+
+
+def b_artillery_p2_3():
+    """PRECISION tier 3, Expense the Staples: a stapler with a receipt spike and a stack of coins."""
+    root = empty("artillery_p2_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    parts += _stapler(-0.05, 0.02, h, 1.1, mat("red", rough=0.4), mat("metal_light", metal=0.7, rough=0.3))
+    spike_base = cyl("SpikeBase", 0.05, 0.02, loc=(0.24, 0.1, h), material=mat("plastic_black"), verts=10)
+    spike = cyl("Spike", 0.006, 0.18, loc=(0.24, 0.1, h + 0.02), material=mat("metal_light", metal=0.9), verts=6)
+    receipts = [box(f"Receipt{i}", (0.08, 0.1, 0.004), loc=(0.24, 0.1, h + 0.04 + i * 0.02), material=mat("paper"), rot_z=i * 0.6) for i in range(4)]
+    coins = [cyl(f"Coin{i}", 0.04, 0.012, loc=(0.24, -0.18, h + i * 0.013), material=mat("yellow", metal=0.7, rough=0.3), verts=12) for i in range(5)]
+    tag = box("Tag", (0.12, 0.012, 0.06), loc=(-0.24, -0.24, h), material=mat(AT_P), bevel=0.004)
+    ob = join("artillery_p2_3_mesh", parts + [spike_base, spike, tag] + receipts + coins)
+    parent(ob, root)
+    return root
+
+
+def b_artillery_p2_4():
+    """PRECISION tier 4, Supply Drop: a stapler on a crate that came down on a purple parachute."""
+    root = empty("artillery_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood")
+    crate = box("Crate", (0.36, 0.3, 0.2), loc=(0, 0.06, h), material=mat("cardboard"), bevel=0.01)
+    slats = [box(f"Slat{i}", (0.38, 0.32, 0.02), loc=(0, 0.06, h + 0.04 + i * 0.12), material=mat("wood_dark")) for i in range(2)]
+    parts += _stapler(0, 0.04, h + 0.2, 0.9, mat("red", rough=0.4), mat("metal_light", metal=0.7, rough=0.3))
+    chute = ball("Chute", 0.22, loc=(-0.1, 0.2, h + 0.36), material=mat(AT_P), subdiv=1, scale=(1.2, 1, 0.35))
+    lines = [cyl(f"Line{i}", 0.004, 0.24, loc=(-0.1 + dx, 0.2 + dy, h + 0.18), material=mat("plastic_white"), verts=4) for i, (dx, dy) in enumerate(((-0.15, 0), (0.15, 0), (0, -0.1)))]
+    coins = [cyl(f"Coin{i}", 0.04, 0.012, loc=(0.28, -0.22, h + i * 0.013), material=mat("yellow", metal=0.7, rough=0.3), verts=12) for i in range(4)]
+    ob = join("artillery_p2_4_mesh", parts + [crate, chute] + slats + lines + coins)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Headphones looks per path
+# Path colours from towers.ts: NOISE CANCELLING #6fcf7f, VOLUME #7fb6e3, FOCUS MUSIC #b48ce0.
+HP_N, HP_V, HP_F = "#6fcf7f", "#7fb6e3", "#b48ce0"
+
+
+def _speaker(name, x, y, z, w, d, hgt, body, cone):
+    cab = box(f"{name}Cab", (w, d, hgt), loc=(x, y, z), material=body, bevel=0.01)
+    woof = cyl(f"{name}Woof", w * 0.36, 0.02, loc=(x, y - d / 2, z + hgt * 0.35), material=cone, verts=14, rot=(math.pi / 2, 0, 0))
+    tweet = cyl(f"{name}Tweet", w * 0.16, 0.02, loc=(x, y - d / 2, z + hgt * 0.75), material=cone, verts=10, rot=(math.pi / 2, 0, 0))
+    return [cab, woof, tweet]
+
+
+def b_headphones_p0_3():
+    """NOISE CANCELLING tier 3, Studio Monitors: a green headset between two studio speakers."""
+    root = empty("headphones_p0_3")
+    h = 0.42
+    parts = side_desk("Desk", top="plastic_black")
+    parts += _speaker("L", -0.28, 0.06, h, 0.16, 0.16, 0.26, mat("plastic_black"), mat(HP_N, emit=0.5))
+    parts += _speaker("R", 0.28, 0.06, h, 0.16, 0.16, 0.26, mat("plastic_black"), mat(HP_N, emit=0.5))
+    stand = box("StandBase", (0.14, 0.12, 0.02), loc=(0, 0.04, h), material=mat("metal"))
+    pole = cyl("Pole", 0.012, 0.16, loc=(0, 0.04, h + 0.02), material=mat("metal"), verts=6)
+    parts += [stand, pole] + _headset(0, 0.04, h + 0.12, 1.0, mat(HP_N), mat("plastic_black"), mat(HP_N))
+    ob = join("headphones_p0_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_p0_4():
+    """NOISE CANCELLING tier 4, Soundproof Booth: three walls of green foam around a headset."""
+    root = empty("headphones_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_black")
+    walls = [box("BackWall", (0.7, 0.04, 0.42), loc=(0, 0.3, h), material=mat("charcoal")),
+             box("LeftWall", (0.04, 0.5, 0.42), loc=(-0.35, 0.07, h), material=mat("charcoal")),
+             box("RightWall", (0.04, 0.5, 0.42), loc=(0.35, 0.07, h), material=mat("charcoal"))]
+    foam = []
+    for i in range(4):
+        for j in range(3):
+            foam.append(box(f"Foam{i}{j}", (0.13, 0.03, 0.1), loc=(-0.24 + i * 0.16, 0.27, h + 0.04 + j * 0.13), material=mat(HP_N if (i + j) % 2 else "plant_dark"), taper=0.6))
+    sign = box("OnAir", (0.2, 0.02, 0.06), loc=(0, 0.3, h + 0.44), material=mat("red", emit=1.5))
+    parts += walls + foam + [sign] + _headset(0, 0.02, h + 0.04, 1.3, mat("plastic_black"), mat(HP_N), mat("plastic_black"))
+    ob = join("headphones_p0_4_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_p1_3():
+    """VOLUME tier 3, Drop the Bass: a big blue subwoofer with the headset on top."""
+    root = empty("headphones_p1_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    sub = box("Sub", (0.38, 0.32, 0.3), loc=(0, 0.04, h), material=mat("plastic_black"), bevel=0.015)
+    cone = cyl("Cone", 0.12, 0.03, loc=(0, -0.12, h + 0.15), material=mat(HP_V), verts=16, rot=(math.pi / 2, 0, 0), radius_top=0.05)
+    cap = cyl("DustCap", 0.04, 0.03, loc=(0, -0.14, h + 0.15), material=mat("charcoal"), verts=12, rot=(math.pi / 2, 0, 0))
+    trim = box("SubTrim", (0.39, 0.33, 0.03), loc=(0, 0.04, h + 0.27), material=mat(HP_V, emit=0.6))
+    parts += [sub, cone, cap, trim] + _headset(0, 0.04, h + 0.3, 1.0, mat(HP_V), mat("plastic_black"), mat("plastic_black"))
+    ob = join("headphones_p1_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_p1_4():
+    """VOLUME tier 4, Open-Plan Speakers: two tall speaker towers and a little mixer."""
+    root = empty("headphones_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="metal")
+    parts += _speaker("TL", -0.3, 0.1, h, 0.18, 0.18, 0.5, mat("plastic_black"), mat(HP_V, emit=0.6))
+    parts += _speaker("TR", 0.3, 0.1, h, 0.18, 0.18, 0.5, mat("plastic_black"), mat(HP_V, emit=0.6))
+    mixer = box("Mixer", (0.26, 0.18, 0.04), loc=(0, -0.12, h), material=mat("charcoal"), bevel=0.01, taper=0.9)
+    faders = [box(f"Fader{i}", (0.02, 0.06, 0.02), loc=(-0.09 + i * 0.045, -0.13, h + 0.04), material=mat(HP_V if i % 2 else "plastic_white")) for i in range(5)]
+    leds = [box(f"Led{i}", (0.015, 0.01, 0.015), loc=(-0.09 + i * 0.045, -0.04, h + 0.045), material=mat("plant" if i < 3 else "red", emit=2.0)) for i in range(5)]
+    ob = join("headphones_p1_4_mesh", parts + [mixer] + faders + leds)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_p2_3():
+    """FOCUS MUSIC tier 3, Deep Focus: the headset next to a purple lava lamp."""
+    root = empty("headphones_p2_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood")
+    lamp_base = cyl("LampBase", 0.06, 0.06, loc=(0.24, 0.08, h), material=mat("metal"), verts=10, radius_top=0.04)
+    glass = cyl("LampGlass", 0.04, 0.22, loc=(0.24, 0.08, h + 0.06), material=mat(HP_F, emit=0.8, alpha=0.7), verts=12, radius_top=0.025)
+    blobs = [ball(f"Blob{i}", 0.022, loc=(0.24, 0.08, h + 0.1 + i * 0.07), material=mat("orange", emit=1.2), subdiv=1) for i in range(2)]
+    lamp_top = cyl("LampTop", 0.03, 0.04, loc=(0.24, 0.08, h + 0.28), material=mat("metal"), verts=10)
+    stand = box("StandBase", (0.14, 0.12, 0.02), loc=(-0.1, 0.04, h), material=mat("wood_dark"))
+    pole = cyl("Pole", 0.012, 0.16, loc=(-0.1, 0.04, h + 0.02), material=mat("wood_dark"), verts=6)
+    parts += [lamp_base, glass, lamp_top, stand, pole] + blobs + _headset(-0.1, 0.04, h + 0.12, 1.0, mat(HP_F), mat("plastic_black"), mat(HP_F))
+    ob = join("headphones_p2_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_headphones_p2_4():
+    """FOCUS MUSIC tier 4, Flow State: a turntable with a spinning record and a purple glow."""
+    root = empty("headphones_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood")
+    deck = box("Deck", (0.42, 0.34, 0.06), loc=(-0.04, 0.04, h), material=mat("wood_dark"), bevel=0.01)
+    platter = cyl("Platter", 0.14, 0.02, loc=(-0.08, 0.04, h + 0.06), material=mat("metal"), verts=20)
+    vinyl = cyl("Vinyl", 0.13, 0.01, loc=(-0.08, 0.04, h + 0.08), material=mat("plastic_black", rough=0.3), verts=20)
+    label = cyl("Label", 0.045, 0.012, loc=(-0.08, 0.04, h + 0.08), material=mat(HP_F, emit=0.8), verts=12)
+    arm = box("ToneArm", (0.02, 0.22, 0.02), loc=(0.11, 0.06, h + 0.09), material=mat("metal_light", metal=0.8), rot_z=0.4)
+    glow = cyl("Glow", 0.36, 0.006, loc=(-0.04, 0.04, h + 0.005), material=mat(HP_F, emit=1.6), verts=24)
+    parts += [deck, platter, vinyl, label, arm, glow] + _headset(0.28, -0.18, h + 0.02, 0.8, mat(HP_F), mat("plastic_black"), mat(HP_F))
+    ob = join("headphones_p2_4_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Coffee Machine looks per path
+# Path colours from towers.ts: BREWING #d9a05b, EXPENSE CLAIM #7fb6e3, VENDING #6fcf7f.
+CF_B, CF_E, CF_V = "#d9a05b", "#7fb6e3", "#6fcf7f"
+
+
+def _espresso(x, y, z, s, body):
+    base = box("EBase", (0.34 * s, 0.26 * s, 0.05 * s), loc=(x, y, z), material=mat("metal"), bevel=0.01)
+    bod = box("EBody", (0.34 * s, 0.16 * s, 0.3 * s), loc=(x, y + 0.05 * s, z + 0.05 * s), material=body, bevel=0.015)
+    head = box("EHead", (0.08 * s, 0.08 * s, 0.05 * s), loc=(x, y - 0.06 * s, z + 0.2 * s), material=mat("metal_light", metal=0.8))
+    handle = box("EHandle", (0.03 * s, 0.14 * s, 0.025 * s), loc=(x, y - 0.14 * s, z + 0.2 * s), material=mat("plastic_black"))
+    cup = cyl("ECup", 0.03 * s, 0.05 * s, loc=(x, y - 0.06 * s, z + 0.05 * s), material=mat("plastic_white"), verts=10)
+    gauge = cyl("EGauge", 0.03 * s, 0.01, loc=(x + 0.1 * s, y - 0.03 * s, z + 0.27 * s), material=mat("plastic_white"), verts=10, rot=(math.pi / 2, 0, 0))
+    return [base, bod, head, handle, cup, gauge]
+
+
+def b_coffee_p0_3():
+    """BREWING tier 3, Barista Station: an espresso machine, a milk jug and a stack of cups."""
+    root = empty("coffee_p0_3")
+    h = 0.42
+    parts = side_desk("Desk", top="wood")
+    parts += _espresso(-0.05, 0.04, h, 1.0, mat(CF_B, rough=0.4))
+    jug = cyl("Jug", 0.04, 0.09, loc=(0.24, -0.12, h), material=mat("metal_light", metal=0.8, rough=0.25), verts=10, radius_top=0.035)
+    cups = [cyl(f"Cup{i}", 0.04, 0.05, loc=(0.24, 0.12, h + i * 0.04), material=mat("plastic_white"), verts=10, radius_top=0.045) for i in range(4)]
+    beans = box("Beans", (0.1, 0.06, 0.12), loc=(-0.3, -0.18, h), material=mat(CF_B), bevel=0.01)
+    ob = join("coffee_p0_3_mesh", parts + [jug, beans] + cups)
+    parent(ob, root)
+    return root
+
+
+def b_coffee_p0_4():
+    """BREWING tier 4, Coffee Subscription: a big machine and a stack of delivery boxes."""
+    root = empty("coffee_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood")
+    parts += _espresso(-0.1, 0.06, h, 1.3, mat(CF_B, rough=0.35))
+    boxes = []
+    for i, (x, y, z, r) in enumerate(((0.28, -0.1, 0, 0), (0.28, -0.1, 0.11, 0.3), (0.28, 0.14, 0, -0.2))):
+        boxes.append(box(f"Parcel{i}", (0.16, 0.14, 0.11), loc=(x, y, h + z), material=mat("cardboard"), bevel=0.005, rot_z=r))
+        boxes.append(box(f"Tape{i}", (0.165, 0.03, 0.112), loc=(x, y, h + z), material=mat(CF_B), rot_z=r))
+    ob = join("coffee_p0_4_mesh", parts + boxes)
+    parent(ob, root)
+    return root
+
+
+def b_coffee_p1_3():
+    """EXPENSE CLAIM tier 3, Corporate Card: the machine with a card terminal and a big blue card."""
+    root = empty("coffee_p1_3")
+    h = 0.42
+    parts = side_desk("Desk", top="plastic_white")
+    parts += _espresso(-0.1, 0.06, h, 0.9, mat("plastic_black"))
+    term = box("Terminal", (0.1, 0.14, 0.05), loc=(0.24, -0.04, h), material=mat("charcoal"), bevel=0.01, taper=0.8)
+    scr = box("TermScreen", (0.07, 0.05, 0.006), loc=(0.24, -0.02, h + 0.05), material=mat(CF_E, emit=1.2))
+    card = box("Card", (0.16, 0.1, 0.008), loc=(0.2, -0.24, h), material=mat(CF_E, rough=0.3), bevel=0.004, rot_z=0.25)
+    chip = box("Chip", (0.03, 0.025, 0.004), loc=(0.16, -0.24, h + 0.008), material=mat("yellow", metal=0.7), rot_z=0.25)
+    ob = join("coffee_p1_3_mesh", parts + [term, scr, card, chip])
+    parent(ob, root)
+    return root
+
+
+def b_coffee_p1_4():
+    """EXPENSE CLAIM tier 4, Offshore Account: the machine, a little safe and a palm tree."""
+    root = empty("coffee_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood")
+    parts += _espresso(-0.18, 0.06, h, 0.9, mat("plastic_black"))
+    safe = box("Safe", (0.2, 0.2, 0.2), loc=(0.22, 0.06, h), material=mat("charcoal", metal=0.5), bevel=0.012)
+    dial = cyl("Dial", 0.04, 0.02, loc=(0.22, -0.045, h + 0.12), material=mat(CF_E, metal=0.6, emit=0.4), verts=12, rot=(math.pi / 2, 0, 0))
+    sand = cyl("Sand", 0.08, 0.03, loc=(0.24, -0.24, h), material=mat("yellow"), verts=10)
+    trunk = cyl("Trunk", 0.012, 0.16, loc=(0.24, -0.24, h + 0.03), material=mat("wood"), verts=6)
+    leaves = [box(f"Leaf{i}", (0.12, 0.03, 0.01), loc=(0.24 + 0.05 * math.cos(a), -0.24 + 0.05 * math.sin(a), h + 0.19), material=mat("plant"), rot_z=a) for i, a in enumerate((0, 1.6, 3.2, 4.7))]
+    ob = join("coffee_p1_4_mesh", parts + [safe, dial, sand, trunk] + leaves)
+    parent(ob, root)
+    return root
+
+
+def b_coffee_p2_3():
+    """VENDING tier 3, Coffee Cart: a cart on wheels with a green awning."""
+    root = empty("coffee_p2_3")
+    cart = box("Cart", (0.62, 0.44, 0.36), loc=(0, 0, 0.08), material=mat("plastic_white"), bevel=0.02)
+    stripe = box("CartStripe", (0.63, 0.45, 0.06), loc=(0, 0, 0.28), material=mat(CF_V))
+    wheels = [cyl(f"Wheel{i}", 0.07, 0.03, loc=(x, y, 0.07), material=mat("plastic_black"), verts=12, rot=(0, math.pi / 2, 0)) for i, (x, y) in enumerate(((-0.33, -0.15), (-0.33, 0.15), (0.3, -0.15), (0.3, 0.15)))]
+    poles = [cyl(f"Pole{i}", 0.01, 0.34, loc=(x, 0.18, 0.44), material=mat("metal"), verts=6) for i, x in enumerate((-0.28, 0.28))]
+    awning = box("Awning", (0.7, 0.3, 0.03), loc=(0, 0.06, 0.78), material=mat(CF_V), bevel=0.005)
+    kit.tilt(awning, rx=-0.25)
+    parts = _espresso(-0.1, 0.06, 0.44, 0.8, mat(CF_B, rough=0.4))
+    cups = [cyl(f"Cup{i}", 0.035, 0.045, loc=(0.18, -0.08, 0.44 + i * 0.035), material=mat("plastic_white"), verts=10, radius_top=0.04) for i in range(3)]
+    ob = join("coffee_p2_3_mesh", [cart, stripe, awning] + wheels + poles + parts + cups)
+    parent(ob, root)
+    return root
+
+
+def b_coffee_p2_4():
+    """VENDING tier 4, Franchise: a little kiosk with a green sign on a pole."""
+    root = empty("coffee_p2_4")
+    counter = box("Counter", (0.8, 0.5, 0.42), loc=(0, 0.04, 0), material=mat(CF_V, rough=0.6), bevel=0.02)
+    top = box("CounterTop", (0.84, 0.54, 0.04), loc=(0, 0.04, 0.42), material=mat("wood"), bevel=0.01)
+    back = box("BackPanel", (0.8, 0.04, 0.5), loc=(0, 0.3, 0.46), material=mat("plastic_white"), bevel=0.01)
+    sign = box("Sign", (0.5, 0.04, 0.14), loc=(0, 0.3, 0.98), material=mat(CF_V, emit=1.0), bevel=0.01)
+    mark = cyl("SignCup", 0.04, 0.05, loc=(0, 0.27, 1.02), material=mat("plastic_white", emit=0.8), verts=10, rot=(math.pi / 2, 0, 0))
+    parts = _espresso(-0.18, 0.1, 0.46, 0.9, mat(CF_B, rough=0.4))
+    cups = [cyl(f"Cup{i}", 0.035, 0.045, loc=(0.2 + 0.08 * (i % 2), -0.08, 0.46 + (i // 2) * 0.04), material=mat("plastic_white"), verts=10, radius_top=0.04) for i in range(4)]
+    stripe = box("Stripe", (0.81, 0.51, 0.05), loc=(0, 0.04, 0.12), material=mat("plastic_white"))
+    ob = join("coffee_p2_4_mesh", [counter, top, back, sign, mark, stripe] + parts + cups)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Quick Reply looks per path
+QR_K, QR_S, QR_E = "#8fa0b4", "#7fb6e3", "#f2c641"
+
+
+def b_quickreply_p0_3():
+    """KEEP TYPING tier 3, Seen: a phone with a big bubble and two blue ticks."""
+    root = empty("quickreply_p0_3")
+    h = 0.42
+    parts = side_desk("Desk") + _phone(-0.1, 0.04, h, 1.1)
+    parts += _bubble(0.12, 0.0, h + 0.34, 0.24, "plastic_white", 0.5)
+    ticks = []
+    for i in range(2):
+        a = box(f"TickA{i}", (0.03, 0.034, 0.012), loc=(0.08 + i * 0.05, -0.004, h + 0.37), material=mat(QR_S, emit=1.2))
+        kit.tilt(a, ry=0.8)
+        b = box(f"TickB{i}", (0.06, 0.034, 0.012), loc=(0.105 + i * 0.05, -0.004, h + 0.385), material=mat(QR_S, emit=1.2))
+        kit.tilt(b, ry=-0.9)
+        ticks += [a, b]
+    ob = join("quickreply_p0_3_mesh", parts + ticks)
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_p0_4():
+    """KEEP TYPING tier 4, Typing Forever: a laptop under a tower of bubbles, dots in the top one."""
+    root = empty("quickreply_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _laptop(0, 0.04, h)
+    for i in range(3):
+        parts += _bubble(-0.12 + i * 0.12, 0.06, h + 0.3 + i * 0.13, 0.2, QR_K if i < 2 else "plastic_white", 0.4)
+    dots = [ball(f"Dot{i}", 0.016, loc=(0.06 + i * 0.045, 0.03, h + 0.57), material=mat("plastic_black"), subdiv=1) for i in range(3)]
+    ob = join("quickreply_p0_4_mesh", parts + dots)
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_p1_3():
+    """SHORTCUTS tier 3, Reply in Thread: a thread of blue bubbles stepping up from the phone."""
+    root = empty("quickreply_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _phone(-0.2, 0.04, h)
+    for i in range(4):
+        parts += _bubble(-0.06 + i * 0.09, 0.02, h + 0.22 + i * 0.1, 0.16, QR_S if i % 2 else "plastic_white", 0.5)
+    line = box("ThreadLine", (0.012, 0.012, 0.32), loc=(-0.1, 0.03, h + 0.2), material=mat(QR_S))
+    ob = join("quickreply_p1_3_mesh", parts + [line])
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_p1_4():
+    """SHORTCUTS tier 4, Autocomplete: a mechanical keyboard with glowing keys and a long bubble."""
+    root = empty("quickreply_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_black")
+    kb = box("Keyboard", (0.5, 0.18, 0.03), loc=(0, -0.08, h), material=mat("charcoal"), bevel=0.008)
+    keys = [box(f"Key{r}{c}", (0.04, 0.035, 0.02), loc=(-0.2 + c * 0.05, -0.14 + r * 0.045, h + 0.03), material=mat(QR_S if (r + c) % 4 == 0 else "plastic_black", emit=1.5 if (r + c) % 4 == 0 else 0)) for r in range(3) for c in range(9)]
+    parts += [kb] + keys + _phone(0.0, 0.18, h, 0.9)
+    parts += _bubble(0.05, 0.12, h + 0.38, 0.4, QR_S, 0.8)
+    ob = join("quickreply_p1_4_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_p2_3():
+    """EMOJI tier 3, Thumbs-Down: a yellow bubble with a thumb pointing down."""
+    root = empty("quickreply_p2_3")
+    h = 0.42
+    parts = side_desk("Desk") + _phone(-0.12, 0.06, h)
+    parts += _bubble(0.06, 0.02, h + 0.38, 0.2, QR_E, 0.5)
+    fist = box("Fist", (0.06, 0.036, 0.05), loc=(0.06, 0.0, h + 0.4), material=mat("orange"), bevel=0.012)
+    thumb = box("ThumbDown", (0.025, 0.036, 0.05), loc=(0.07, 0.0, h + 0.36), material=mat("orange"), bevel=0.008)
+    ob = join("quickreply_p2_3_mesh", parts + [fist, thumb])
+    parent(ob, root)
+    return root
+
+
+def b_quickreply_p2_4():
+    """EMOJI tier 4, Party Parrot: a little parrot on the phone stand, confetti on the desk."""
+    root = empty("quickreply_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _phone(-0.18, 0.06, h)
+    body = ball("ParrotBody", 0.07, loc=(0.12, 0.04, h + 0.12), material=mat("plant"), subdiv=1, scale=(0.8, 0.8, 1.2))
+    head = ball("ParrotHead", 0.05, loc=(0.12, 0.02, h + 0.24), material=mat("red"), subdiv=1)
+    beak = box("Beak", (0.03, 0.04, 0.02), loc=(0.12, -0.03, h + 0.23), material=mat(QR_E), taper=0.3)
+    wing = box("Wing", (0.02, 0.08, 0.1), loc=(0.18, 0.04, h + 0.1), material=mat("blue"), bevel=0.01)
+    perch = cyl("Perch", 0.012, 0.2, loc=(0.12, 0.04, h), material=mat("wood"), verts=6)
+    confetti = [box(f"Conf{i}", (0.025, 0.025, 0.004), loc=(-0.3 + (i * 29 % 60) / 100, -0.25 + (i * 17 % 20) / 100, h), material=mat([QR_E, "red", "blue", "plant"][i % 4]), rot_z=i) for i in range(10)]
+    ob = join("quickreply_p2_4_mesh", parts + [body, head, beak, wing, perch] + confetti)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Thumbtacks looks per path
+TT_S, TT_U, TT_H = "#d24b4b", "#d9a05b", "#f2c641"
+
+
+def b_thumbtacks_p0_3():
+    """SHARPER tier 3, Drawing Pins: a cork board with big red drawing pins, more on the desk."""
+    root = empty("thumbtacks_p0_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    board = _corkboard(0, 0.22, h, 0.5, 0.36, pins=4)
+    kit.tilt(board, rx=-0.18, pivot=(0, 0.22, h))
+    big = [cyl(f"BigPin{i}", 0.04, 0.03, loc=(-0.15 + i * 0.15, -0.12 + (i % 2) * 0.06, h + 0.01), material=mat(TT_S, rough=0.35), verts=12) for i in range(3)]
+    spikes = [cyl(f"BigSpike{i}", 0.006, 0.04, loc=(-0.15 + i * 0.15, -0.12 + (i % 2) * 0.06, h + 0.04), material=mat("metal_light", metal=0.9), verts=6) for i in range(3)]
+    ob = join("thumbtacks_p0_3_mesh", parts + board + big + spikes)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_p0_4():
+    """SHARPER tier 4, Tack Carpet: a red mat on the desk, bristling with tacks."""
+    root = empty("thumbtacks_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood_dark")
+    mat_ = box("TackMat", (0.72, 0.6, 0.015), loc=(0, 0, h), material=mat(TT_S, rough=0.9), bevel=0.005)
+    tacks = []
+    for i in range(5):
+        tacks += _tacks(-0.24 + i * 0.12, 0.0, h + 0.015, 5, 0.2, seed=10 + i)
+    ob = join("thumbtacks_p0_4_mesh", parts + [mat_] + tacks)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_p1_3():
+    """SUPPLY tier 3, Bulk Order: boxes of tacks stacked up, one spilling over the desk."""
+    root = empty("thumbtacks_p1_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    boxes = []
+    for i, (x, y, z) in enumerate(((-0.15, 0.1, 0), (0.1, 0.1, 0), (-0.03, 0.1, 0.1))):
+        boxes.append(box(f"Box{i}", (0.2, 0.16, 0.1), loc=(x, y, h + z), material=mat("cardboard"), bevel=0.005))
+        boxes.append(box(f"Label{i}", (0.1, 0.004, 0.05), loc=(x, y - 0.082, h + z + 0.025), material=mat(TT_U)))
+    spill = box("Spilled", (0.16, 0.12, 0.06), loc=(0.2, -0.16, h), material=mat("cardboard"), bevel=0.005, rot_z=0.4)
+    kit.tilt(spill, ry=0.6)
+    ob = join("thumbtacks_p1_3_mesh", parts + boxes + [spill] + _tacks(0.05, -0.2, h, 8, 0.12, seed=5))
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_p1_4():
+    """SUPPLY tier 4, Supply Closet: a tall cabinet with open doors and shelves full of boxes."""
+    root = empty("thumbtacks_p1_4")
+    # Open at the front (-Y): back, sides, top and bottom, so the shelves are on show.
+    m_ = mat("metal_light")
+    cab = box("CabBack", (0.62, 0.03, 1.0), loc=(0, 0.25, 0), material=m_)
+    back = join("CabSides", [box("CabL", (0.03, 0.4, 1.0), loc=(-0.295, 0.06, 0), material=m_),
+                             box("CabR", (0.03, 0.4, 1.0), loc=(0.295, 0.06, 0), material=m_),
+                             box("CabTop", (0.62, 0.4, 0.03), loc=(0, 0.06, 0.97), material=m_),
+                             box("CabBottom", (0.62, 0.4, 0.04), loc=(0, 0.06, 0), material=m_)])
+    shelves = []
+    for j in range(3):
+        z = 0.08 + j * 0.3
+        shelves.append(box(f"Shelf{j}", (0.56, 0.36, 0.02), loc=(0, 0.04, z), material=mat("metal")))
+        for i in range(3):
+            shelves.append(box(f"SBox{j}{i}", (0.15, 0.2, 0.12), loc=(-0.18 + i * 0.18, 0.0, z + 0.02), material=mat(TT_U if (i + j) % 2 else "cardboard"), bevel=0.004))
+    doors = []
+    for i, sx in enumerate((-1, 1)):
+        d = box(f"Door{i}", (0.3, 0.02, 0.96), loc=(sx * 0.15, -0.14, 0.02), material=mat("metal_light"))
+        kit.tilt(d, rz=sx * 1.3, pivot=(sx * 0.3, -0.14, 0.5))
+        doors.append(d)
+    ob = join("thumbtacks_p1_4_mesh", [cab, back] + shelves + doors)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_p2_3():
+    """HEALTH AND SAFETY tier 3, Upturned Plug: a power strip with a plug pins-up and a warning sign."""
+    root = empty("thumbtacks_p2_3")
+    h = 0.42
+    parts = side_desk("Desk")
+    strip = box("Strip", (0.4, 0.08, 0.04), loc=(-0.05, 0.08, h), material=mat("plastic_white"), bevel=0.01)
+    sockets = [box(f"Sock{i}", (0.05, 0.05, 0.005), loc=(-0.18 + i * 0.09, 0.08, h + 0.04), material=mat("charcoal")) for i in range(4)]
+    plug = box("Plug", (0.08, 0.06, 0.05), loc=(0.15, -0.15, h), material=mat("plastic_black"), bevel=0.01)
+    prongs = [box(f"Prong{i}", (0.012, 0.012, 0.05), loc=(0.13 + i * 0.04, -0.15, h + 0.05), material=mat("yellow", metal=0.8)) for i in range(2)]
+    sign = box("Warn", (0.16, 0.02, 0.16), loc=(-0.24, -0.16, h + 0.05), material=mat(TT_H), rot_z=0.3)
+    kit.tilt(sign, ry=math.pi / 4)
+    mark = box("WarnMark", (0.02, 0.024, 0.07), loc=(-0.24, -0.17, h + 0.1), material=mat("plastic_black"), rot_z=0.3)
+    ob = join("thumbtacks_p2_3_mesh", parts + [strip, plug, sign, mark] + sockets + prongs)
+    parent(ob, root)
+    return root
+
+
+def b_thumbtacks_p2_4():
+    """HEALTH AND SAFETY tier 4, Risk Assessment: a yellow hard hat, a clipboard and a warning cone."""
+    root = empty("thumbtacks_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood")
+    hat = ball("HardHat", 0.12, loc=(-0.15, 0.08, h + 0.02), material=mat(TT_H, rough=0.4), subdiv=1, scale=(1, 1.1, 0.7))
+    brim = cyl("Brim", 0.15, 0.015, loc=(-0.15, 0.06, h + 0.02), material=mat(TT_H, rough=0.4), verts=14)
+    clip = box("Clipboard", (0.18, 0.24, 0.015), loc=(0.15, -0.08, h), material=mat("wood"), bevel=0.004, rot_z=-0.2)
+    sheet = box("ClipSheet", (0.15, 0.2, 0.004), loc=(0.15, -0.09, h + 0.015), material=mat("paper"), rot_z=-0.2)
+    lines = [box(f"Check{i}", (0.1, 0.03, 0.004), loc=(0.16, -0.14 + i * 0.05, h + 0.02), material=mat(TT_H if i == 0 else "charcoal"), rot_z=-0.2) for i in range(3)]
+    cone = cyl("Cone", 0.07, 0.2, loc=(0.3, 0.2, h), material=mat("orange"), verts=10, radius_top=0.015)
+    band = cyl("ConeBand", 0.05, 0.04, loc=(0.3, 0.2, h + 0.08), material=mat("plastic_white"), verts=10, radius_top=0.04)
+    ob = join("thumbtacks_p2_4_mesh", parts + [hat, brim, clip, sheet, cone, band] + lines)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Self-Service looks per path
+SS_K, SS_C, SS_P = "#3fa7a0", "#7fb6e3", "#8fa0b4"
+
+
+def b_selfservice_p0_3():
+    """KNOWLEDGE BASE tier 3, Send to Service Desk: a kiosk with a service bell and a magnifier."""
+    root = empty("selfservice_p0_3")
+    parts = _kiosk(accent=SS_K)
+    shelf = box("Shelf", (0.3, 0.16, 0.03), loc=(0.0, -0.18, 0.62), material=mat("plastic_black"))
+    bell = ball("Bell", 0.05, loc=(-0.06, -0.2, 0.65), material=mat("yellow", metal=0.8, rough=0.25), subdiv=1, scale=(1, 1, 0.7))
+    knob = ball("BellKnob", 0.012, loc=(-0.06, -0.2, 0.7), material=mat("metal_light", metal=0.8), subdiv=1)
+    lens = cyl("Lens", 0.04, 0.012, loc=(0.08, -0.2, 0.66), material=mat("window", rough=0.1, alpha=0.6), verts=12, rot=(math.pi / 2, 0, 0))
+    rim = cyl("LensRim", 0.045, 0.01, loc=(0.08, -0.205, 0.66), material=mat(SS_K), verts=12, rot=(math.pi / 2, 0, 0))
+    ob = join("selfservice_p0_3_mesh", parts + [shelf, bell, knob, lens, rim])
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_p0_4():
+    """KNOWLEDGE BASE tier 4, Knowledge Base: a kiosk beside a shelf of teal binders."""
+    root = empty("selfservice_p0_4")
+    parts = _kiosk(w=0.32, accent=SS_K)
+    for k in parts:
+        k.location.x -= 0.0
+    case = box("Bookcase", (0.2, 0.3, 0.8), loc=(0.32, 0.06, 0), material=mat("wood_dark"), bevel=0.01)
+    books = []
+    for j in range(3):
+        for i in range(3):
+            books.append(box(f"Book{j}{i}", (0.05, 0.22, 0.18), loc=(0.27 + i * 0.05, 0.02, 0.06 + j * 0.25), material=mat(SS_K if (i + j) % 2 else "navy"), bevel=0.004))
+    ob = join("selfservice_p0_4_mesh", parts + [case] + books)
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_p1_3():
+    """CHATBOT tier 3, Ticket Queue: a kiosk behind queue posts with a blue band, and a number."""
+    root = empty("selfservice_p1_3")
+    parts = _kiosk(accent=SS_C)
+    posts = []
+    for i, x in enumerate((-0.32, 0.32)):
+        posts.append(cyl(f"QBase{i}", 0.05, 0.02, loc=(x, -0.26, 0), material=mat("plastic_black"), verts=10))
+        posts.append(cyl(f"QPost{i}", 0.015, 0.36, loc=(x, -0.26, 0.02), material=mat("metal_light", metal=0.7), verts=8))
+    band = box("QBand", (0.64, 0.01, 0.04), loc=(0, -0.26, 0.32), material=mat(SS_C, emit=0.5))
+    num = box("Number", (0.2, 0.04, 0.1), loc=(0, 0.06, 1.18), material=mat("plastic_black"), bevel=0.01)
+    digit = box("Digit", (0.12, 0.042, 0.05), loc=(0, 0.06, 1.2), material=mat("red", emit=2.0))
+    ob = join("selfservice_p1_3_mesh", parts + posts + [band, num, digit])
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_p1_4():
+    """CHATBOT tier 4, AI Assistant: a kiosk with a friendly robot head on top."""
+    root = empty("selfservice_p1_4")
+    parts = _kiosk(accent=SS_C, screen="screen_glow")
+    head = box("RobotHead", (0.24, 0.18, 0.18), loc=(0, 0.1, 1.18), material=mat("plastic_white"), bevel=0.03)
+    eyes = [ball(f"Eye{i}", 0.025, loc=(x, 0.0, 1.27), material=mat(SS_C, emit=2.0), subdiv=1) for i, x in enumerate((-0.05, 0.05))]
+    mouth = box("Mouth", (0.08, 0.01, 0.015), loc=(0, 0.0, 1.22), material=mat("charcoal"))
+    antenna = cyl("Antenna", 0.008, 0.1, loc=(0, 0.1, 1.36), material=mat("metal"), verts=6)
+    tip = ball("AntTip", 0.02, loc=(0, 0.1, 1.47), material=mat("red", emit=2.0), subdiv=1)
+    ob = join("selfservice_p1_4_mesh", parts + [head, mouth, antenna, tip] + eyes)
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_p2_3():
+    """PORTAL tier 3, Search Bar: a wide kiosk screen with a search bar and a magnifier on top."""
+    root = empty("selfservice_p2_3")
+    parts = _kiosk(w=0.44, accent=SS_P)
+    bar = box("SearchBar", (0.3, 0.01, 0.05), loc=(0, -0.09, 1.1), material=mat("plastic_white", emit=1.2))
+    kit.tilt(bar, rx=0.35, pivot=(0, 0.0, 1.01))
+    ring = cyl("MagRing", 0.08, 0.02, loc=(0.0, 0.08, 1.25), material=mat(SS_P), verts=14, rot=(math.pi / 2, 0, 0))
+    glass = cyl("MagGlass", 0.065, 0.012, loc=(0.0, 0.075, 1.25), material=mat("window", rough=0.1, alpha=0.6), verts=14, rot=(math.pi / 2, 0, 0))
+    handle = box("MagHandle", (0.03, 0.02, 0.14), loc=(0.07, 0.08, 1.1), material=mat("plastic_black"), rot_z=0)
+    kit.tilt(handle, ry=0.6, pivot=(0.07, 0.08, 1.18))
+    ob = join("selfservice_p2_3_mesh", parts + [bar, ring, glass, handle])
+    parent(ob, root)
+    return root
+
+
+def b_selfservice_p2_4():
+    """PORTAL tier 4, Closed as Resolved: a kiosk, a stamp, and a stack of tickets with green ticks."""
+    root = empty("selfservice_p2_4")
+    parts = _kiosk(accent=SS_P)
+    stand = box("Table", (0.32, 0.24, 0.5), loc=(0.34, -0.06, 0), material=mat("metal_light"), bevel=0.01)
+    stack = [box(f"Ticket{i}", (0.16, 0.12, 0.012), loc=(0.34, -0.08, 0.5 + i * 0.013), material=mat("paper"), rot_z=0.15 * (i % 3)) for i in range(6)]
+    tick = box("Tick", (0.1, 0.06, 0.004), loc=(0.34, -0.08, 0.58), material=mat("plant", emit=1.0))
+    stamp = cyl("Stamp", 0.035, 0.08, loc=(0.42, 0.02, 0.5), material=mat("plastic_black"), verts=10)
+    knob = ball("StampKnob", 0.03, loc=(0.42, 0.02, 0.6), material=mat(SS_P), subdiv=1)
+    ob = join("selfservice_p2_4_mesh", parts + [stand, tick, stamp, knob] + stack)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Keyboard Smash looks per path
+KS_S, KS_C, KS_H = "#e5534b", "#7fb6e3", "#f2c641"
+
+
+def b_keyboardsmash_p0_3():
+    """SLAM tier 3, Ctrl+Z: a keyboard with one big red Z, the screen showing an undo arrow."""
+    root = empty("keyboardsmash_p0_3")
+    h = 0.42
+    parts = side_desk("Desk") + _monitor(0, 0.18, h, screen_key="screen", emit=1.0) + _keyboard(0, -0.12, h, name="Kb")
+    z = box("ZKey", (0.1, 0.1, 0.06), loc=(0.12, -0.12, h + 0.025), material=mat(KS_S, emit=0.6), bevel=0.01)
+    arc = box("Undo", (0.14, 0.02, 0.03), loc=(0, 0.15, h + 0.27), material=mat(KS_S, emit=1.2))
+    tip = box("UndoTip", (0.04, 0.02, 0.07), loc=(-0.08, 0.15, h + 0.25), material=mat(KS_S, emit=1.2), taper=0.1)
+    ob = join("keyboardsmash_p0_3_mesh", parts + [z, arc, tip])
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_p0_4():
+    """SLAM tier 4, Keyboard Warrior: a glowing keyboard, keys flying, a red banner on a pole."""
+    root = empty("keyboardsmash_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_black") + _keyboard(0, -0.08, h, w=0.56, rgb=True, name="Kb") + _flying_keys(h, seed=1)
+    pole = cyl("BannerPole", 0.012, 0.5, loc=(0.34, 0.24, h), material=mat("metal"), verts=6)
+    flag = box("Banner", (0.02, 0.2, 0.14), loc=(0.34, 0.14, h + 0.34), material=mat(KS_S), bevel=0.004)
+    ob = join("keyboardsmash_p0_4_mesh", parts + [pole, flag])
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_p1_3():
+    """CAPS LOCK tier 3, Sharp Keycaps: every key a little blue spike."""
+    root = empty("keyboardsmash_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _monitor(0, 0.18, h, screen_key="screen", emit=1.0)
+    base = box("KbBase", (0.44, 0.16, 0.025), loc=(0, -0.12, h), material=mat("plastic_black"), bevel=0.006)
+    spikes = [box(f"Spike{r}{c}", (0.035, 0.035, 0.05), loc=(-0.19 + c * 0.0475, -0.17 + r * 0.05, h + 0.025), material=mat(KS_C, metal=0.5, rough=0.3), taper=0.05) for r in range(3) for c in range(9)]
+    ob = join("keyboardsmash_p1_3_mesh", parts + [base] + spikes)
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_p1_4():
+    """CAPS LOCK tier 4, Server Rack: a black rack full of blue lights, a keyboard on its shelf."""
+    root = empty("keyboardsmash_p1_4")
+    rack = box("Rack", (0.56, 0.5, 0.95), loc=(0, 0.04, 0), material=mat("plastic_black"), bevel=0.01)
+    units = []
+    for j in range(6):
+        z = 0.08 + j * 0.14
+        units.append(box(f"Unit{j}", (0.5, 0.02, 0.1), loc=(0, -0.215, z), material=mat("charcoal")))
+        units += [box(f"Led{j}{i}", (0.02, 0.022, 0.015), loc=(0.16 + i * 0.03, -0.22, z + 0.04), material=mat(KS_C if (i + j) % 3 else "plant", emit=2.0)) for i in range(3)]
+    shelf = box("Shelf", (0.5, 0.2, 0.02), loc=(0, -0.32, 0.5), material=mat("metal"))
+    kb = _keyboard(0, -0.32, 0.52, w=0.4, name="RackKb")
+    ob = join("keyboardsmash_p1_4_mesh", [rack, shelf] + units + kb)
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_p2_3():
+    """SHORTCUTS tier 3, Autorepeat: two keyboards stacked, a yellow repeat arrow over them."""
+    root = empty("keyboardsmash_p2_3")
+    h = 0.42
+    parts = side_desk("Desk") + _keyboard(0, -0.06, h, name="KbA") + _keyboard(0.02, -0.04, h + 0.04, name="KbB")
+    ring = [box(f"Rep{i}", (0.06, 0.02, 0.025), loc=(0.12 * math.cos(a), 0.15, h + 0.3 + 0.12 * math.sin(a)), material=mat(KS_H, emit=1.0), rot_z=0) for i, a in enumerate([k * TAU / 7 for k in range(6)])]
+    for i, r in enumerate(ring):
+        kit.tilt(r, ry=-[k * TAU / 7 for k in range(6)][i])
+    ob = join("keyboardsmash_p2_3_mesh", parts + ring)
+    parent(ob, root)
+    return root
+
+
+def b_keyboardsmash_p2_4():
+    """SHORTCUTS tier 4, Any Key: one giant yellow key on the desk."""
+    root = empty("keyboardsmash_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74)
+    key = box("AnyKey", (0.42, 0.36, 0.12), loc=(0, 0, h), material=mat(KS_H, rough=0.5), bevel=0.04, taper=0.85)
+    label = box("AnyLabel", (0.24, 0.06, 0.006), loc=(0, -0.02, h + 0.12), material=mat("plastic_black"))
+    stem = box("Stem", (0.3, 0.26, 0.04), loc=(0, 0, h - 0.0), material=mat("charcoal"))
+    ob = join("keyboardsmash_p2_4_mesh", parts + [stem, key, label])
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Office Chair looks per path
+CH_R, CH_O, CH_S = "#e5534b", "#7fb6e3", "#6fcf7f"
+
+
+def b_chair_p0_3():
+    """RAMMING tier 3, Executive Chair: tall brown leather, red piping."""
+    root = empty("chair_p0_3")
+    parts = _chair("wood_dark", "wood_dark", arms=True, s=1.1)
+    trim = box("Piping", (0.47, 0.09, 0.03), loc=(0, 0.22, 0.88), material=mat(CH_R))
+    ob = join("chair_p0_3_mesh", parts + [trim])
+    parent(ob, root)
+    return root
+
+
+def b_chair_p0_4():
+    """RAMMING tier 4, Racing Chair: red bucket seat with wings."""
+    root = empty("chair_p0_4")
+    ob = join("chair_p0_4_mesh", _chair(CH_R, "plastic_black", racing=True, s=1.15))
+    parent(ob, root)
+    return root
+
+
+def b_chair_p1_3():
+    """ROLLING tier 3, Swivel: a blue chair with motion lines round its feet."""
+    root = empty("chair_p1_3")
+    parts = _chair(CH_O, "navy", arms=True)
+    lines = [box(f"Swish{i}", (0.14, 0.02, 0.01), loc=(0.34 * math.cos(a), 0.34 * math.sin(a), 0.03), material=mat(CH_O, emit=1.0), rot_z=a + math.pi / 2) for i, a in enumerate((0.3, 1.5, 2.7, 3.9, 5.1))]
+    ob = join("chair_p1_3_mesh", parts + lines)
+    parent(ob, root)
+    return root
+
+
+def b_chair_p1_4():
+    """ROLLING tier 4, Office Olympics: a blue chair with a gold medal and a chequered flag."""
+    root = empty("chair_p1_4")
+    parts = _chair(CH_O, CH_O, arms=True, s=1.05)
+    medal = cyl("Medal", 0.06, 0.015, loc=(0, -0.05, 0.55), material=mat("yellow", metal=0.8, rough=0.25), verts=14, rot=(math.pi / 2, 0, 0))
+    ribbon = box("Ribbon", (0.03, 0.01, 0.22), loc=(0, -0.04, 0.6), material=mat("red"))
+    pole = cyl("FlagPole", 0.01, 0.8, loc=(0.32, 0.25, 0), material=mat("metal"), verts=6)
+    flag = [box(f"Chk{i}{j}", (0.05, 0.01, 0.05), loc=(0.35 + i * 0.05, 0.25, 0.65 + j * 0.05), material=mat("plastic_black" if (i + j) % 2 else "plastic_white")) for i in range(3) for j in range(2)]
+    ob = join("chair_p1_4_mesh", parts + [medal, ribbon, pole] + flag)
+    parent(ob, root)
+    return root
+
+
+def b_chair_p2_3():
+    """STURDY tier 3, Ergonomic: a green chair with a headrest and a lumbar cushion."""
+    root = empty("chair_p2_3")
+    parts = _chair(CH_S, "charcoal", arms=True)
+    head = box("Headrest", (0.26, 0.07, 0.12), loc=(0, 0.25, 0.9), material=mat(CH_S), bevel=0.03)
+    lumbar = box("Lumbar", (0.3, 0.06, 0.1), loc=(0, 0.15, 0.5), material=mat(CH_S), bevel=0.03)
+    ob = join("chair_p2_3_mesh", parts + [head, lumbar])
+    parent(ob, root)
+    return root
+
+
+def b_chair_p2_4():
+    """STURDY tier 4, Throne: a tall green-and-gold seat with a crown on the back."""
+    root = empty("chair_p2_4")
+    parts = _chair(CH_S, CH_S, arms=True, s=1.15)
+    back = box("ThroneBack", (0.5, 0.06, 0.62), loc=(0, 0.27, 0.5), material=mat("yellow", metal=0.6, rough=0.35), bevel=0.02, taper=0.8)
+    crown = [box(f"Crown{i}", (0.05, 0.04, 0.09), loc=(-0.12 + i * 0.08, 0.27, 1.12), material=mat("yellow", metal=0.8, rough=0.25), taper=0.2) for i in range(4)]
+    band = box("CrownBand", (0.3, 0.045, 0.04), loc=(0, 0.27, 1.1), material=mat("yellow", metal=0.8, rough=0.25))
+    ob = join("chair_p2_4_mesh", parts + [back, band] + crown)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Reply All looks per path
+RA_U, RA_T, RA_E = "#e5534b", "#7fb6e3", "#e2557a"
+
+
+def b_replyall_p0_3():
+    """URGENT tier 3: a laptop, red envelopes and a big red exclamation mark."""
+    root = empty("replyall_p0_3")
+    h = 0.42
+    parts = side_desk("Desk") + _laptop(-0.06, 0.05, h) + _envelope_fan(-0.06, 0.05, h + 0.25, 3, 1.0)
+    bar = box("Bang", (0.05, 0.05, 0.18), loc=(0.28, 0.0, h + 0.1), material=mat(RA_U, emit=1.0), bevel=0.01)
+    dot = box("BangDot", (0.05, 0.05, 0.05), loc=(0.28, 0.0, h + 0.02), material=mat(RA_U, emit=1.0), bevel=0.01)
+    ob = join("replyall_p0_3_mesh", parts + [bar, dot])
+    parent(ob, root)
+    return root
+
+
+def b_replyall_p0_4():
+    """URGENT tier 4, Escalated: a red siren on the monitor and envelopes flying out."""
+    root = empty("replyall_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _monitor(0, 0.15, h, screen_key=RA_U, emit=1.2) + _envelope_fan(0, 0.12, h + 0.42, 5, 1.6, seed=2)
+    siren = cyl("Siren", 0.06, 0.1, loc=(0.0, 0.17, h + 0.4), material=mat(RA_U, emit=2.0), verts=12, radius_top=0.045)
+    ob = join("replyall_p0_4_mesh", parts + [siren])
+    parent(ob, root)
+    return root
+
+
+def b_replyall_p1_3():
+    """THREAD tier 3, Reply Storm: two monitors, a wide fan of blue envelopes."""
+    root = empty("replyall_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _monitor(-0.18, 0.15, h, w=0.3, rot=0.3, screen_key=RA_T, emit=1.0) + _monitor(0.18, 0.15, h, w=0.3, rot=-0.3, screen_key=RA_T, emit=1.0)
+    parts += _envelope_fan(0, 0.05, h + 0.4, 5, 1.4, seed=3)
+    ob = join("replyall_p1_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_replyall_p1_4():
+    """THREAD tier 4, Infinite Loop: envelopes chasing each other in a blue ring."""
+    root = empty("replyall_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _laptop(0, -0.05, h)
+    ring = cyl("Loop", 0.24, 0.012, loc=(0, 0.1, h + 0.36), material=mat(RA_T, emit=1.4), verts=24, rot=(math.pi / 2, 0, 0), radius_top=0.24)
+    for i in range(8):
+        a = i * TAU / 8
+        parts += _envelope(0.24 * math.cos(a), 0.09, h + 0.36 + 0.24 * math.sin(a), scale=1.0, tilt=a)
+    ob = join("replyall_p1_4_mesh", parts + [ring])
+    parent(ob, root)
+    return root
+
+
+def b_replyall_p2_3():
+    """EVERYONE tier 3, Company-Wide Email: a monitor and a pink megaphone."""
+    root = empty("replyall_p2_3")
+    h = 0.42
+    parts = side_desk("Desk") + _monitor(-0.1, 0.15, h, w=0.32, screen_key=RA_E, emit=1.0)
+    horn = cyl("Megaphone", 0.03, 0.22, loc=(0.24, -0.02, h + 0.12), material=mat(RA_E), verts=12, radius_top=0.09, rot=(math.pi / 2, 0, 0.3))
+    grip = box("MegaGrip", (0.03, 0.04, 0.1), loc=(0.24, 0.06, h + 0.02), material=mat("plastic_black"))
+    ob = join("replyall_p2_3_mesh", parts + [horn, grip])
+    parent(ob, root)
+    return root
+
+
+def b_replyall_p2_4():
+    """EVERYONE tier 4, All Staff: a wide pink screen full of little faces."""
+    root = empty("replyall_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _monitor(0, 0.15, h, w=0.66, hgt=0.4, screen_key=RA_E, emit=0.8)
+    faces = [ball(f"Face{r}{c}", 0.022, loc=(-0.24 + c * 0.08, 0.12, h + 0.17 + r * 0.08), material=mat("#d9a87a", emit=0.3), subdiv=1, scale=(1, 0.4, 1)) for r in range(3) for c in range(7)]
+    ob = join("replyall_p2_4_mesh", parts + faces)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Delegation looks per path
+DL_E, DL_D, DL_P = "#f2c641", "#7fb6e3", "#8fa0b4"
+
+
+def _pawn(name, x, y, z, col):
+    return [cyl(f"{name}Base", 0.03, 0.02, loc=(x, y, z), material=mat(col), verts=10), cyl(f"{name}Body", 0.02, 0.06, loc=(x, y, z + 0.02), material=mat(col), verts=10, radius_top=0.012), ball(f"{name}Head", 0.022, loc=(x, y, z + 0.09), material=mat(col), subdiv=1)]
+
+
+def b_delegation_p0_3():
+    """ESCALATE tier 3, Steering Group: a round table of little yellow pawns around a tray."""
+    root = empty("delegation_p0_3")
+    h = 0.42
+    parts = side_desk("Desk") + _tray(0, 0.02, h + 0.02, folders=2, seed=11)
+    table = cyl("Table", 0.26, 0.02, loc=(0, 0.02, h), material=mat("wood_dark"), verts=20)
+    for i in range(6):
+        a = i * TAU / 6
+        parts += _pawn(f"P{i}", 0.22 * math.cos(a), 0.02 + 0.22 * math.sin(a), h + 0.02, DL_E if i % 2 else "plastic_white")
+    ob = join("delegation_p0_3_mesh", parts + [table])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_p0_4():
+    """ESCALATE tier 4, Company Policy: a huge yellow rulebook standing on the desk."""
+    root = empty("delegation_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood_dark")
+    book = box("Rulebook", (0.16, 0.42, 0.52), loc=(-0.1, 0.06, h), material=mat(DL_E), bevel=0.01)
+    pages = box("Pages", (0.15, 0.4, 0.5), loc=(-0.02, 0.06, h + 0.01), material=mat("paper"))
+    label = box("Spine", (0.012, 0.3, 0.12), loc=(-0.185, 0.06, h + 0.3), material=mat("plastic_black"))
+    parts += _tray(0.24, -0.1, h, folders=3, seed=12)
+    ob = join("delegation_p0_4_mesh", parts + [book, pages, label])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_p1_3():
+    """DELEGATE tier 3, Hand Off: two trays and a blue relay baton between them."""
+    root = empty("delegation_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _tray(-0.2, 0.05, h, folders=3, seed=13) + _tray(0.2, 0.05, h, col="plastic_white", folders=1, seed=14)
+    baton = cyl("Baton", 0.025, 0.26, loc=(-0.13, -0.15, h + 0.03), material=mat(DL_D, emit=0.5), verts=10, rot=(0, math.pi / 2, 0.2))
+    ob = join("delegation_p1_3_mesh", parts + [baton])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_p1_4():
+    """DELEGATE tier 4, Outsource: a blue globe on a stand beside an empty tray."""
+    root = empty("delegation_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _tray(0.24, -0.08, h, col="plastic_white", folders=0, seed=15)
+    stand = cyl("GlobeStand", 0.07, 0.03, loc=(-0.1, 0.06, h), material=mat("wood_dark"), verts=12)
+    post = cyl("GlobePost", 0.012, 0.12, loc=(-0.1, 0.06, h + 0.03), material=mat("metal"), verts=6)
+    globe = ball("Globe", 0.16, loc=(-0.1, 0.06, h + 0.3), material=mat(DL_D), subdiv=2)
+    land = [ball(f"Land{i}", 0.06, loc=(-0.1 + 0.11 * math.cos(a), 0.06 - 0.11 * math.sin(a), h + 0.3 + 0.06 * (i - 1)), material=mat("plant"), subdiv=1, scale=(1, 0.4, 0.7)) for i, a in enumerate((0.5, 1.4, 2.3))]
+    ob = join("delegation_p1_4_mesh", parts + [stand, post, globe] + land)
+    parent(ob, root)
+    return root
+
+
+def b_delegation_p2_3():
+    """PROTOCOL tier 3, Sign-Off: a signature pad, a pen and a grey stamp."""
+    root = empty("delegation_p2_3")
+    h = 0.42
+    parts = side_desk("Desk") + _tray(-0.2, 0.08, h, folders=2, seed=16)
+    pad = box("Pad", (0.22, 0.28, 0.015), loc=(0.12, -0.02, h), material=mat("paper"), rot_z=-0.15)
+    sig = box("Signature", (0.14, 0.02, 0.004), loc=(0.12, -0.1, h + 0.016), material=mat("navy"), rot_z=0.2)
+    pen = cyl("Pen", 0.008, 0.16, loc=(0.24, 0.02, h + 0.02), material=mat("plastic_black"), verts=6, rot=(0, math.pi / 2, 0.6))
+    stamp = cyl("Stamp", 0.035, 0.08, loc=(-0.05, -0.2, h), material=mat(DL_P), verts=10)
+    knob = ball("StampKnob", 0.03, loc=(-0.05, -0.2, h + 0.1), material=mat("plastic_black"), subdiv=1)
+    ob = join("delegation_p2_3_mesh", parts + [pad, sig, pen, stamp, knob])
+    parent(ob, root)
+    return root
+
+
+def b_delegation_p2_4():
+    """PROTOCOL tier 4, Compliance: a grey filing cabinet with a padlock and a checklist."""
+    root = empty("delegation_p2_4")
+    cab = box("Filing", (0.5, 0.5, 0.9), loc=(0, 0.04, 0), material=mat(DL_P), bevel=0.01)
+    drawers = [box(f"Drawer{i}", (0.44, 0.02, 0.24), loc=(0, -0.215, 0.06 + i * 0.28), material=mat("metal_light")) for i in range(3)]
+    handles = [box(f"Handle{i}", (0.12, 0.03, 0.025), loc=(0, -0.23, 0.2 + i * 0.28), material=mat("metal", metal=0.8)) for i in range(3)]
+    lock = box("Lock", (0.08, 0.04, 0.07), loc=(0.15, -0.24, 0.78), material=mat("yellow", metal=0.6), bevel=0.01)
+    clip = box("Checklist", (0.18, 0.02, 0.24), loc=(0, 0.04, 0.9), material=mat("wood"), bevel=0.004)
+    kit.tilt(clip, rx=-0.3, pivot=(0, 0.04, 0.9))
+    ob = join("delegation_p2_4_mesh", [cab, lock, clip] + drawers + handles)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Pomodoro Timer looks per path
+PM_F, PM_D, PM_B = "#3fa7a0", "#e2553f", "#f2c641"
+
+
+def b_pomodoro_p0_3():
+    """FOCUS SPRINT tier 3, Back to Back: two tomatoes side by side on a teal track."""
+    root = empty("pomodoro_p0_3")
+    h = 0.42
+    track = box("Track", (0.6, 0.2, 0.015), loc=(0, 0, h), material=mat(PM_F), bevel=0.005)
+    parts = side_desk("Desk") + [track] + _tomato(-0.15, 0, h + 0.015, 0.13, "A") + _tomato(0.15, 0, h + 0.015, 0.13, "B")
+    ob = join("pomodoro_p0_3_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_p0_4():
+    """FOCUS SPRINT tier 4, Flow: a big tomato with a teal ring orbiting it."""
+    root = empty("pomodoro_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _tomato(0, 0, h, 0.2)
+    ring = cyl("Orbit", 0.32, 0.015, loc=(0, 0, h + 0.18), material=mat(PM_F, emit=1.2), verts=28, radius_top=0.32)
+    hole = cyl("OrbitHole", 0.29, 0.02, loc=(0, 0, h + 0.178), material=mat("plastic_black"), verts=28)
+    kit.tilt([ring, hole], rx=0.35, pivot=(0, 0, h + 0.18))
+    ob = join("pomodoro_p0_4_mesh", parts + [ring])
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_p1_3():
+    """DEEP WORK tier 3, Burnt Out: a charred tomato with puffs of smoke."""
+    root = empty("pomodoro_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _tomato(0, 0, h, 0.16)
+    char = ball("Char", 0.165, loc=(0, 0, h + 0.135), material=mat("charcoal", rough=1.0), subdiv=2, scale=(1, 1, 0.5))
+    smoke = [ball(f"Smoke{i}", 0.05 + i * 0.015, loc=(0.03 * i, 0.02, h + 0.34 + i * 0.09), material=mat("#b9bec6", rough=1.0), subdiv=1) for i in range(3)]
+    ember = box("Ember", (0.04, 0.04, 0.02), loc=(0.2, -0.15, h), material=mat(PM_D, emit=2.0))
+    ob = join("pomodoro_p1_3_mesh", parts + [char, ember] + smoke)
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_p1_4():
+    """DEEP WORK tier 4: a big red tomato under a glass dome, nobody gets in."""
+    root = empty("pomodoro_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood_dark") + _tomato(0, 0, h + 0.03, 0.2)
+    plinth = cyl("Plinth", 0.3, 0.03, loc=(0, 0, h), material=mat(PM_D), verts=20)
+    dome = ball("Dome", 0.3, loc=(0, 0, h + 0.03), material=mat("window", rough=0.05, alpha=0.35), subdiv=2, scale=(1, 1, 1.35))
+    ob = join("pomodoro_p1_4_mesh", parts + [plinth, dome])
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_p2_3():
+    """BREAK TIME tier 3, Snooze: a tomato on a pillow, yellow Zs floating up."""
+    root = empty("pomodoro_p2_3")
+    h = 0.42
+    pillow = box("Pillow", (0.44, 0.32, 0.07), loc=(0, 0, h), material=mat("plastic_white"), bevel=0.03)
+    parts = side_desk("Desk") + [pillow] + _tomato(0, 0, h + 0.06, 0.13)
+    zs = [box(f"Z{i}", (0.05 + 0.02 * i, 0.012, 0.012), loc=(0.15 + 0.05 * i, 0.0, h + 0.36 + 0.09 * i), material=mat(PM_B, emit=1.2)) for i in range(3)]
+    ob = join("pomodoro_p2_3_mesh", parts + zs)
+    parent(ob, root)
+    return root
+
+
+def b_pomodoro_p2_4():
+    """BREAK TIME tier 4, Alarm Clock: a big yellow twin-bell alarm clock."""
+    root = empty("pomodoro_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74)
+    body = cyl("ClockBody", 0.18, 0.1, loc=(0, 0.04, h + 0.2), material=mat(PM_B, rough=0.4), verts=20, rot=(math.pi / 2, 0, 0))
+    face = cyl("ClockFace", 0.15, 0.01, loc=(0, -0.012, h + 0.2), material=mat("plastic_white"), verts=20, rot=(math.pi / 2, 0, 0))
+    hands = [box("HandH", (0.015, 0.012, 0.08), loc=(0, -0.02, h + 0.2), material=mat("plastic_black")), box("HandM", (0.1, 0.012, 0.012), loc=(0.04, -0.02, h + 0.2), material=mat("plastic_black"))]
+    bells = [ball(f"Bell{i}", 0.06, loc=(x, 0.04, h + 0.4), material=mat("metal_light", metal=0.8, rough=0.25), subdiv=1, scale=(1, 1, 0.7)) for i, x in enumerate((-0.12, 0.12))]
+    feet = [box(f"Foot{i}", (0.03, 0.03, 0.06), loc=(x, 0.04, h), material=mat("plastic_black")) for i, x in enumerate((-0.12, 0.12))]
+    parts += [body, face] + hands + bells + feet + _tomato(0.32, -0.18, h, 0.07, "Small")
+    ob = join("pomodoro_p2_4_mesh", parts)
+    parent(ob, root)
+    return root
+
+
+# ---------------------------------------------------------------- Motivational Poster looks per path
+PO_H, PO_F, PO_L = "#3fa7a0", "#e2553f", "#7fb6e3"
+
+
+def _easel(h, hgt=0.7, mat_key="wood_dark"):
+    return [box(f"Easel{i}", (0.03, 0.03, hgt), loc=(x, 0.12, h), material=mat(mat_key)) for i, x in enumerate((-0.24, 0.24))]
+
+
+def b_poster_p0_3():
+    """HANG IN THERE tier 3, All Hands: a teal poster with a row of raised hands under it."""
+    root = empty("poster_p0_3")
+    h = 0.42
+    parts = side_desk("Desk") + _easel(h) + _poster_board(0.46, 0.5, h + 0.16, PO_H, emit=0.4)
+    hands = []
+    for i in range(5):
+        x = -0.24 + i * 0.12
+        hands.append(box(f"Arm{i}", (0.03, 0.03, 0.12), loc=(x, -0.12, h), material=mat("#d9a87a")))
+        hands.append(ball(f"Palm{i}", 0.025, loc=(x, -0.12, h + 0.14), material=mat("#d9a87a"), subdiv=1))
+    ob = join("poster_p0_3_mesh", parts + hands)
+    parent(ob, root)
+    return root
+
+
+def b_poster_p0_4():
+    """HANG IN THERE tier 4, Employee of the Month: a framed portrait with a gold star."""
+    root = empty("poster_p0_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74) + _easel(h, 0.86, "metal")
+    frame = box("Frame", (0.5, 0.05, 0.6), loc=(0, 0.1, h + 0.2), material=mat("yellow", metal=0.6, rough=0.35), bevel=0.01)
+    pic = box("Portrait", (0.4, 0.055, 0.5), loc=(0, 0.095, h + 0.25), material=mat(PO_H, emit=0.3))
+    head = ball("Face", 0.07, loc=(0, 0.06, h + 0.55), material=mat("#d9a87a"), subdiv=1, scale=(1, 0.3, 1))
+    body = box("Shoulders", (0.2, 0.02, 0.12), loc=(0, 0.065, h + 0.36), material=mat("navy"))
+    star = [box(f"Star{i}", (0.12, 0.02, 0.03), loc=(0.18, 0.06, h + 0.72), material=mat("yellow", emit=1.4), rot_z=0) for i in range(3)]
+    for i, s_ in enumerate(star):
+        kit.tilt(s_, ry=i * math.pi / 3)
+    ob = join("poster_p0_4_mesh", parts + [frame, pic, head, body] + star)
+    parent(ob, root)
+    return root
+
+
+def b_poster_p1_3():
+    """FRAMED PRINT tier 3, Inspirational Quote: a red print with big quote marks."""
+    root = empty("poster_p1_3")
+    h = 0.42
+    parts = side_desk("Desk") + _easel(h)
+    frame = box("Frame", (0.5, 0.04, 0.5), loc=(0, 0.1, h + 0.16), material=mat("wood_dark"), bevel=0.008)
+    art = box("Print", (0.42, 0.045, 0.42), loc=(0, 0.095, h + 0.2), material=mat(PO_F, emit=0.3))
+    quotes = [box(f"Quote{i}", (0.04, 0.05, 0.08), loc=(-0.12 + i * 0.06, 0.07, h + 0.48), material=mat("plastic_white", emit=0.6), taper=0.4) for i in range(2)]
+    lines = [box(f"Line{i}", (0.3 - i * 0.06, 0.05, 0.03), loc=(0, 0.07, h + 0.36 - i * 0.07), material=mat("plastic_white", emit=0.5)) for i in range(3)]
+    ob = join("poster_p1_3_mesh", parts + [frame, art] + quotes + lines)
+    parent(ob, root)
+    return root
+
+
+def b_poster_p1_4():
+    """FRAMED PRINT tier 4, Mission Statement: a big red-and-gold plaque on a stand."""
+    root = empty("poster_p1_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="wood_dark")
+    stand = box("Stand", (0.2, 0.16, 0.12), loc=(0, 0.06, h), material=mat("wood_dark"), bevel=0.01)
+    plaque = box("Plaque", (0.6, 0.05, 0.5), loc=(0, 0.06, h + 0.12), material=mat(PO_F, rough=0.5), bevel=0.02)
+    plate = box("GoldPlate", (0.46, 0.055, 0.36), loc=(0, 0.06, h + 0.19), material=mat("yellow", metal=0.7, rough=0.3))
+    lines = [box(f"Text{i}", (0.36, 0.06, 0.02), loc=(0, 0.06, h + 0.46 - i * 0.07), material=mat("plastic_black")) for i in range(4)]
+    ob = join("poster_p1_4_mesh", parts + [stand, plaque, plate] + lines)
+    parent(ob, root)
+    return root
+
+
+def b_poster_p2_3():
+    """LED WALL tier 3, Sponsored Content: a poster with a blue AD corner and lights round it."""
+    root = empty("poster_p2_3")
+    h = 0.42
+    parts = side_desk("Desk") + _easel(h, 0.8, "metal") + _poster_board(0.5, 0.56, h + 0.16, "#5a7fb4", emit=0.5)
+    corner = box("AdCorner", (0.14, 0.05, 0.1), loc=(0.2, 0.07, h + 0.62), material=mat(PO_L, emit=1.2))
+    bulbs = [ball(f"Bulb{i}", 0.018, loc=(-0.27 + i * 0.09, 0.06, h + 0.76), material=mat("yellow", emit=2.0), subdiv=1) for i in range(7)]
+    ob = join("poster_p2_3_mesh", parts + [corner] + bulbs)
+    parent(ob, root)
+    return root
+
+
+def b_poster_p2_4():
+    """LED WALL tier 4: a wall of glowing blue panels on a frame."""
+    root = empty("poster_p2_4")
+    h = 0.42
+    parts = side_desk("Desk", w=0.86, d=0.74, top="plastic_black")
+    legs = [box(f"Leg{i}", (0.04, 0.04, 0.9), loc=(x, 0.18, h), material=mat("metal")) for i, x in enumerate((-0.36, 0.36))]
+    panels = [box(f"Panel{r}{c}", (0.17, 0.04, 0.17), loc=(-0.27 + c * 0.18, 0.15, h + 0.24 + r * 0.18), material=mat(PO_L if (r + c) % 2 else "#5a7fb4", emit=1.6)) for r in range(4) for c in range(4)]
+    ob = join("poster_p2_4_mesh", parts + legs + panels)
+    parent(ob, root)
+    return root
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -3141,6 +4363,84 @@ BUILDERS = {
     "autoreply_1": b_autoreply_1,
     "autoreply_2": b_autoreply_2,
     "autoreply_3": b_autoreply_3,
+    "autoreply_p0_3": b_autoreply_p0_3,
+    "autoreply_p0_4": b_autoreply_p0_4,
+    "autoreply_p1_3": b_autoreply_p1_3,
+    "autoreply_p1_4": b_autoreply_p1_4,
+    "autoreply_p2_3": b_autoreply_p2_3,
+    "autoreply_p2_4": b_autoreply_p2_4,
+    "artillery_p0_3": b_artillery_p0_3,
+    "artillery_p0_4": b_artillery_p0_4,
+    "artillery_p1_3": b_artillery_p1_3,
+    "artillery_p1_4": b_artillery_p1_4,
+    "artillery_p2_3": b_artillery_p2_3,
+    "artillery_p2_4": b_artillery_p2_4,
+    "headphones_p0_3": b_headphones_p0_3,
+    "headphones_p0_4": b_headphones_p0_4,
+    "headphones_p1_3": b_headphones_p1_3,
+    "headphones_p1_4": b_headphones_p1_4,
+    "headphones_p2_3": b_headphones_p2_3,
+    "headphones_p2_4": b_headphones_p2_4,
+    "coffee_p0_3": b_coffee_p0_3,
+    "coffee_p0_4": b_coffee_p0_4,
+    "coffee_p1_3": b_coffee_p1_3,
+    "coffee_p1_4": b_coffee_p1_4,
+    "coffee_p2_3": b_coffee_p2_3,
+    "coffee_p2_4": b_coffee_p2_4,
+    "keyboardsmash_p0_3": b_keyboardsmash_p0_3,
+    "keyboardsmash_p0_4": b_keyboardsmash_p0_4,
+    "keyboardsmash_p1_3": b_keyboardsmash_p1_3,
+    "keyboardsmash_p1_4": b_keyboardsmash_p1_4,
+    "keyboardsmash_p2_3": b_keyboardsmash_p2_3,
+    "keyboardsmash_p2_4": b_keyboardsmash_p2_4,
+    "chair_p0_3": b_chair_p0_3,
+    "chair_p0_4": b_chair_p0_4,
+    "chair_p1_3": b_chair_p1_3,
+    "chair_p1_4": b_chair_p1_4,
+    "chair_p2_3": b_chair_p2_3,
+    "chair_p2_4": b_chair_p2_4,
+    "replyall_p0_3": b_replyall_p0_3,
+    "replyall_p0_4": b_replyall_p0_4,
+    "replyall_p1_3": b_replyall_p1_3,
+    "replyall_p1_4": b_replyall_p1_4,
+    "replyall_p2_3": b_replyall_p2_3,
+    "replyall_p2_4": b_replyall_p2_4,
+    "delegation_p0_3": b_delegation_p0_3,
+    "delegation_p0_4": b_delegation_p0_4,
+    "delegation_p1_3": b_delegation_p1_3,
+    "delegation_p1_4": b_delegation_p1_4,
+    "delegation_p2_3": b_delegation_p2_3,
+    "delegation_p2_4": b_delegation_p2_4,
+    "pomodoro_p0_3": b_pomodoro_p0_3,
+    "pomodoro_p0_4": b_pomodoro_p0_4,
+    "pomodoro_p1_3": b_pomodoro_p1_3,
+    "pomodoro_p1_4": b_pomodoro_p1_4,
+    "pomodoro_p2_3": b_pomodoro_p2_3,
+    "pomodoro_p2_4": b_pomodoro_p2_4,
+    "poster_p0_3": b_poster_p0_3,
+    "poster_p0_4": b_poster_p0_4,
+    "poster_p1_3": b_poster_p1_3,
+    "poster_p1_4": b_poster_p1_4,
+    "poster_p2_3": b_poster_p2_3,
+    "poster_p2_4": b_poster_p2_4,
+    "quickreply_p0_3": b_quickreply_p0_3,
+    "quickreply_p0_4": b_quickreply_p0_4,
+    "quickreply_p1_3": b_quickreply_p1_3,
+    "quickreply_p1_4": b_quickreply_p1_4,
+    "quickreply_p2_3": b_quickreply_p2_3,
+    "quickreply_p2_4": b_quickreply_p2_4,
+    "thumbtacks_p0_3": b_thumbtacks_p0_3,
+    "thumbtacks_p0_4": b_thumbtacks_p0_4,
+    "thumbtacks_p1_3": b_thumbtacks_p1_3,
+    "thumbtacks_p1_4": b_thumbtacks_p1_4,
+    "thumbtacks_p2_3": b_thumbtacks_p2_3,
+    "thumbtacks_p2_4": b_thumbtacks_p2_4,
+    "selfservice_p0_3": b_selfservice_p0_3,
+    "selfservice_p0_4": b_selfservice_p0_4,
+    "selfservice_p1_3": b_selfservice_p1_3,
+    "selfservice_p1_4": b_selfservice_p1_4,
+    "selfservice_p2_3": b_selfservice_p2_3,
+    "selfservice_p2_4": b_selfservice_p2_4,
     "desk_pair": b_desk_pair,
     "plant": b_plant,
     "cooler": b_cooler,

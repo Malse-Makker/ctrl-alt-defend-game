@@ -18,15 +18,22 @@ import build_models as bm  # noqa: E402
 import kit  # noqa: E402
 
 PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter", "impersonator", "cleaner", "linemanager", "coldcaller", "baby", "phonecaller", "smoker", "consultant", "hrmanager", "projectmanager"]
-ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3", "autoreply_1", "autoreply_2", "autoreply_3",
-                  "headphones_1", "headphones_2", "headphones_3", "artillery_1", "artillery_2", "artillery_3",
+ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3",
+                  "coffee_p0_3", "coffee_p0_4", "coffee_p1_3", "coffee_p1_4", "coffee_p2_3", "coffee_p2_4", "autoreply_1", "autoreply_2", "autoreply_3",
+                  "autoreply_p0_3", "autoreply_p0_4", "autoreply_p1_3", "autoreply_p1_4", "autoreply_p2_3", "autoreply_p2_4",
+                  "headphones_1", "headphones_2", "headphones_3",
+                  "headphones_p0_3", "headphones_p0_4", "headphones_p1_3", "headphones_p1_4", "headphones_p2_3", "headphones_p2_4", "artillery_1", "artillery_2", "artillery_3",
+                  "artillery_p0_3", "artillery_p0_4", "artillery_p1_3", "artillery_p1_4", "artillery_p2_3", "artillery_p2_4",
                   "shredder_1", "shredder_2", "shredder_3", "quickreply_1", "quickreply_2", "quickreply_3",
-                  "thumbtacks_1", "thumbtacks_2", "thumbtacks_3", "selfservice_1", "selfservice_2", "selfservice_3",
+                  "quickreply_p0_3", "quickreply_p0_4", "quickreply_p1_3", "quickreply_p1_4", "quickreply_p2_3", "quickreply_p2_4",
+                  "thumbtacks_1", "thumbtacks_2", "thumbtacks_3",
+                  "thumbtacks_p0_3", "thumbtacks_p0_4", "thumbtacks_p1_3", "thumbtacks_p1_4", "thumbtacks_p2_3", "thumbtacks_p2_4", "selfservice_1", "selfservice_2", "selfservice_3",
+                  "selfservice_p0_3", "selfservice_p0_4", "selfservice_p1_3", "selfservice_p1_4", "selfservice_p2_3", "selfservice_p2_4",
                   "shredder_p0_3", "shredder_p0_4", "shredder_p1_3", "shredder_p1_4", "shredder_p2_3", "shredder_p2_4",
-                  "keyboardsmash_1", "keyboardsmash_2", "keyboardsmash_3", "chair_1", "chair_2", "chair_3",
-                  "replyall_1", "replyall_2", "replyall_3", "delegation_1", "delegation_2", "delegation_3",
-                  "pomodoro_1", "pomodoro_2", "pomodoro_3",
-                  "poster_1", "poster_2", "poster_3"]
+                  "keyboardsmash_1", "keyboardsmash_2", "keyboardsmash_3", "keyboardsmash_p0_3", "keyboardsmash_p0_4", "keyboardsmash_p1_3", "keyboardsmash_p1_4", "keyboardsmash_p2_3", "keyboardsmash_p2_4", "chair_1", "chair_2", "chair_3", "chair_p0_3", "chair_p0_4", "chair_p1_3", "chair_p1_4", "chair_p2_3", "chair_p2_4",
+                  "replyall_1", "replyall_2", "replyall_3", "replyall_p0_3", "replyall_p0_4", "replyall_p1_3", "replyall_p1_4", "replyall_p2_3", "replyall_p2_4", "delegation_1", "delegation_2", "delegation_3", "delegation_p0_3", "delegation_p0_4", "delegation_p1_3", "delegation_p1_4", "delegation_p2_3", "delegation_p2_4",
+                  "pomodoro_1", "pomodoro_2", "pomodoro_3", "pomodoro_p0_3", "pomodoro_p0_4", "pomodoro_p1_3", "pomodoro_p1_4", "pomodoro_p2_3", "pomodoro_p2_4",
+                  "poster_1", "poster_2", "poster_3", "poster_p0_3", "poster_p0_4", "poster_p1_3", "poster_p1_4", "poster_p2_3", "poster_p2_4"]
 
 
 def render_icon(key, out_dir, size):

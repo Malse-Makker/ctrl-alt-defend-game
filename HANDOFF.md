@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-12 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-12 klaar, stap 13 deels
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -123,7 +123,13 @@ Stap 12 (0.42.0), keuzes van mij:
 - Board Member counters nu Auto-Reply en Delegation (Quick Reply is geen enkel-doel-toren meer).
   Botscripts: L15 Auto-Reply bij het bureau in plaats van Quick Reply; L13 een derde Auto-Reply.
 - **Voor de maker:** L13 greedy wint nu met 2 Focus (was 10), L15 solid 59 en 2 sterren (was 92 en
-  3). L13 was al het zwaarste level (zie OPEN bij L13). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+  3). L13 was al het zwaarste level (zie OPEN bij L13).
+Stap 13 (0.43.0, deels): looks per pad (tier 3 en 4) voor Coffee Machine, Auto-Reply, Headphones,
+Office Artillery, Quick Reply, Thumbtacks en Self-Service (`b_<toren>_p<pad>_<tier>` in
+`build_models.py`, iconen, `MODEL_NAMES`, `pathModels`). Nog te doen: Keyboard Smash, Office Chair,
+Reply All, Delegation, Pomodoro Timer, Motivational Poster. Uicheck `--looks-only` zet per groep
+torens elk pad op tier 3 en 4 neer (`looks-a/b-tier3/4.png`). `tests/assets.test.ts` gebruikt nu
+Delegation als voorbeeld van een toren zonder eigen looks. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.
