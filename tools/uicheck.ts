@@ -1325,6 +1325,18 @@ async function level3Flow(browser: import('puppeteer-core').Browser, errors: str
   console.log(`  ${await ff('boss')}`);
   await new Promise((r) => setTimeout(r, 1500));
   total += await check(page, 'l3-boss', size);
+  // The Presenter's side door stands open while he is on the floor.
+  const door = await page.evaluate(() => {
+    type Any = any;
+    const g = (window as unknown as { cad: { session: { game: Any } } }).cad.session.game;
+    // He comes in through the main door first; the side door opens once he is on the floor.
+    const inside = () => g.enemies.some((e: Any) => e.alive && e.def.boss && g.onFloor(e));
+    for (let i = 0; i < 300 && !inside(); i++) g.step();
+    return { boss: inside(), open: g.doorOpen, door: g.doorPath };
+  });
+  console.log(`  side door: ${JSON.stringify(door)}`);
+  if (door.door === null) errors.push('l3: the Presentation Room has no side door');
+  else if (door.boss && !door.open) errors.push('l3: the side door stayed shut with The Presenter on the floor');
   await page.close();
   return total;
 }

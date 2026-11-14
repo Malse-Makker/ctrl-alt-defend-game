@@ -3,6 +3,15 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.48.0] - 2026-11-14
+
+### New
+- Six floors have a side door with a red sign: the Presentation Room, the Boardroom (all three times), The Car Park and the HR Room. It is shut, and its bit of walkway is there from the start, so you can see where trouble will come from. When the boss arrives the door opens and his people come in through it: The Presenter's slides by the lectern, your Line Manager's reviewers from the meeting room, the smoking buddies from the shelter, the new hires from the HR office.
+- Bosses who bring bodyguards (The Head of Comms, The Repair Guy, The Cleaner, The Consultant, The Project Manager) still have them walk alongside.
+
+### Changed
+- "Sees N% of the walkway" counts the stretch the side door shares with the main walkway once.
+
 ## [0.47.0] - 2026-11-14
 
 ### Changed

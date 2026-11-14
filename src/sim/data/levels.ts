@@ -174,6 +174,12 @@ export interface LevelDef {
   rule?: string;
   size: { w: number; h: number };
   paths: { x: number; y: number }[][];
+  /**
+   * A side door the boss calls his people in through: the route from outside the door to your
+   * desk. It is walkway from the start, so you can get ready for it; the door opens when he
+   * arrives. Waves never use it.
+   */
+  bossDoor?: { x: number; y: number }[];
   desk: { x: number; y: number };
   decor: Decor[];
   towers: readonly string[];
@@ -447,14 +453,21 @@ const L3: LevelDef = {
       { x: 16.5, y: 3.0 },
     ],
   ],
+  // The Presenter's side door, by the lectern: his slides come in here and walk the last stretch.
+  bossDoor: [
+    { x: 13.5, y: -1.5 },
+    { x: 13.5, y: 4.5 },
+    { x: 16.5, y: 4.5 },
+    { x: 16.5, y: 3.0 },
+  ],
   desk: { x: 16, y: 2 },
   // The level design (docs/leveldesign, level 3). The maker's call: no laptop spots, you build
   // on the floor like everywhere else.
   grid: [
-    't..HHHHHHHHHHHH...HHt',
-    't....................',
-    '................Dt...',
-    '.........t......=...t',
+    't..HHHHHHHHHH=.HH.HHt',
+    't............=.......',
+    '.............=..Dt...',
+    '.........t...=..=...t',
     '.================....',
     '.=.tttttt..tttttt....',
     '.=.tttttt..tttttt....',
@@ -473,7 +486,7 @@ const L3: LevelDef = {
     { model: 'projector_screen', rect: { x: 8, y: 0, w: 3, h: 1 } },
     { model: 'speaker', rect: { x: 11, y: 0, w: 1, h: 1 } },
     { model: 'bookshelf', rect: { x: 12, y: 0, w: 1, h: 1 } },
-    { model: 'tall_cabinet', rect: { x: 13, y: 0, w: 2, h: 1 } },
+    { model: 'tall_cabinet', rect: { x: 15, y: 0, w: 2, h: 1 } },
     ...run('bookshelf', 18, 0, 2, 'x'),
     { model: 'plant', rect: { x: 20, y: 0, w: 1, h: 1 } },
     // Your laptop, next to the lectern, facing you.
@@ -638,11 +651,20 @@ const L5: LevelDef = {
       { x: 10.5, y: 10.0 },
     ],
   ],
+  // The meeting room door: your Line Manager's reviewers come in here, halfway round the table.
+  bossDoor: [
+    { x: 13.5, y: -1.5 },
+    { x: 13.5, y: 1.5 },
+    { x: 17.5, y: 1.5 },
+    { x: 17.5, y: 9.5 },
+    { x: 10.5, y: 9.5 },
+    { x: 10.5, y: 10.0 },
+  ],
   desk: { x: 10, y: 10 },
   // The level design (docs/leveldesign, level 5), with your desk one tile up from the edge so
   // your chair fits behind it. Levels 10 and 15 come back to this room.
   grid: [
-    't.......HHHHH.ttt..HH',
+    't.......HHHHH=ttt..HH',
     '...===============.HH',
     '...=.............=.HH',
     't..=.H.........H.=...',
@@ -837,6 +859,13 @@ const L7: LevelDef = {
       { x: 24.0, y: 13.5 },
     ],
   ],
+  // The smoking shelter door: his smoking buddies join for the last stretch.
+  bossDoor: [
+    { x: -1.5, y: 10.5 },
+    { x: 1.5, y: 10.5 },
+    { x: 1.5, y: 13.5 },
+    { x: 24.0, y: 13.5 },
+  ],
   desk: { x: 24, y: 13 },
   // The level design (docs/leveldesign, level 7). P: an empty bay, the only place you may build.
   // Your desk sits one tile in from the edge, so the chair fits behind it, by the lifts.
@@ -851,7 +880,7 @@ const L7: LevelDef = {
     '-========================-',
     '-=------------------------',
     '-=-ttHHPP-ttPPtt-ttHHPP---',
-    '-=-ttHHPPHttPPttHttHHPP---',
+    '==-ttHHPPHttPPttHttHHPP---',
     '-=-ttHHPP-ttPPtt-ttHHPP---',
     '-=------------------------',
     '-=======================D-',
@@ -1092,11 +1121,20 @@ const L10: LevelDef = {
       { x: 10.5, y: 10.0 },
     ],
   ],
+  // The meeting room door: your Line Manager's reviewers come in here, halfway round the table.
+  bossDoor: [
+    { x: 13.5, y: -1.5 },
+    { x: 13.5, y: 1.5 },
+    { x: 17.5, y: 1.5 },
+    { x: 17.5, y: 9.5 },
+    { x: 10.5, y: 9.5 },
+    { x: 10.5, y: 10.0 },
+  ],
   desk: { x: 10, y: 10 },
   // The level design (docs/leveldesign, level 10): level 5 plus the glass room (B), with a door
   // at the bottom. Your desk one tile up from the edge, as in level 5.
   grid: [
-    't.......HHHHH.ttt..HH',
+    't.......HHHHH=ttt..HH',
     '...===============.HH',
     '...=BBBBBBBBBBBBB=.HH',
     't..=BH.........HB=...',
@@ -1277,11 +1315,18 @@ const L12: LevelDef = {
       { x: 14.5, y: 8.0 },
     ],
   ],
+  // The HR office door: the new people come in here, straight into the last corridor.
+  bossDoor: [
+    { x: 12.5, y: -1.5 },
+    { x: 12.5, y: 1.5 },
+    { x: 14.5, y: 1.5 },
+    { x: 14.5, y: 8.0 },
+  ],
   desk: { x: 14, y: 8 },
   // The level design (docs/leveldesign, level 12). m: the one-way mirror, see-through from the
   // observation room (west of it) only.
   grid: [
-    't.ttt...HHHH.HHH.t',
+    't.ttt...HHHH=HHH.t',
     '.....==========...',
     '.HHH.=.#######=###',
     '.....=.#...m..=HH#',
@@ -1546,11 +1591,20 @@ const L15: LevelDef = {
     ],
   ],
   splitPaths: true,
+  // The meeting room door: your Line Manager's reviewers come in here, halfway round the table.
+  bossDoor: [
+    { x: 13.5, y: -1.5 },
+    { x: 13.5, y: 1.5 },
+    { x: 17.5, y: 1.5 },
+    { x: 17.5, y: 9.5 },
+    { x: 10.5, y: 9.5 },
+    { x: 10.5, y: 10.0 },
+  ],
   desk: { x: 10, y: 10 },
   // The level design (docs/leveldesign, level 15): level 10 plus a back door on the right and a
   // champagne bar. Your desk one tile up from the edge, as in levels 5 and 10.
   grid: [
-    't.......HHHHH.ttt..HH',
+    't.......HHHHH=ttt..HH',
     '...===============.HH',
     '...=BBBBBBBBBBBBB=.HH',
     't..=BH.........HB=H.t',

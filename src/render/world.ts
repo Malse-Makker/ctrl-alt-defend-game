@@ -72,6 +72,8 @@ export class World {
   /** Boardroom II: the blinds in the glass room, and how far down they are (0 up, 1 down). */
   private readonly slats: THREE.Object3D[] = [];
   private slatsDown = 0;
+  /** The boss's side door: its leaf, how far open it is (0..1), and its angle when fully open. */
+  private bossDoor: { leaf: THREE.Object3D; open: number; shut: THREE.Quaternion; wide: THREE.Quaternion } | null = null;
   /** Server Room: the racks' status lights, blinking. */
   private readonly rackLights: THREE.Object3D[] = [];
 
@@ -119,12 +121,41 @@ export class World {
     const windowMat = new THREE.MeshStandardMaterial({ color: PAL.window, roughness: 0.2, emissive: new THREE.Color(PAL.window), emissiveIntensity: 0.25 });
     // A glass front (Reception) is furniture of its own, with its own doors.
     const doors = level.look?.glassFront ? [] : level.paths.map((p) => p[0]).filter((p) => p.x < 0).map((p) => p.y);
-    if (!level.look?.glassFront) this.wallAlongZ(0, h, doors, wallMat, trimMat);
-    this.wallAlongX(w, wallMat, trimMat, windowMat);
+    // The boss's side door can be in either back wall.
+    const side = level.bossDoor?.[0];
+    const sideZ = side && side.x < 0 ? [side.y] : [];
+    const sideX = side && side.y < 0 && side.x >= 0 ? [side.x] : [];
+    if (!level.look?.glassFront) this.wallAlongZ(0, h, [...doors, ...sideZ], wallMat, trimMat);
+    this.wallAlongX(w, wallMat, trimMat, windowMat, sideX);
     for (const dz of doors) {
       const door = assets.clone('door');
       door.position.set(-WALL_T / 2, 0, dz);
       door.rotation.y = Math.PI / 2;
+      this.shared.add(door);
+      g.add(door);
+    }
+    if (side) {
+      // Shut, with a red sign, until the boss arrives (see update).
+      const door = assets.clone('door');
+      if (sideZ.length) {
+        door.position.set(-WALL_T / 2, 0, side.y);
+        door.rotation.y = Math.PI / 2;
+      } else door.position.set(side.x, 0, -WALL_T / 2);
+      // A red bar on the sign: this one is his. Materials are shared, so swap only this copy's.
+      const red = new THREE.MeshStandardMaterial({ color: PAL.bad, emissive: new THREE.Color(PAL.bad), emissiveIntensity: 0.4 });
+      door.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        if (Array.isArray(m.material)) m.material = m.material.map((x) => (/^teal/.test(x.name) ? red : x));
+        else if (/^teal/.test(m.material.name)) m.material = red;
+      });
+      const leaf = door.getObjectByName('door_leaf');
+      if (leaf) {
+        // The model stands swung open (outwards, seen from here): it opens the other way, into the room.
+        const wide = leaf.quaternion.clone().invert();
+        this.bossDoor = { leaf, open: 0, shut: new THREE.Quaternion(), wide };
+        leaf.quaternion.identity();
+      }
       this.shared.add(door);
       g.add(door);
     }
@@ -350,6 +381,11 @@ export class World {
   /** Speed gates swing open for whoever is walking through, once they have scanned their pass. */
   update(dt: number, game: Game): void {
     this.clock += dt;
+    if (this.bossDoor) {
+      const d = this.bossDoor;
+      d.open += ((game.doorOpen ? 1 : 0) - d.open) * Math.min(1, dt * 3);
+      d.leaf.quaternion.slerpQuaternions(d.shut, d.wide, d.open);
+    }
     this.updateBeamer(game);
     this.updateDesks(game);
     this.updatePizza(game);
@@ -585,16 +621,34 @@ export class World {
     }
   }
 
-  private wallAlongX(len: number, wallMat: THREE.Material, trimMat: THREE.Material, windowMat: THREE.Material): void {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(len + WALL_T, WALL_H, WALL_T), wallMat);
-    wall.position.set(len / 2 - WALL_T / 2, WALL_H / 2, -WALL_T / 2);
-    wall.castShadow = true;
-    wall.receiveShadow = true;
-    this.group.add(wall);
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(len + WALL_T, 0.08, WALL_T + 0.02), trimMat);
-    trim.position.set(len / 2 - WALL_T / 2, 0.04, -WALL_T / 2);
-    this.group.add(trim);
+  private wallAlongX(len: number, wallMat: THREE.Material, trimMat: THREE.Material, windowMat: THREE.Material, doorsAt: number[] = []): void {
+    // Split around a door gap (1 tile wide), the corner post at x = -WALL_T included.
+    const gaps = doorsAt.map((x) => [Math.floor(x), Math.floor(x) + 1] as const).sort((a, b) => a[0] - b[0]);
+    let x0 = -WALL_T;
+    const pieces: [number, number][] = [];
+    for (const [a, b] of gaps) {
+      if (a > x0) pieces.push([x0, a]);
+      x0 = b;
+    }
+    if (x0 < len) pieces.push([x0, len]);
+    for (const [a, b] of pieces) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(b - a, WALL_H, WALL_T), wallMat);
+      wall.position.set((a + b) / 2, WALL_H / 2, -WALL_T / 2);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      this.group.add(wall);
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(b - a, 0.08, WALL_T + 0.02), trimMat);
+      trim.position.set((a + b) / 2, 0.04, -WALL_T / 2);
+      this.group.add(trim);
+    }
+    for (const [a, b] of gaps) {
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(b - a, WALL_H - 1.55, WALL_T), wallMat);
+      lintel.position.set((a + b) / 2, 1.55 + (WALL_H - 1.55) / 2, -WALL_T / 2);
+      this.group.add(lintel);
+    }
+    // Windows, but not over a door.
     for (let x = 1.5; x < len - 1; x += 3) {
+      if (gaps.some(([a, b]) => x + 1.4 > a && x - 0.4 < b)) continue;
       const win = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 0.02), windowMat);
       win.position.set(x + 0.5, 0.95, 0.005);
       this.group.add(win);

@@ -1,6 +1,7 @@
 // Level 3: Quick Reply, The Presenter, and the projector mini-game.
 
 import { describe, expect, it } from 'vitest';
+import { LEVELS } from '../src/sim/data/levels';
 import { applyCommand, parseCommand } from '../src/sim/commands';
 import { Game, HAZARD_WARN, TICK } from '../src/sim/game';
 import { corridor } from './helpers';
@@ -66,13 +67,15 @@ describe('Quick Reply', () => {
 });
 
 describe('The Presenter', () => {
-  it('beams his slides next to your desk', () => {
-    const g = new Game(corridor(['presenter:1@1'], { towers: TOWERS }));
-    g.start();
-    g.runFor(4.1);
+  it('beams his slides in through the side door by your desk', () => {
+    const g = new Game(LEVELS[3]);
+    g.phase = 'running';
+    const boss = g.spawn('presenter', 0, 4, false);
+    boss.addTimer = 0;
+    g.step(TICK);
     const adds = g.enemies.filter((e) => e.isAdd);
     expect(adds.length).toBe(4);
-    for (const a of adds) expect(a.dist / g.paths[0].length).toBeGreaterThan(0.7);
+    for (const a of adds) expect(a.pathIndex).toBe(g.doorPath);
   });
 
   it('his loading screen fills up again at every phase', () => {

@@ -17,8 +17,6 @@ export interface BossDef {
   phase3Speed: number;
   /** No Coffee comes in at all while he is on the floor (The Repair Guy). */
   blocksIncome?: boolean;
-  /** Called-in colleagues appear this far along the route instead of next to him (0..1). */
-  addsAt?: number;
   /** His shield fills up again at every phase change (The Presenter's loading screen). */
   shieldRecharge?: boolean;
   /** Colleagues this close to him walk this much faster (The Cleaner: "Move, I'm mopping"). */
@@ -281,8 +279,8 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Can everyone see my screen?',
     ability:
-      'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide straight at your desk: a handful of Chasers appear on the last stretch before it.',
-    counter: 'Keep something near your desk for the slides: Quick Reply clears the Chasers he beams in. Office Artillery and Self-Service for him; break the loading screen again at 66% and 33%.',
+      'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide at your desk: a handful of Chasers come in through the side door by the lectern.',
+    counter: 'Keep something by the side door for the slides: Quick Reply clears the Chasers he beams in. Office Artillery and Self-Service for him; break the loading screen again at 66% and 33%.',
     hp: 560,
     shield: 180,
     speed: 1.05,
@@ -295,9 +293,8 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
       addCount: 4,
       phaseBurst: 6,
       phase3Speed: 1.5,
-      addsAt: 0.82,
       shieldRecharge: true,
-      intro: 'His slides land on the last stretch before your desk, and his loading screen comes back every phase.',
+      intro: 'His slides come in through the side door by your desk, and his loading screen comes back every phase.',
     },
     stunResist: 0.4,
     scale: 1,
@@ -390,7 +387,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Do you have a minute? It will not take long.',
     ability:
-      'Three phases. First a stack of agenda points as a shield. At 66% he calls in peer reviewers who keep coming. At 33% he walks faster, and every tower near him reloads a lot slower while he asks how you are getting on.',
+      'Three phases. First a stack of agenda points as a shield. At 66% he calls in peer reviewers who keep coming, through the meeting room door. At 33% he walks faster, and every tower near him reloads a lot slower while he asks how you are getting on.',
     counter: 'Break the agenda early: anything works on it. Keep damage away from his route for the last phase: Office Artillery from across the floor, or a barrier he has to kick.',
     hp: 720,
     shield: 180,
@@ -448,7 +445,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'This is just a friendly conversation. I will be taking notes.',
     ability:
-      'Does audits. Every few seconds the kind of tower you spent the most Coffee on is called in for a review and does nothing for a while. In her last phase the audits come faster. She brings New Hires for their onboarding.',
+      'Does audits. Every few seconds the kind of tower you spent the most Coffee on is called in for a review and does nothing for a while. In her last phase the audits come faster. She brings New Hires for their onboarding: they come in through the HR office door.',
     counter: 'Do not put everything into one kind of tower. Spread it, so an audit only takes out part of your defence.',
     hp: 860,
     speed: 0.95,
@@ -504,8 +501,8 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Final boss',
     quote: 'Do you feel stressed? Let us talk about your 360.',
     ability:
-      'Your annual review, with feedback from everyone. Three phases like before: a stack of agenda points, then peer reviewers, then questions while your towers near him reload slower. At 66% The Head of Comms comes back for the review, at 33% The Presenter.',
-    counter: 'Everything you have learned. Hit hard early, keep damage away from his route at the end, and keep something in reserve for the reviewers.',
+      'Your annual review, with feedback from everyone. Three phases like before: a stack of agenda points, then peer reviewers, then questions while your towers near him reload slower. At 66% The Head of Comms comes back for the review, at 33% The Presenter, both through the meeting room door.',
+    counter: 'Everything you have learned. Hit hard early, keep damage away from his route at the end, and keep something by the meeting room door for the reviewers.',
     hp: 600,
     shield: 150,
     speed: 1.0,
@@ -607,7 +604,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Just popping out for a minute.',
     ability:
-      'Walks through the car park in a cloud of his own smoke. Every tower near him reaches a lot less far, and wherever he stops for a puff the smoke hangs around for a while. He brings a Chatterbox along now and then.',
+      'Walks through the car park in a cloud of his own smoke. Every tower near him reaches a lot less far, and wherever he stops for a puff the smoke hangs around for a while. Now and then a Chatterbox comes out of the smoking shelter door to join him.',
     counter: 'Long range and lots of it: Office Artillery does not care about smoke. Spread your towers out so a cloud never covers all of them.',
     hp: 1000,
     speed: 0.85,

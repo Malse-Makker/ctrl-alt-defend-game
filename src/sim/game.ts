@@ -641,6 +641,10 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
 export class Game {
   readonly level: LevelDef;
   readonly paths: Path[];
+  /** The routes waves come in on; the boss's side door, if there is one, comes after them. */
+  readonly wavePaths: number;
+  /** Index of the boss's side door in paths, or null when the level has none. */
+  readonly doorPath: number | null;
   readonly waves: SpawnGroup[][];
   readonly seed: number;
   readonly costMult: number;
@@ -707,7 +711,9 @@ export class Game {
     this.players = Math.max(1, Math.min(8, Math.floor(opts.players ?? 1)));
     this.sharedWallet = this.players === 1 || (opts.sharedWallet ?? true);
     this.ownTowers = this.players > 1 && (opts.ownTowers ?? true);
-    this.paths = level.paths.map((p) => new Path(p));
+    this.paths = [...level.paths, ...(level.bossDoor ? [level.bossDoor] : [])].map((p) => new Path(p));
+    this.wavePaths = level.paths.length;
+    this.doorPath = level.bossDoor ? level.paths.length : null;
     this.waves = level.waves.map(parseWave);
     this.startFocus = level.startFocus + (opts.extraFocus ?? 0);
     this.focus = this.startFocus;
@@ -1111,16 +1117,18 @@ export class Game {
     let total = 0;
     const c = { x, y };
     const z = this.level.closedZone;
-    for (const path of this.paths) {
+    this.paths.forEach((path, pi) => {
       for (let d = 0; d <= path.length; d += 0.25) {
         const p = path.pointAt(d);
+        // The side door's last stretch is the main walkway: count it once.
+        if (pi >= this.wavePaths && this.paths.slice(0, this.wavePaths).some((w) => w.distanceTo(p) < 0.05)) continue;
         total++;
         if (Math.hypot(p.x - x, p.y - y) > range) continue;
         if (z && !global && this.inClosedZone(p) !== this.inClosedZone(c)) continue;
         if (sighted && !this.lineOfSight(x, y, p.x, p.y)) continue;
         points.push({ x: p.x, y: p.y });
       }
-    }
+    });
     return { points, share: total ? points.length / total : 0 };
   }
 
@@ -1745,7 +1753,7 @@ export class Game {
       if (hz.type === 'smoke') {
         // A gust of exhaust: clouds settle on random bits of the walkway.
         for (let i = 0; i < hz.clouds; i++) {
-          const path = this.paths[i % this.paths.length];
+          const path = this.paths[i % this.wavePaths];
           const p = path.pointAt(this.rng.range(path.length * 0.1, path.length * 0.9));
           this.smoke.push({ x: p.x, y: p.y, r: hz.radius, mult: hz.rangeMult, life: hz.window });
         }
@@ -1753,7 +1761,7 @@ export class Game {
       if (hz.type === 'overheat') {
         // The racks give off smoke over the walkway inside the room.
         for (let i = 0; i < hz.clouds; i++) {
-          const path = this.paths[i % this.paths.length];
+          const path = this.paths[i % this.wavePaths];
           let p = path.pointAt(this.rng.range(0, path.length));
           for (let tries = 0; tries < 8 && this.level.closedZone && !this.inClosedZone(p); tries++) p = path.pointAt(this.rng.range(0, path.length));
           this.smoke.push({ x: p.x, y: p.y, r: hz.radius, mult: hz.rangeMult, life: hz.window });
@@ -1765,7 +1773,7 @@ export class Game {
           this.hazardNext = this.time + hz.every;
           return;
         }
-        const pathIndex = Math.max(0, this.waveIndex - 1) % this.paths.length;
+        const pathIndex = Math.max(0, this.waveIndex - 1) % this.wavePaths;
         let at = this.time;
         for (const g of parseWave(hz.swarm)) {
           for (let i = 0; i < g.count; i++) {
@@ -1862,12 +1870,12 @@ export class Game {
     const groups = this.waves[this.waveIndex];
     this.waveIndex++;
     this.reserveDesks();
-    const pathIndex = (this.waveIndex - 1) % this.paths.length;
+    const pathIndex = (this.waveIndex - 1) % this.wavePaths;
     let at = this.time;
     for (const g of groups) {
       for (let i = 0; i < g.count; i++) {
         // Town Hall: one through each entrance in turn.
-        const p = this.level.splitPaths ? this.seq % this.paths.length : pathIndex;
+        const p = this.level.splitPaths ? this.seq % this.wavePaths : pathIndex;
         this.pending.push({ at, seq: this.seq++, type: g.type, pathIndex: p });
         at += g.interval;
       }
@@ -2205,12 +2213,19 @@ export class Game {
   }
 
   private callIn(boss: Enemy, type: string, count: number): void {
-    const at = boss.def.boss?.addsAt;
-    // The Presenter beams his slides at your desk; everyone else calls people in next to him.
-    const from = at !== undefined ? this.paths[boss.pathIndex].length * at : boss.dist;
+    // Through the side door where the level has one (they queue behind it and walk in), next to
+    // him everywhere else: his bodyguards.
+    const door = this.doorPath;
+    const pathIndex = door ?? boss.pathIndex;
+    const from = door !== null ? 0 : boss.dist;
     for (let i = 0; i < count; i++) {
-      this.spawn(type, boss.pathIndex, from - 0.35 * (i + 1) - this.rng.range(0, 0.15), true);
+      this.spawn(type, pathIndex, from - 0.35 * (i + 1) - this.rng.range(0, 0.15), true);
     }
+  }
+
+  /** The boss's side door stands open while a boss is on the floor. */
+  get doorOpen(): boolean {
+    return this.doorPath !== null && this.enemies.some((e) => e.alive && e.def.boss !== undefined && this.onFloor(e));
   }
 
   // ------------------------------------------------------------------ towers
@@ -2978,7 +2993,7 @@ export class Game {
       if (b.reviewers) {
         // An earlier boss comes back for the 360-degree review.
         const type = e.phase === 2 ? b.reviewers.phase2 : b.reviewers.phase3;
-        const r = this.spawn(type, e.pathIndex, Math.max(0, e.dist - 1.2), true);
+        const r = this.doorPath !== null ? this.spawn(type, this.doorPath, -0.4, true) : this.spawn(type, e.pathIndex, Math.max(0, e.dist - 1.2), true);
         r.hp = r.maxHp = r.def.hp * b.reviewers.hpShare;
         this.events.push({ t: 'reviewer', enemyId: r.id, type });
       }

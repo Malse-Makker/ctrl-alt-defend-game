@@ -43,7 +43,8 @@ function seenCoverage(g: Game, c: { x: number; y: number }, range: number): numb
   const z = g.level.closedZone;
   const inside = (p: { x: number; y: number }) => !!z && p.x >= z.x && p.x < z.x + z.w && p.y >= z.y && p.y < z.y + z.h;
   let n = 0;
-  for (const path of g.paths) {
+  // The routes the waves take: the boss's side door only matters for one wave.
+  for (const path of g.paths.slice(0, g.wavePaths)) {
     for (let d = 0; d <= path.length; d += 0.25) {
       const p = path.pointAt(d);
       if (z && range < 30 && inside(p) !== inside(c)) continue;
@@ -63,7 +64,7 @@ export function rankSpots(g: Game, range: number, sighted = true): Spot[] {
       const r = g.isLit(tx, ty) ? range : range * DARK_RANGE;
       // For towers that aim, only walkway they can actually see counts: walls and furniture are
       // in the way. Zones, pulses, piles and the chair do not care.
-      const cover = sighted ? seenCoverage(g, c, r) : g.paths.reduce((s, p) => s + p.coverage(c, r, 0.25), 0);
+      const cover = sighted ? seenCoverage(g, c, r) : g.paths.slice(0, g.wavePaths).reduce((s, p) => s + p.coverage(c, r, 0.25), 0);
       if (cover > 0) spots.push({ tx, ty, cover });
     }
   }

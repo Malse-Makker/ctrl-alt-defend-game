@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-14 klaar
+## Stand: v0.48.0 (2026-11-14); alle 15 levels staan erin; review stap 1-14 klaar, plus doos/verborgen en zijdeuren
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -160,6 +160,14 @@ ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) 
   100/100, L6 100/46 -> 92/84, L7 92/92 -> 92/88, L8 92/88 -> 92/81, L9 51/33 -> 67/37, L10
   100/100 -> 100/92, L11 51/48 -> 67/51, L12 59/59 -> 59/51, L13 19/2 -> 63/34, L14 97/89 -> 97/65,
   L15 59/68 -> 68/84; L1-4 gelijk. L13 (de zwaarste) is daarmee een stuk eerlijker.
+- **Gedaan in 0.48.0:** de zijdeuren. `LevelDef.bossDoor` is een route van buiten de deur naar je
+  bureau; hij komt na de golfroutes in `game.paths` (`wavePaths`, `doorPath`), golven gebruiken hem
+  nooit. Op een level met een deur roept elke boss zijn mensen door die deur (`callIn`, ook de
+  reviewers van de 360); `addsAt` van de Presenter is weg. De deur is het gewone `door`-model met een
+  rood bordje, dicht tot `game.doorOpen` (een boss op de vloer), en zwaait dan naar binnen open
+  (`World.update`). Bots en de "Sees N%"-hint tellen het gedeelde stuk maar een keer. Balans (solid,
+  seed 1, Focus zonder -> met deur): L3 100 -> 100, L5 100 -> 100, L7 92 -> 96, L10 100 -> 100, L12
+  59 -> 59, L15 68 -> 100 (de reviewers komen nu ver van je bureau binnen).
 - Zijdeur voor boss-hulpjes: een vaste deur met een kort eigen pad, vanaf het begin zichtbaar en
   dicht, open zodra de boss binnenkomt; zijn hulpjes komen daaruit. Alleen waar het bij het verhaal
   past: Presenter (L3), Line Manager (L5, L10, L15: reviewers uit de vergaderzaal), Smoking
