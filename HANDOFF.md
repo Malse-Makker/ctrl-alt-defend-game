@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-9 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-11 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -102,7 +102,14 @@ Stap 9 (0.39.0): `src/ui/almanac.ts` ("Who is who", tabbladen Colleagues en Towe
 = silhouet; torens na de hoogste open vloer op slot), knop op het carrièrescherm en in het
 pauzemenu. Golf-preview als gezichten met aantal (speciaal eerst, NEW, klik = kaart). Kleine
 DOM-badges (`badgeIcons`) in "On the floor". Eindscherm: counter-torens per collega en "You had
-none of these". Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+none of these".
+Stap 10 (0.40.0): `zoneProof` weg (de doos houdt de Shredder tegen zolang hij er is); stop-halvering
+alleen nog voor bosses; `stunPulse` en `SHOP_ORDER` opgeruimd. Noise Cancelling voor de buurt zat al
+in stap 8. Balans: geen uitkomst of ster veranderd (alleen L5 deepest 85 -> 86%). De oude test
+"repeated stuns land shorter" is omgezet naar de nieuwe regel (besluit 7).
+Stap 11 (0.41.0): `src/render/tierdots.ts` (puur): per pad een rij lampjes, één per tier. In
+`actors.ts` op de zijkant van het kastje die naar de camera wijst (groep gedraaid met `camRight`,
+op 0,445 van het midden: het kastje is 0,86 x 0,77 na schalen); op een aanrecht liggen ze ervoor. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

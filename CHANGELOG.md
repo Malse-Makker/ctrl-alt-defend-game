@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.41.0] - 2026-11-14
+
+### New
+- Every tower shows what is in it: a little light on its cabinet for every tier bought, a row per path in the colour of that path, like the pips in the panel.
+
+## [0.40.0] - 2026-11-14
+
+### Changed
+- An ordinary colleague now stops just as long every time Headphones pulse. Only bosses get used to it.
+- The Shredder may grind the Old Guard once his archive box is broken. Until then the box stops it, like every other light hit.
+
 ## [0.39.0] - 2026-11-14
 
 ### New

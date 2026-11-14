@@ -7,6 +7,7 @@ import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '.
 import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
 import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
+import { tierDots } from './tierdots';
 import { PAL } from './palette';
 import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
 
@@ -66,6 +67,9 @@ interface TowerView {
   wet: THREE.Object3D | null;
   /** The top of the worktop it stands on (Coffee Corner), or undefined on the floor. */
   surface: number | undefined;
+  /** Tier dots on its foot, rebuilt when an upgrade is bought. */
+  dots: THREE.Group | null;
+  dotsKey: string;
 }
 
 interface Shot {
@@ -373,6 +377,7 @@ export class Actors {
         v.root.add(v.wet);
       }
       if (v.wet) v.wet.visible = t.mopped > 0;
+      this.placeDots(v, t);
       const kind = towerBadge(t);
       if (kind !== v.badgeKind) {
         v.badgeKind = kind;
@@ -677,9 +682,51 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface };
+    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface, dots: null, dotsKey: '' };
     this.towers.set(t.id, v);
     return v;
+  }
+
+  private readonly dotGeo = new THREE.BoxGeometry(0.085, 0.06, 0.02);
+  private dotMats = new Map<string, THREE.MeshBasicMaterial>();
+
+  /**
+   * One light per tier bought, in the path's colour, on the front of the cabinet: a row per path.
+   * A tower on a worktop has no cabinet; its lights lie on the counter in front of it.
+   */
+  private placeDots(v: TowerView, t: Tower): void {
+    const key = t.tiers.join('');
+    if (key === v.dotsKey) return;
+    v.dotsKey = key;
+    if (v.dots) v.root.remove(v.dots);
+    const dots = tierDots(t.def, t.tiers);
+    if (dots.length === 0) {
+      v.dots = null;
+      return;
+    }
+    const g = new THREE.Group();
+    const onCounter = v.surface !== undefined;
+    const base = onCounter ? v.surface! - v.root.position.y + 0.02 : 0;
+    for (const d of dots) {
+      let mat = this.dotMats.get(d.color);
+      if (!mat) {
+        mat = new THREE.MeshBasicMaterial({ color: d.color });
+        this.dotMats.set(d.color, mat);
+      }
+      const m = new THREE.Mesh(this.dotGeo, mat);
+      if (onCounter) {
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(d.x, base, 0.36 + d.row * 0.06);
+        // Just outside the cabinet, which the model scales to 0.86 by 0.77: clear of it on every side.
+      } else m.position.set(d.x, TOWER_CABINET_H - 0.08 - d.row * 0.08, 0.445);
+      g.add(m);
+    }
+    // Turn the row to the side of the cabinet that faces the camera, whichever way the tower faces.
+    const toCam = Math.atan2(-this.camRight.z, this.camRight.x);
+    const side = Math.floor(toCam / (Math.PI / 2) + 0.5) * (Math.PI / 2);
+    g.rotation.y = onCounter ? 0 : side - v.root.rotation.y;
+    v.dots = g;
+    v.root.add(g);
   }
 
   private swapModel(v: TowerView, t: Tower): void {
