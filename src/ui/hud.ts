@@ -16,11 +16,14 @@ import {
   pathBlock,
   type DamageClass,
   type TargetMode,
+  type Tiers,
+  type TowerDef,
 } from '../sim/data/towers';
-import { earlyCallPoints } from '../sim/economy';
+import { DUPLICATE_SURCHARGE, earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
 import { idleNote } from './badges';
+import { upgradeDiff } from './statdiff';
 import { cardCountdown, colleagueCard } from './colleaguecard';
 import { fmt, h, icon, img, setText, toggle } from './dom';
 import { UI_TEXT as T } from './text';
@@ -71,16 +74,25 @@ const SHIELD_MIN_HIT = Math.max(...Object.values(COLLEAGUES).map((c) => c.shield
 
 /** One line for the tower panel: can this tower hurt a shielded colleague? */
 function shieldLine(s: LiveTowerStats): { text: string; ok: boolean; help: string } {
-  const help = `A shield stops every hit under ${SHIELD_MIN_HIT} damage.`;
+  const help = T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT));
   if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true, help };
   if (s.rampMax > 0 && s.damage * s.rampMax >= SHIELD_MIN_HIT) return { text: 'once built up', ok: true, help };
   return { text: 'bounces off', ok: false, help };
+}
+
+/** Under an upgrade button: what it changes in numbers, from computeStats before and after. */
+function diffLine(def: TowerDef, tiers: Tiers, path: number): HTMLElement | null {
+  const changes = upgradeDiff(def, tiers, path);
+  if (changes.length === 0) return null;
+  return h('span', { class: 'diff' }, ...changes.map((c) => h('span', { class: c.isNew ? 'chg new' : 'chg', text: c.isNew ? `NEW: ${c.text}` : `${c.label} ${c.text}` })));
 }
 
 interface ShopEntry {
   defId: string;
   el: HTMLButtonElement;
   cost: HTMLElement;
+  /** "NEW" on a tower that arrives this level, until you have put one down. */
+  fresh: HTMLElement | null;
 }
 
 export class Hud {
@@ -105,6 +117,10 @@ export class Hud {
   private speedBtns: HTMLButtonElement[] = [];
   private pauseBtn!: HTMLButtonElement;
   private shop: ShopEntry[] = [];
+  /** The strip under the shop: what the tower under the mouse (or in your hand) does. */
+  private shopInfo!: HTMLElement;
+  private shopHover: string | null = null;
+  private shopInfoKey = '';
   private towerPanel!: HTMLElement;
   private towerKey = '';
   private towerDyn: (() => void) | null = null;
@@ -235,15 +251,26 @@ export class Hud {
   }
 
   private buildRight(): void {
-    const grid = h('div', { class: 'shop-grid' });
+    // Fourteen towers in two columns do not fit on a 900 pixel screen: three smaller ones do.
+    const grid = h('div', { class: `shop-grid${this.game.level.towers.length > 8 ? ' many' : ''}` });
     let key = 1;
     for (const defId of this.game.level.towers) {
       const def = TOWERS[defId];
       const n = key++;
       const cost = h('span', { class: 'cost' });
+      const fresh = def.unlockLevel === this.game.level.id && this.game.level.id > 1 ? h('span', { class: 'new-tag', text: T.newBadge }) : null;
       const el = h(
         'button',
-        { class: 'shop-item', title: def.verb, on: { click: () => this.act.pick(defId) } },
+        {
+          class: 'shop-item',
+          on: {
+            click: () => this.act.pick(defId),
+            mouseenter: () => (this.shopHover = defId),
+            mouseleave: () => (this.shopHover = this.shopHover === defId ? null : this.shopHover),
+            focus: () => (this.shopHover = defId),
+            blur: () => (this.shopHover = this.shopHover === defId ? null : this.shopHover),
+          },
+        },
         // Only 1 to 9 are keys; a number above that would promise a shortcut that does not exist.
         h('span', { class: 'hotkey', text: n <= 9 ? String(n) : '' }),
         img(`icons/${def.models[0]}.png`, def.name),
@@ -255,8 +282,9 @@ export class Hud {
           def.special ? h('span', { class: 'special', text: T.oneEach, title: T.oneEachHelp }) : null,
           classTag(def.damageClass, false),
         ),
+        fresh,
       );
-      this.shop.push({ defId, el, cost });
+      this.shop.push({ defId, el, cost, fresh });
       grid.append(el);
     }
     const later = h('ul', { class: 'later' });
@@ -267,8 +295,8 @@ export class Hud {
       'div',
       { class: 'section panel scroll shop' },
       h('div', { class: 'section-head' }, h('span', { class: 'label', text: T.shop })),
-      h('div', { class: 'faint', attrs: { style: 'font-size:12px' }, text: T.shopHint }),
       grid,
+      (this.shopInfo = h('div', { class: 'shop-info' })),
       UPCOMING_TOWERS.length ? h('div', { class: 'label', attrs: { style: 'margin-top:4px' }, text: T.comingLater }) : null,
       UPCOMING_TOWERS.length ? later : null,
     );
@@ -332,7 +360,9 @@ export class Hud {
       setText(s.cost, taken ? T.placed : String(cost));
       toggle(s.el, 'broke', taken || wallet < cost);
       toggle(s.el, 'selected', st.placing === s.defId);
+      if (s.fresh) s.fresh.hidden = g.towers.some((t) => t.defId === s.defId && t.owner === this.me);
     }
+    this.updateShopInfo(st.placing);
     this.updatePlayers(st);
 
     this.updateColleagues();
@@ -456,6 +486,29 @@ export class Hud {
     else this.infoCard.hidden = true;
   }
 
+  private updateShopInfo(placing: string | null): void {
+    const id = this.shopHover ?? placing;
+    const g = this.game;
+    const owned = id ? g.towers.filter((t) => t.defId === id && t.owner === this.me).length : 0;
+    const key = `${id ?? '-'}:${Math.min(owned, 1)}`;
+    if (key === this.shopInfoKey) return;
+    this.shopInfoKey = key;
+    if (!id) {
+      this.shopInfo.replaceChildren(h('div', { class: 'faint wrap', text: T.shopHint }));
+      return;
+    }
+    const def = TOWERS[id];
+    const here = new Set(g.waves.flat().map((gr) => gr.type));
+    const good = Object.values(COLLEAGUES).filter((c) => !c.boss && here.has(c.id) && c.counters?.includes(id));
+    const lines: (HTMLElement | null)[] = [
+      h('div', { class: 'row' }, h('span', { class: 'si-name', text: def.name }), classTag(def.damageClass, true)),
+      h('div', { class: 'wrap si-short', text: def.short }),
+      good.length ? h('div', { class: 'wrap si-good', text: `${T.shopInfoGood}: ${good.map((c) => c.name).join(', ')}` }) : null,
+      owned > 0 && !def.special ? h('div', { class: 'faint wrap si-copies', text: T.shopInfoCopies.replace('{p}', String(Math.round(DUPLICATE_SURCHARGE * 100))) }) : null,
+    ];
+    this.shopInfo.replaceChildren(...lines.filter((l): l is HTMLElement => l !== null));
+  }
+
   private updateTowerPanel(id: number | null): void {
     const t = id !== null ? this.game.tower(id) : undefined;
     if (!t) {
@@ -488,6 +541,7 @@ export class Hud {
         title = p.tiers[t.tiers[i] - 1].name;
       }
     });
+    const dyn0: (() => void)[] = [];
     const head = h(
       'div',
       { class: 'tp-head' },
@@ -501,8 +555,12 @@ export class Hud {
       ),
       h('button', { class: 'icon-btn', title: 'Close (Esc)', on: { click: () => this.act.deselect() } }, icon('xmark')),
     );
-    const parts: HTMLElement[] = [head];
-    const dyn: (() => void)[] = [];
+    // Sell sits right under the name: it used to fall off the bottom of a long panel.
+    const sellLabel = h('span');
+    const sell = h('button', { class: 'btn danger small tp-sell', on: { click: () => this.act.sell(t.id) } }, icon('recycle'), sellLabel);
+    dyn0.push(() => setText(sellLabel, ` ${T.sell} (+${g.sellValueFor(t)})`));
+    const parts: HTMLElement[] = [head, sell];
+    const dyn: (() => void)[] = dyn0;
 
     const stats = h('div', { class: 'kv' });
     if (def.role === 'pulse') {
@@ -530,8 +588,8 @@ export class Hud {
         h('span', { class: 'k', text: 'Zone size' }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
       );
-      // Zone damage comes in tiny ticks: a shield stops all of it.
-      stats.append(h('span', { class: 'k', text: 'Shields' }), h('span', { class: 'v faint', text: 'bounces off' }));
+      // Zone damage comes in tiny ticks: a box stops all of it. Other shields it grinds down.
+      stats.append(h('span', { class: 'k', text: T.boxes, title: T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT)) }), h('span', { class: 'v faint', text: 'bounce it off' }));
       if (s.slow < 1) stats.append(h('span', { class: 'k', text: 'Slows to' }), h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%${s.slowTime > 0.5 ? `, ${fmt(s.slowTime, 0)}s after` : ''}` }));
       const extra = ['reveals hidden', s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.stunPulse ? `stops everyone every ${s.stunPulse.every}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
@@ -550,16 +608,12 @@ export class Hud {
         h('span', { class: 'v', text: fmt(s.range, 2) }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      stats.append(h('span', { class: 'k', text: T.boxes, title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       const extra = ['hits hidden', s.slowOnHit ? 'slows' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
       stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
-      const per = h('span', { class: 'v' });
-      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt, h('span', { class: 'k', text: T.perCoffee }), per);
-      dyn.push(() => {
-        setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`);
-        setText(per, fmt(t.stats.damage / Math.max(1, t.invested), 1));
-      });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
     } else if (def.role === 'smash') {
       stats.append(
         h('span', { class: 'k', text: 'Slam' }),
@@ -570,7 +624,7 @@ export class Hud {
         h('span', { class: 'v', text: `${fmt(s.barrierHp, 0)} kicks, ${fmt(s.barrierTime, 0)}s` }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      stats.append(h('span', { class: 'k', text: T.boxes, title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       const extra = [s.doubleSmash ? 'smashes twice' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.barrierThorns > 0 ? `kicking it hurts (${s.barrierThorns}/s)` : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
@@ -588,7 +642,7 @@ export class Hud {
         h('span', { class: 'v', text: `${fmt(s.interval, 1)}s` }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      stats.append(h('span', { class: 'k', text: T.boxes, title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       const extra = [s.knockback > 0 ? 'knocks back' : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.rollBack ? 'hits on the way back' : '', s.bossMult > 1 ? `x${s.bossMult} vs bosses` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
@@ -621,7 +675,7 @@ export class Hud {
         h('span', { class: 'v', text: 'any tile' }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      stats.append(h('span', { class: 'k', text: T.boxes, title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       const extra = [s.doubleShot ? 'two tomatoes' : '', s.crater ? `burns ${s.crater.time}s` : '', s.stunOnHit > 0 ? `stops for ${s.stunOnHit}s` : '', s.knockback > 0 ? 'pushes back' : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
@@ -632,25 +686,22 @@ export class Hud {
       stats.append(
         h('span', { class: 'k', text: T.damage }),
         h('span', { class: 'v', text: fmt(s.damage, 1) }),
-        h('span', { class: 'k', text: T.rate }),
-        h('span', { class: 'v', text: fmt(1 / s.interval, 2) }),
+        // A slow tower reads better as a reload time than as 0.31 shots a second.
+        h('span', { class: 'k', text: s.interval > 1 ? T.reload : T.rate }),
+        h('span', { class: 'v', text: s.interval > 1 ? `${fmt(s.interval, 1)}s` : fmt(1 / s.interval, 2) }),
         h('span', { class: 'k', text: T.range }),
         h('span', { class: 'v', text: s.global ? 'the whole floor' : fmt(s.range, 2) }),
       );
       const sl = shieldLine(s);
-      stats.append(h('span', { class: 'k', text: 'Shields', title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
+      stats.append(h('span', { class: 'k', text: T.boxes, title: sl.help }), h('span', { class: `v ${sl.ok ? 'good' : 'faint'}`, text: sl.text, title: sl.help }));
       if (s.stunOnHit > 0) extra.push(`pins for ${s.stunOnHit}s`);
       if (s.slowOnHit) extra.push('slows');
       if (s.killCoffee > 0) extra.push(`+${s.killCoffee} Coffee per colleague`);
       if (s.waveIncome > 0) extra.push(`+${s.waveIncome} Coffee per wave`);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
-      const per = h('span', { class: 'v' });
-      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt, h('span', { class: 'k', text: T.perCoffee }), per);
-      dyn.push(() => {
-        setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`);
-        setText(per, fmt(t.stats.damage / Math.max(1, t.invested), 1));
-      });
+      stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);
+      dyn.push(() => setText(dealt, `${Math.round(t.stats.damage)} (${t.stats.kills} dealt with)`));
     } else {
       stats.append(h('span', { class: 'k', text: s.bank ? 'Brews into the pot' : 'Makes' }), h('span', { class: 'v', text: `${fmt(s.coffeeAmount, 0)} per ${fmt(s.coffeeInterval, 1)}s` }));
       if (s.tip > 0) stats.append(h('span', { class: 'k', text: 'Tips in range' }), h('span', { class: 'v', text: `+${Math.round(s.tip * 100)}%` }));
@@ -707,6 +758,7 @@ export class Hud {
           { class: 'btn upgrade-btn', title: `${next.desc} (key ${keys[i]})`, on: { click: () => this.act.upgrade(t.id, i) } },
           h('span', { class: 'row' }, h('span', { class: 'wrap' }, h('span', { class: 'faint mono', text: `${tier + 1} ` }), next.name), h('span', { class: 'price', text: String(cost) })),
           h('span', { class: 'faint wrap', attrs: { style: 'font-size:12px' }, text: next.desc }),
+          diffLine(def, t.tiers, i),
         );
         dyn.push(() => {
           btn.disabled = !g.canUpgrade(t, i, this.me).ok;
@@ -717,6 +769,7 @@ export class Hud {
       parts.push(card);
     });
 
+    const before = parts.length;
     if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : t.quiet === 'audit' ? T.auditNote : T.silencedNote }));
     else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
     else if (t.idle) parts.splice(2, 0, h('div', { class: 'status warn', text: idleNote(t.idle, t.def.damageClass, COLLEAGUES[t.idleWho ?? '']?.name ?? '') }));
@@ -725,7 +778,9 @@ export class Hud {
     else if (g.isCold(t.tx, t.ty)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.coldNote }));
     else if (!g.isLit(t.tx, t.ty) && t.def.role !== 'economy' && !t.def.base.global) parts.splice(2, 0, h('div', { class: 'status bad', text: T.darkNote }));
 
-    // Targeting
+    // Targeting, right under the name too: you change it mid-wave, upgrades you read once.
+    const controls: HTMLElement[] = [];
+    const statusAt = parts.length > before ? 3 : 2;
     if (def.role === 'chair') {
       // Four arrows laid out the way they look on screen: +x runs down-right, +y down-left.
       const arrows = h('div', { class: 'chair-dirs', attrs: { role: 'group', 'aria-label': T.chairDirection } });
@@ -740,10 +795,10 @@ export class Hud {
         i.style.transform = `rotate(${a.deg}deg)`;
         arrows.append(h('button', { class: `btn small${t.dir === a.dir ? ' active' : ''}`, title: `Roll ${a.label}`, attrs: { 'aria-label': `Roll ${a.label}` }, on: { click: () => this.act.dir(t.id, a.dir) } }, i));
       }
-      parts.push(h('div', { class: 'label', text: T.chairDirection }), arrows);
+      controls.push(h('div', { class: 'label', text: T.chairDirection }), arrows);
     }
     if (def.role === 'mortar') {
-      parts.push(h('button', { class: 'btn aim-btn', title: T.aimHelp, on: { click: () => this.act.aim(t.id) } }, icon('crosshairs'), ` ${T.aimPick}`));
+      controls.push(h('button', { class: 'btn aim-btn', title: T.aimHelp, on: { click: () => this.act.aim(t.id) } }, icon('crosshairs'), ` ${T.aimPick}`));
     }
     if (def.role === 'damage' || def.role === 'trap') {
       const trap = def.role === 'trap';
@@ -753,14 +808,10 @@ export class Hud {
         const help = (trap ? TRAP_TARGET_HELP[mode] : undefined) ?? TARGET_HELP[mode];
         tg.append(h('button', { class: `btn${t.target === mode ? ' active' : ''}`, text: label, title: help, on: { click: () => this.act.target(t.id, mode) } }));
       }
-      parts.push(h('div', { class: 'label', text: trap ? T.trapTargeting : T.targeting }), tg);
+      controls.push(h('div', { class: 'label', text: trap ? T.trapTargeting : T.targeting }), tg);
     }
 
-    // Sell
-    const sellLabel = h('span');
-    const sell = h('button', { class: 'btn danger small', on: { click: () => this.act.sell(t.id) } }, icon('recycle'), sellLabel);
-    dyn.push(() => setText(sellLabel, ` ${T.sell} (+${g.sellValueFor(t)})`));
-    parts.push(sell);
+    parts.splice(statusAt, 0, ...controls);
 
     this.towerPanel.replaceChildren(...parts);
     this.towerDyn = () => dyn.forEach((f) => f());

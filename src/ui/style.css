@@ -700,6 +700,24 @@ button:disabled {
   width: 100%;
 }
 
+/* What an upgrade changes, in numbers. */
+.upgrade-btn .diff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ok);
+}
+
+.upgrade-btn .chg.new {
+  color: var(--warn);
+}
+
+.tp-sell {
+  align-self: flex-start;
+}
+
 .price {
   font-family: var(--mono);
   color: var(--coffee);
@@ -1620,10 +1638,11 @@ select {
 .qte-head {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 
 .qte-title {
+  line-height: 1.3;
   font-family: var(--mono);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1835,6 +1854,59 @@ select {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.shop-grid.many {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.shop-grid.many .shop-item {
+  padding: 16px 2px 4px;
+}
+
+.shop-grid.many .shop-item img {
+  width: 44px;
+  height: 44px;
+}
+
+.shop-grid.many .shop-item .name {
+  font-size: 11px;
+}
+
+.shop-item .new-tag {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--warn);
+  color: #1b1b1b;
+}
+
+/* Under the shop: what the tower under the mouse does, and who it is good against. */
+.shop-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 64px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.shop-info .row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.shop-info .si-name {
+  font-weight: 700;
 }
 
 .shop-item .special {

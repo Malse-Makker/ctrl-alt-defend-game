@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.34.0 (2026-11-14), live; alle 15 levels staan erin; review stap 1-4 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-6 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -64,7 +64,26 @@ Stap 4, keuzes van mij:
   zegt de ring van wie hij is).
 - De hint bij doorlopen alleen voor collega's met een eigen regel (immuun, doos, verborgen, kring,
   taunt, pointResist, stunOnlyFrom), niet voor gewone. "BOUNCED OFF" de eerste 3 keer per collega.
-- Nog niet gedaan uit 9.3: de iconen in de lijst "On the floor" en de golf-preview (stap 9). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+- Nog niet gedaan uit 9.3: de iconen in de lijst "On the floor" en de golf-preview (stap 9).
+Stap 5 (0.35.0), keuzes van mij:
+- Brown Noise: `Enemy.revealUntil` = tijd van de volgende puls; elke tik begint met `revealed =
+  revealUntil > time`. Niet in de snapshot (`revealed` zelf gaat al mee).
+- Een stilgelegde toren geeft geen aura's meer (buffRate, slowAura, Poster-aura); gebruikt
+  `t.silenced` van de vorige tik.
+- Sharp Keycaps: de doorns negeren de doos (`ignoresMinHit`). Gekozen boven tekst aanpassen, zodat
+  de upgrade iets doet tegen de Old Guard.
+- Balans: alleen L9 verschoof (solid 51 -> 43, 2 -> 1 ster, greedy 9 -> 17/25). Het botscript zat
+  op het randje; golf 14 van L9 laat de twee Old Guards verder uit elkaar komen (1,10 -> 1,60).
+  Daarmee weer 51 / 2 sterren. De bot zet een Poster nu niet anders neer (geprobeerd, geen effect).
+Stap 6 (0.36.0), keuzes van mij:
+- `upgradeDiff` in `src/ui/statdiff.ts` (computeStats voor en na); onder elke upgradeknop.
+- Sell en Targeting bovenaan het paneel; "Reload 3.2s" boven 1 s; "Damage per Coffee" weg uit het
+  paneel (eindscherm houdt hem); "Shields" heet "Boxes".
+- Winkel: strook `shop-info` onder het grid (hover of gekozen toren; "Good against" = collega's
+  van dit level met deze toren in `counters`); NEW-label tot je er een plaatst; meer dan 8 torens
+  = drie kolommen met kleinere iconen.
+- NIET gedaan uit stap 6: iconen zonder kastje (moet via `art/blender/icons.py`, hoort bij stap 13)
+  en "alle statusredenen als iconen" in het paneel (nu nog een regel). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

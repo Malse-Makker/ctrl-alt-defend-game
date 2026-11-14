@@ -109,6 +109,11 @@ export const UI_TEXT = {
   locked: 'Locked',
   range: 'Range',
   rate: 'Shots per second',
+  reload: 'Reload',
+  boxes: 'Boxes',
+  boxesHelp: 'The Old Guard\'s archive box and the Repair Guy\'s toolbox stop every hit under {n} damage. Other shields take any hit.',
+  shopInfoGood: 'Good against',
+  shopInfoCopies: 'Each one you already own makes the next {p}% dearer.',
   damage: 'Damage',
   targets: 'Targets per shot',
 

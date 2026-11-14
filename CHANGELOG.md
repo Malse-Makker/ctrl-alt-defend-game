@@ -3,6 +3,29 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.36.0] - 2026-11-14
+
+### New
+- Under the shop, a strip says what the tower under your mouse does, which colleagues on this floor it is good against, and that every copy you own makes the next one dearer.
+- Towers that arrive on this level say NEW in the shop until you put one down.
+- Every upgrade button says what changes in numbers: "Damage 15 > 35", "Reload 3.2s > 2.2s", or NEW for something the tower did not do before.
+
+### Changed
+- Sell and Targeting sit at the top of the tower panel, right under the name, instead of falling off the bottom.
+- Slow towers show their reload time ("Reload 3.2s") instead of 0.31 shots a second. "Damage per Coffee" left the panel; it stays on the end screen.
+- "Shields" in the panel is now "Boxes": only the Old Guard's archive box and the Repair Guy's toolbox stop light hits. Other shields take anything.
+- With more than eight towers the shop shows three smaller ones per row, so all fourteen fit on the screen.
+
+## [0.35.0] - 2026-11-14
+
+### Fixed
+- Brown Noise now shows hidden colleagues until the next pulse. Before, it only worked for towers that happened to be built after the Headphones.
+- A Motivational Poster or Headphones silenced by a Chatterbox no longer speed up the towers around them. "It does nothing until he moves on" now includes helping.
+- Sharp Keycaps hurt the Old Guard through his box, as the keyboard promises.
+
+### Changed
+- Town Hall: the two Old Guards in wave 14 come in a little further apart.
+
 ## [0.34.0] - 2026-11-14
 
 ### New
