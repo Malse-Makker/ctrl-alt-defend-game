@@ -77,6 +77,8 @@ export interface Enemy {
   /** Speed factor from a boss hurrying people along (The Cleaner). 1 = none. */
   haste: number;
   revealed: boolean;
+  /** Brown Noise: shown up until this time (the next pulse), wherever he walks meanwhile. */
+  revealUntil: number;
   /** Extra damage from every hit while this lasts (Focus Music). */
   vulnerable: number;
   vulnerableTime: number;
@@ -1045,7 +1047,7 @@ export class Game {
   posterAura(t: Tower): { damage: number; add: number; range: number; shield: boolean; hidden: boolean; discount: number } | null {
     let a: { damage: number; add: number; range: number; shield: boolean; hidden: boolean; discount: number } | null = null;
     for (const p of this.towers) {
-      if (p.def.role !== 'support' || p === t) continue;
+      if (p.def.role !== 'support' || p === t || p.silenced) continue;
       const ps = computeStats(p.def, p.tiers);
       if (Math.hypot(p.x - t.x, p.y - t.y) > ps.range) continue;
       a ??= { damage: 1, add: 0, range: 1, shield: false, hidden: false, discount: 0 };
@@ -1556,6 +1558,7 @@ export class Game {
         aura: 1,
         haste: 1,
         revealed: a[16] === 1,
+        revealUntil: 0,
         vulnerable: 0,
         vulnerableTime: 0,
         stunnedTakes: 1,
@@ -1886,6 +1889,7 @@ export class Game {
       aura: 1,
       haste: 1,
       revealed: false,
+      revealUntil: 0,
       vulnerable: 0,
       vulnerableTime: 0,
       stunnedTakes: 1,
@@ -1957,7 +1961,8 @@ export class Game {
           b.hp -= (e.def.boss ? 25 : Math.max(1, e.def.focus)) * dt;
           if (b.thorns > 0) {
             const owner = this.tower(b.tower);
-            const { dealt } = this.damage(e, b.thorns * dt, 'physical', false);
+            // Keycaps dig in all the time: the box does not stop them the way it stops a light hit.
+            const { dealt } = this.damage(e, b.thorns * dt, 'physical', false, true);
             if (owner) owner.stats.damage += dealt;
             if (!e.alive) {
               if (owner) owner.stats.kills++;
@@ -1990,7 +1995,8 @@ export class Game {
     const slows: { x: number; y: number; r: number; f: number }[] = [];
     const buffs: { x: number; y: number; r: number; f: number; id: number }[] = [];
     for (const t of this.towers) {
-      if (t.def.role === 'economy') continue;
+      // A silenced tower does nothing, and that includes helping (it was quiet last tick).
+      if (t.def.role === 'economy' || t.silenced) continue;
       const s = this.liveStats(t);
       if (s.slowAura < 1) slows.push({ x: t.x, y: t.y, r: s.range, f: s.slowAura });
       if (s.buffRate < 1) buffs.push({ x: t.x, y: t.y, r: s.range, f: s.buffRate, id: t.id });
@@ -2149,8 +2155,8 @@ export class Game {
   // ------------------------------------------------------------------ towers
 
   private updateTowers(dt: number): void {
-    // Shredder zones reveal hidden colleagues; recomputed every tick.
-    for (const e of this.enemies) e.revealed = false;
+    // Shredder zones reveal hidden colleagues; recomputed every tick. Brown Noise lasts a pulse.
+    for (const e of this.enemies) e.revealed = e.revealUntil > this.time;
     for (const t of this.towers) {
       if (t.mopped > 0) t.mopped = Math.max(0, t.mopped - dt);
       if (t.hushed > 0) t.hushed = Math.max(0, t.hushed - dt);
@@ -2663,7 +2669,10 @@ export class Game {
         e.x = pt.x;
         e.y = pt.y;
       }
-      if (s.seesHidden) e.revealed = true;
+      if (s.seesHidden) {
+        e.revealed = true;
+        e.revealUntil = Math.max(e.revealUntil, this.time + s.interval * t.rateBuff + TICK);
+      }
     }
     t.stats.shots++;
     t.pulseTimer = s.interval * t.rateBuff;

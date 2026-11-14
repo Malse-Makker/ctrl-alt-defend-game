@@ -1068,7 +1068,7 @@ const L9: LevelDef = {
     'chaser:58@0.08 + newhire:14@0.60 + phonecaller:4@0.75 + chatterbox:2@1.40',
     'oldguard:2@1.20 + requester:6@0.85 + boardmember:2@1.20 + impersonator:6@0.50 + newhire:8@0.65',
     'boardmember:2@1.20 + phonecaller:6@0.70 + newhire:18@0.55 + chaser:44@0.08 + coldcaller:4@0.75',
-    'oldguard:2@1.10 + phonecaller:6@0.65 + requester:7@0.85 + chaser:48@0.08 + coldcaller:4@0.75',
+    'oldguard:2@1.60 + phonecaller:6@0.65 + requester:7@0.85 + chaser:48@0.08 + coldcaller:4@0.75',
     'repairguy:1@2.00 + newhire:12@0.60 + chaser:24@0.10',
   ],
 };

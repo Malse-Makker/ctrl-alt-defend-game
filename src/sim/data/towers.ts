@@ -422,7 +422,7 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#b48ce0',
         tiers: [
           { name: 'Lo-fi Beats', desc: 'Colleagues it stops take +1 damage from every hit for a few seconds. The Chatterbox talks over it.', cost: 15, effect: { vulnerableAdd: 1 } },
-          { name: 'Brown Noise', desc: 'Reveals hidden colleagues in range.', cost: 25, effect: { seesHidden: true } },
+          { name: 'Brown Noise', desc: 'Every pulse shows hidden colleagues in range until the next one.', cost: 25, effect: { seesHidden: true } },
           { name: 'Deep Focus', desc: 'Towers in range fire 25% faster.', cost: 60, effect: { buffRate: 0.8 } },
           { name: 'Flow State', desc: 'Towers in range fire 50% faster, and stopped colleagues take +2 more damage per hit.', cost: 170, effect: { buffRate: 0.67, vulnerableAdd: 2 } },
         ],
@@ -706,7 +706,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Wrist Rest', desc: 'The barrier takes 20 more kicks.', cost: 20, effect: { barrierHpAdd: 20 } },
           { name: 'Ergonomic', desc: 'The barrier stays 4 seconds longer.', cost: 35, effect: { barrierTimeAdd: 4 } },
-          { name: 'Sharp Keycaps', desc: 'Kicking the barrier hurts: 4 damage a second, and it takes twice the kicks.', cost: 90, effect: { barrierThorns: 4, barrierHpMult: 2 } },
+          { name: 'Sharp Keycaps', desc: 'Kicking the barrier hurts, even through a box: 4 damage a second, and it takes twice the kicks.', cost: 90, effect: { barrierThorns: 4, barrierHpMult: 2 } },
           { name: 'Server Rack', desc: 'Three times the kicks, and it stays 8 seconds longer.', cost: 220, effect: { barrierHpMult: 3, barrierTimeAdd: 8 } },
         ],
       },
