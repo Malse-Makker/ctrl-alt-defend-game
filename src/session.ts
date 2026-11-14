@@ -301,6 +301,7 @@ export class Session {
       this.qte.setTimeLeft(g.hazardUntil - g.time);
       this.qte.el.hidden = this.overlay !== null;
     }
+    this.hud?.coverCard(this.qte !== null && !this.qte.el.hidden);
   }
 
   private snapshot(): void {

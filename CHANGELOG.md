@@ -3,6 +3,11 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.48.1] - 2026-11-14
+
+### Fixed
+- A new-colleague card no longer sits on top of the projector (or any other mini-game). It waits behind it and comes back when you are done.
+
 ## [0.48.0] - 2026-11-14
 
 ### New

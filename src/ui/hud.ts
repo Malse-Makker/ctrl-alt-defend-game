@@ -487,6 +487,11 @@ export class Hud {
     this.infoTimer = gotIt ? 0 : seconds;
   }
 
+  /** A mini-game sits in the middle of the screen: the colleague card steps aside until it is done. */
+  coverCard(on: boolean): void {
+    toggle(this.infoCard, 'covered', on);
+  }
+
   /** The briefing before the day starts, in the same spot as the colleague card. */
   showBriefing(children: HTMLElement[]): void {
     this.infoCard.replaceChildren(...children);

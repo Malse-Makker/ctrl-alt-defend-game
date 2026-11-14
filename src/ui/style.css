@@ -1115,6 +1115,11 @@ button:disabled {
   pointer-events: auto;
 }
 
+/* A mini-game is open in the middle: the card waits behind it, out of the way. */
+.info-card.covered {
+  display: none !important;
+}
+
 .info-card.waiting {
   border-color: var(--warn, #f2c641);
   box-shadow: 0 0 0 2px rgba(242, 198, 65, 0.35), 0 12px 40px rgba(0, 0, 0, 0.5);
