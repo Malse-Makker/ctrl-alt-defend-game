@@ -126,7 +126,6 @@ export interface Effect {
   /** Everyone in the zone takes the full damage instead of a share. */
   unshared?: boolean;
   /** Every few seconds everyone in the zone stops for a moment. */
-  stunPulse?: { every: number; duration: number };
   /** Every few seconds everyone in range loses a share of their current HP (not bosses' full share). */
   hpPulse?: { every: number; share: number; bossShare: number };
   /** Coffee for every colleague this tower deals with. */
@@ -483,7 +482,7 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'shredder',
     name: 'The Shredder',
     flavour: 'Round filing.',
-    verb: 'A zone that grinds down everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside, so it shines against a few big ones. It does not slow anyone until you jam it. It may not touch the Old Guard archive.',
+    verb: 'A zone that grinds down everyone in it and reveals hidden colleagues. Its damage is shared over everyone inside, so it shines against a few big ones. It does not slow anyone until you jam it. The Old Guard\'s box stops it, until something breaks the box.',
     short: 'A zone that grinds down everyone in it and shows hidden colleagues.',
     role: 'zone',
     damageClass: 'physical',
@@ -995,7 +994,6 @@ export function boughtEffects(def: TowerDef, tiers: Tiers): Effect[] {
 }
 
 /** The full tower order in the shop (unlock order). Later towers get added here. */
-export const SHOP_ORDER: readonly string[] = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice', 'keyboardsmash', 'chair', 'replyall', 'delegation'];
 
 /** Towers that exist in the design but are not built yet, so the shop can say when they arrive. */
 export const UPCOMING_TOWERS: readonly { name: string; unlockLevel: number }[] = [

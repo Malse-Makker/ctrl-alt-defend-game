@@ -60,7 +60,8 @@ describe('Headphones', () => {
     expect(boss.dist).toBeLessThan(9.5);
   });
 
-  it('repeated stuns on the same colleague land shorter', () => {
+  // Changed in review step 10 (maker's decision 7): only bosses get used to being stopped.
+  it('repeated stuns on an ordinary colleague land just as long', () => {
     const { g, t } = setup('headphones', [2, 0, 0]);
     const n = put(g, 'newhire', 8.5);
     n.stunTime = 1e-9;
@@ -69,7 +70,7 @@ describe('Headphones', () => {
     n.stunTime = 0;
     t.pulseTimer = 0;
     g.step(TICK);
-    expect(n.stunTime).toBeLessThan(first);
+    expect(n.stunTime).toBeCloseTo(first);
   });
 
   it('Lo-fi Beats makes every hit on slowed colleagues land 1 harder', () => {

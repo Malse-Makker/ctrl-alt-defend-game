@@ -71,7 +71,6 @@ const FLAGS: { text: string; get: (s: LiveTowerStats) => boolean }[] = [
   { text: 'towers nearby break boxes', get: (s) => s.auraShield },
   { text: 'keeps its Coffee in a pot', get: (s) => s.bank !== null },
   { text: 'an ability you trigger', get: (s) => s.ability !== null },
-  { text: 'stops everyone now and then', get: (s) => s.stunPulse !== null },
   { text: 'takes a share of their HP now and then', get: (s) => s.hpPulse !== null },
   { text: 'slows on hit', get: (s) => s.slowOnHit !== null },
   { text: 'leaves a burning patch', get: (s) => s.crater !== null },

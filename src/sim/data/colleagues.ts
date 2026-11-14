@@ -82,8 +82,6 @@ export interface ColleagueDef {
   immune?: DamageClass;
   /** Cannot be targeted until revealed, unless the tower can see hidden colleagues. */
   invisible?: boolean;
-  /** Shredder zones do nothing to him (The Old Guard's archive: legally required to be kept). */
-  zoneProof?: boolean;
   /** Towers within this radius stop working while he walks past (The Chatterbox). */
   silence?: number;
   /** Ignores slows, and only stuns from this tower type work on him. */
@@ -239,7 +237,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     name: 'The Old Guard',
     role: 'Tank',
     quote: 'We tried that in 1998.',
-    ability: 'Drags the archive box along. Hits under 10 bounce off it, and the Shredder may not touch it: that archive is legally required to be kept.',
+    ability: 'Drags the archive box along. Hits under 10 bounce off it, the Shredder included. Once the box is broken, anything goes.',
     counter: 'Office Artillery breaks the box. Light hits bounce off, so do not count on Auto-Reply alone.',
     short: 'Carries the archive box. Hits under 10 bounce off it.',
     helps: 'One heavy hit.',
@@ -250,7 +248,6 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     speed: 1.25,
     focus: 8,
     rewardRate: REWARD_SPECIAL,
-    zoneProof: true,
     scale: 1,
     accent: '#a9a6a0',
     model: 'oldguard',

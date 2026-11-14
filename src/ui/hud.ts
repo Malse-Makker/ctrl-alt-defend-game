@@ -640,7 +640,7 @@ export class Hud {
       // Zone damage comes in tiny ticks: a box stops all of it. Other shields it grinds down.
       stats.append(h('span', { class: 'k', text: T.boxes, title: T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT)) }), h('span', { class: 'v faint', text: 'bounce it off' }));
       if (s.slow < 1) stats.append(h('span', { class: 'k', text: 'Slows to' }), h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%${s.slowTime > 0.5 ? `, ${fmt(s.slowTime, 0)}s after` : ''}` }));
-      const extra = ['reveals hidden', s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.stunPulse ? `stops everyone every ${s.stunPulse.every}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
+      const extra = ['reveals hidden', s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));
       const dealt = h('span', { class: 'v' });
       stats.append(h('span', { class: 'k', text: T.damageDealt }), dealt);

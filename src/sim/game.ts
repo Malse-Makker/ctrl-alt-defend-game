@@ -219,7 +219,6 @@ export interface LiveTowerStats {
   dot: number;
   bleed: number;
   unshared: boolean;
-  stunPulse: Effect['stunPulse'] | null;
   hpPulse: Effect['hpPulse'] | null;
   killCoffee: number;
   waveIncome: number;
@@ -515,7 +514,6 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     dot: b.dot ?? 0,
     bleed: 0,
     unshared: false,
-    stunPulse: null,
     hpPulse: null,
     killCoffee: 0,
     waveIncome: 0,
@@ -604,7 +602,6 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.auraHidden) s.auraHidden = true;
     if (e.discount !== undefined) s.discount = Math.max(s.discount, e.discount);
     if (e.crater && (!s.crater || e.crater.dps > s.crater.dps)) s.crater = e.crater;
-    if (e.stunPulse) s.stunPulse = e.stunPulse;
     if (e.hpPulse) s.hpPulse = e.hpPulse;
     damageAdd += e.damageAdd ?? 0;
     damageMult *= e.damageMult ?? 1;
@@ -2078,14 +2075,15 @@ export class Game {
     }
   }
 
-  /** A stun from a tower: bosses resist, repeats land shorter, the Chatterbox only fears headphones. */
+  /** A stun from a tower: bosses resist and their repeats land shorter, the Chatterbox only fears headphones. */
   private stunEnemy(e: Enemy, duration: number, from: Tower, takes = 1): boolean {
     if (e.def.stunOnlyFrom && e.def.stunOnlyFrom !== from.defId) return false;
     const d = duration * (e.def.stunResist ?? 1) * e.stunFalloff;
     if (d <= 0.02) return false;
     const already = e.stunTime > 0;
     e.stunTime = Math.max(e.stunTime, d);
-    e.stunFalloff = Math.max(0.15, e.stunFalloff * 0.5);
+    // Only a boss gets used to it: an ordinary colleague stops every time, as the panel says.
+    if (e.def.boss) e.stunFalloff = Math.max(0.15, e.stunFalloff * 0.5);
     e.stunRecover = 5;
     e.stunnedTakes = already ? Math.max(e.stunnedTakes, takes) : takes;
     return true;
@@ -2710,7 +2708,7 @@ export class Game {
   /** The Shredder: slows and damages everyone inside. Damage is shared out unless upgraded. */
   private updateZone(t: Tower, s: LiveTowerStats, dt: number): void {
     const inside = this.enemies.filter(
-      (e) => e.alive && this.onFloor(e) && !e.def.zoneProof && e.def.immune !== t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
+      (e) => e.alive && this.onFloor(e) && e.def.immune !== t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
     );
     if (inside.length === 0) {
       const near = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.immune === t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range);
@@ -2736,13 +2734,6 @@ export class Game {
     }
     t.pulseTimer += dt;
     t.abilityTimer += dt;
-    if (s.stunPulse && t.pulseTimer >= s.stunPulse.every) {
-      if (inside.length > 0) {
-        t.pulseTimer = 0;
-        for (const e of inside) if (e.alive) this.stunEnemy(e, s.stunPulse.duration, t);
-        this.events.push({ t: 'pulse', towerId: t.id, x: t.x, y: t.y, range: s.range, stun: true });
-      } else t.pulseTimer = s.stunPulse.every;
-    }
     if (s.hpPulse && t.abilityTimer >= s.hpPulse.every) {
       const live = inside.filter((e) => e.alive);
       if (live.length > 0) {

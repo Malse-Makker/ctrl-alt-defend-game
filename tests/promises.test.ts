@@ -127,3 +127,51 @@ describe('Noise Cancelling covers its neighbours', () => {
     expect(auto.silenced).toBe(true);
   });
 });
+
+describe('simpler rules (review step 10)', () => {
+  it('the Shredder grinds the Old Guard once his box is broken', () => {
+    const g = game();
+    g.place('shredder', 8, 1);
+    const og = put(g, 'oldguard', 9);
+    og.stunTime = 1e9;
+    g.runFor(1);
+    // The box stops every tiny tick.
+    expect(og.hp).toBe(og.maxHp);
+    og.shield = 0;
+    g.runFor(1);
+    expect(og.hp).toBeLessThan(og.maxHp);
+  });
+
+  it('an ordinary colleague stops just as long every time', () => {
+    const g = game();
+    const hp = g.place('headphones', 8, 1).tower!;
+    const e = put(g, 'newhire', 9);
+    const stops: number[] = [];
+    let was = 0;
+    g.runFor(g.liveStats(hp).interval * 3.2, (gg) => {
+      if (e.stunTime > was + 0.05) stops.push(e.stunTime);
+      was = e.stunTime;
+      e.dist = 10;
+      e.x = 9;
+      void gg;
+    });
+    expect(stops.length).toBeGreaterThanOrEqual(3);
+    for (const s of stops) expect(s).toBeCloseTo(stops[0], 1);
+  });
+
+  it('a boss still gets used to it', () => {
+    const g = game();
+    const hp = g.place('headphones', 8, 1).tower!;
+    const b = put(g, 'repairguy', 9, 100000);
+    const stops: number[] = [];
+    let was = 0;
+    g.runFor(g.liveStats(hp).interval * 3.2, () => {
+      if (b.stunTime > was + 0.01) stops.push(b.stunTime);
+      was = b.stunTime;
+      b.dist = 10;
+      b.x = 9;
+    });
+    expect(stops.length).toBeGreaterThanOrEqual(2);
+    expect(stops[1]).toBeLessThan(stops[0]);
+  });
+});
