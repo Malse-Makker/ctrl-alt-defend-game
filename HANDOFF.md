@@ -150,6 +150,16 @@ ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) 
   DIGITAL/PHYSICAL blijft voor de vloer (slechte wifi, geen internet), maar geen collega is er nog
   immuun voor: de Cold Caller wordt verborgen ("nummer afgeschermd"), de Board Member krijgt een
   doos ("zit achter zijn scherm").
+- **Gedaan in 0.47.0:** doos en verborgen zoals hierboven. Extra, nodig voor de balans: een toren
+  die geen dozen breekt mikt eerst op iemand die hij wel raakt (`pickTargets`, `breaksBoxes`); de
+  Pomodoro Timer breekt dozen van zichzelf (bommen breken lood), Do Not Disturb geeft nu een 25%
+  grotere klap; Out of Office (Auto-Reply T3) breekt dozen. Board Member 40 HP + doos 6 (een nietje
+  en hij is open). Cold Caller 16 HP (was 24) met `rewardRate` 0.225, zodat hij evenveel Coffee
+  oplevert als vroeger. Bots: Reading Glasses op een Artillery in de Cold Caller-levels, Out of
+  Office in de Board Member-levels. Balans (solid / greedy, seed 1, Focus voor -> na): L5 100/85 ->
+  100/100, L6 100/46 -> 92/84, L7 92/92 -> 92/88, L8 92/88 -> 92/81, L9 51/33 -> 67/37, L10
+  100/100 -> 100/92, L11 51/48 -> 67/51, L12 59/59 -> 59/51, L13 19/2 -> 63/34, L14 97/89 -> 97/65,
+  L15 59/68 -> 68/84; L1-4 gelijk. L13 (de zwaarste) is daarmee een stuk eerlijker.
 - Zijdeur voor boss-hulpjes: een vaste deur met een kort eigen pad, vanaf het begin zichtbaar en
   dicht, open zodra de boss binnenkomt; zijn hulpjes komen daaruit. Alleen waar het bij het verhaal
   past: Presenter (L3), Line Manager (L5, L10, L15: reviewers uit de vergaderzaal), Smoking

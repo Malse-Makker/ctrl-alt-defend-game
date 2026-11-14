@@ -49,8 +49,6 @@ export function goodAgainst(towerId: string): ColleagueDef[] {
 }
 
 const BADGE_GLYPH: Record<ColleagueBadge, { icon: string; cross: boolean; help: string }> = {
-  'no-digital': { icon: 'laptop', cross: true, help: T.badgeNoDigital },
-  'no-physical': { icon: 'hand', cross: true, help: T.badgeNoPhysical },
   box: { icon: 'box', cross: false, help: T.badgeBox },
   hidden: { icon: 'eye-slash', cross: false, help: T.badgeHidden },
   taunt: { icon: 'exclamation', cross: false, help: T.badgeTaunt },

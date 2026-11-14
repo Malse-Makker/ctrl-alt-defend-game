@@ -60,7 +60,7 @@ const NUMBERS: Num[] = [
 
 const FLAGS: { text: string; get: (s: LiveTowerStats) => boolean }[] = [
   { text: 'sees hidden colleagues', get: (s) => s.seesHidden },
-  { text: 'breaks through boxes', get: (s) => s.ignoresMinHit },
+  { text: 'breaks through boxes', get: (s) => s.breaksBoxes },
   { text: 'reaches the whole floor', get: (s) => s.global },
   { text: 'Chatterbox-proof', get: (s) => s.silenceProof },
   { text: 'smashes twice', get: (s) => s.doubleSmash },

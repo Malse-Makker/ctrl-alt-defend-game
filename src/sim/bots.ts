@@ -282,6 +282,9 @@ SCRIPTS[5] = [
   { place: 'coffee', spot: 'far' },
   { place: 'keyboardsmash', spot: 'cover' },
   { up: 'autoreply', path: 0, all: true },
+  // Out of Office breaks the Board Member's laptop.
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'autoreply', path: 0, all: true },
   { place: 'shredder', spot: 'zone' },
   { up: 'artillery', path: 0 },
   { up: 'artillery', path: 0 },
@@ -313,8 +316,13 @@ SCRIPTS[6] = [
   { up: 'autoreply', path: 1, all: true },
   { place: 'coffee', spot: 'far' },
   { place: 'artillery', spot: 'far' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { up: 'thumbtacks', path: 0 },
   { place: 'replyall', spot: 'cover' },
+  { up: 'autoreply', path: 0, all: true },
+  // Out of Office breaks the Board Member's laptop.
+  { up: 'autoreply', path: 0, all: true },
   { up: 'autoreply', path: 0, all: true },
   { place: 'keyboardsmash', spot: 'cover' },
   { up: 'artillery', path: 0 },
@@ -361,7 +369,9 @@ SCRIPTS[7] = [
   { up: 'artillery', path: 0, all: true },
   { place: 'thumbtacks', spot: 'cover' },
   { up: 'thumbtacks', path: 0, all: true },
-  // Board Members only notice DIGITAL: keep some of it along the whole route.
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
+  // A third Auto-Reply along the whole route, for the crowd the staples miss.
   { place: 'autoreply', spot: 'cover' },
   { up: 'autoreply', path: 0, all: true },
   { up: 'delegation', path: 0 },
@@ -394,6 +404,8 @@ SCRIPTS[8] = [
   { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'far' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { up: 'pomodoro', path: 1 },
   { place: 'delegation', spot: 'cover' },
   { up: 'artillery', path: 0 },
@@ -425,8 +437,13 @@ SCRIPTS[9] = [
   { place: 'pomodoro', spot: 'cover' },
   { up: 'thumbtacks', path: 0 },
   { up: 'autoreply', path: 0, all: true },
+  // Out of Office breaks the Board Member's laptop.
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'view' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { place: 'delegation', spot: 'cover' },
   { up: 'pomodoro', path: 1 },
   { up: 'artillery', path: 0 },
@@ -495,8 +512,13 @@ SCRIPTS[11] = [
   { place: 'pomodoro', spot: 'cover' },
   { up: 'thumbtacks', path: 0 },
   { up: 'autoreply', path: 0, all: true },
+  // Out of Office breaks the Board Member's laptop.
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'view' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { place: 'delegation', spot: 'cover' },
   { up: 'pomodoro', path: 1 },
   { up: 'artillery', path: 0 },
@@ -531,6 +553,8 @@ SCRIPTS[12] = [
   { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'view' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { up: 'pomodoro', path: 1 },
   { place: 'delegation', spot: 'cover' },
   { up: 'artillery', path: 0 },
@@ -561,8 +585,13 @@ SCRIPTS[13] = [
   { up: 'thumbtacks', path: 0 },
   { place: 'pomodoro', spot: 'cover' },
   { up: 'autoreply', path: 0, all: true },
+  // Out of Office breaks the Board Member's laptop.
+  { up: 'autoreply', path: 0, all: true },
+  { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'far' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { up: 'pomodoro', path: 1 },
   { place: 'delegation', spot: 'cover' },
   { up: 'artillery', path: 0 },
@@ -575,7 +604,7 @@ SCRIPTS[13] = [
   { place: 'thumbtacks', spot: 'cover' },
   { up: 'thumbtacks', path: 0, all: true },
   { up: 'delegation', path: 1 },
-  // The Board Members in here only feel DIGITAL: a third Auto-Reply for them.
+  // A third Auto-Reply for the Board Members, once Out of Office has shut their laptops.
   { place: 'autoreply', spot: 'cover' },
   { up: 'autoreply', path: 0, all: true },
   { up: 'artillery', path: 0 },
@@ -597,6 +626,8 @@ SCRIPTS[14] = [
   { up: 'autoreply', path: 0, all: true },
   { up: 'pomodoro', path: 1 },
   { place: 'artillery', spot: 'far' },
+  // Reading Glasses: the Cold Caller's number is withheld, and staples need to see him.
+  { up: 'artillery', path: 2 },
   { up: 'pomodoro', path: 1 },
   { place: 'delegation', spot: 'cover' },
   { up: 'artillery', path: 0 },
@@ -637,7 +668,7 @@ SCRIPTS[15] = [
   { up: 'artillery', path: 0 },
   { up: 'keyboardsmash', path: 1 },
   { up: 'autoreply', path: 0, all: true },
-  // Board Members come in pairs here: Auto-Replies by the desk, one shot at a time, all DIGITAL.
+  // Board Members come in pairs here: Auto-Replies by the desk, one shot at a time.
   { place: 'autoreply', spot: 'desk' },
   { up: 'autoreply', path: 0, all: true },
   { up: 'artillery', path: 0 },

@@ -88,7 +88,8 @@ describe('Reply All', () => {
 });
 
 describe('The Cold Caller', () => {
-  it('ignores everything DIGITAL', () => {
+  it('withholds his number: towers that aim cannot see him, a Shredder zone shows him up', () => {
+    // He used to ignore everything DIGITAL; since the maker's call after the review he is hidden.
     const g = game();
     g.place('autoreply', 8, 1);
     g.place('replyall', 10, 1);
@@ -96,7 +97,10 @@ describe('The Cold Caller', () => {
     const c = put(g, 'coldcaller', 9);
     c.stunTime = 1e9;
     g.runFor(2);
-    expect(c.hp).toBe(24);
+    expect(c.hp).toBe(16);
+    c.revealUntil = 1e9;
+    g.runFor(2);
+    expect(c.hp).toBeLessThan(16);
   });
 });
 

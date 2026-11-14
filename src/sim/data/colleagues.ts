@@ -4,7 +4,6 @@
 // Reward per kill = HP x rate: 0.12 standard, 0.09 swarms, 0.15 for anything that needs a specific
 // tool. Bosses pay a flat amount: it lands on the last wave and barely touches the economy.
 
-import type { DamageClass } from './towers';
 
 export interface BossDef {
   kind: 'headofcomms' | 'repairguy' | 'presenter' | 'cleaner' | 'linemanager' | 'baby' | 'smoker' | 'consultant' | 'hrmanager' | 'projectmanager';
@@ -77,9 +76,11 @@ export interface ColleagueDef {
   rewardRate?: number;
   rewardFlat?: number;
   shield?: number;
-  /** Hits below this bounce off the shield and do nothing. */
-  shieldMinHit?: number;
-  immune?: DamageClass;
+  /**
+   * The shield is a box (the Old Guard's archive, the Board Member's laptop): only towers that
+   * break boxes touch it, everything else bounces off. Once it is gone, anything goes.
+   */
+  box?: boolean;
   /** Cannot be targeted until revealed, unless the tower can see hidden colleagues. */
   invisible?: boolean;
   /** Towers within this radius stop working while he walks past (The Chatterbox). */
@@ -237,14 +238,14 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     name: 'The Old Guard',
     role: 'Tank',
     quote: 'We tried that in 1998.',
-    ability: 'Drags the archive box along. Hits under 10 bounce off it, the Shredder included. Once the box is broken, anything goes.',
-    counter: 'Office Artillery breaks the box. Light hits bounce off, so do not count on Auto-Reply alone.',
-    short: 'Carries the archive box. Hits under 10 bounce off it.',
-    helps: 'One heavy hit.',
-    counters: ['artillery', 'pomodoro'],
+    ability: 'Drags the archive box along. Everything bounces off it except towers that break boxes. Once the box is broken, anything goes.',
+    counter: 'Office Artillery, Keyboard Smash and the Pomodoro Timer break the box, and a few upgrades such as Out of Office. A plain Auto-Reply bounces off.',
+    short: 'Carries the archive box. Only towers that break boxes get through.',
+    helps: 'Office Artillery breaks it.',
+    counters: ['artillery', 'keyboardsmash'],
     hp: 46,
     shield: 30,
-    shieldMinHit: 10,
+    box: true,
     speed: 1.25,
     focus: 8,
     rewardRate: REWARD_SPECIAL,
@@ -256,18 +257,19 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
   boardmember: {
     id: 'boardmember',
     name: 'The Board Member',
-    role: 'Immune to PHYSICAL',
+    role: 'Box',
     quote: 'Can everyone hear me? I am on the train.',
-    ability: 'Never actually in the building: he attends on a screen. Nothing PHYSICAL touches him, not even Office Artillery.',
-    counter: 'Send him something. Auto-Reply and everything else DIGITAL works. PHYSICAL towers do nothing at all.',
-    short: 'Attends on a screen. PHYSICAL towers do nothing.',
-    helps: 'Anything DIGITAL.',
-    counters: ['autoreply', 'delegation'],
+    ability: 'Walks in behind his laptop, still on the call. Everything bounces off the screen except towers that break boxes. Once the laptop is shut, anything goes.',
+    counter: 'Office Artillery, Keyboard Smash and the Pomodoro Timer shut the laptop, and Auto-Reply from Out of Office. After that he is quick, but not tough.',
+    short: 'Behind his laptop screen. Only towers that break boxes get through.',
+    helps: 'Office Artillery shuts the laptop.',
+    counters: ['artillery', 'keyboardsmash'],
     hp: 40,
+    shield: 6,
+    box: true,
     speed: 1.5,
     focus: 8,
     rewardRate: REWARD_SPECIAL,
-    immune: 'physical',
     scale: 1,
     accent: '#2f3d5c',
     model: 'boardmember',
@@ -309,11 +311,11 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     role: 'Boss',
     quote: 'Who touched the machine?',
     ability:
-      'Here to "repair" the coffee machine. No Coffee comes in at all while he is on the floor. His toolbox stops hits under 10, and the queue for the coffee follows him in.',
+      'Here to "repair" the coffee machine. No Coffee comes in at all while he is on the floor. Everything bounces off his toolbox except towers that break boxes, and the queue for the coffee follows him in.',
     counter: 'Office Artillery breaks the toolbox. Save up before he arrives: you will not earn a thing until he is gone.',
     hp: 520,
     shield: 100,
-    shieldMinHit: 10,
+    box: true,
     speed: 1.2,
     focus: 25,
     rewardFlat: 30,
@@ -325,7 +327,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
       phaseBurst: 5,
       phase3Speed: 1.6,
       blocksIncome: true,
-      intro: 'No Coffee until he is gone, and light hits bounce off his toolbox. Office Artillery.',
+      intro: 'No Coffee until he is gone, and his toolbox is a box. Office Artillery.',
     },
     stunResist: 0.3,
     scale: 1,
@@ -530,18 +532,20 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
   coldcaller: {
     id: 'coldcaller',
     name: 'The Cold Caller',
-    role: 'Immune to DIGITAL',
+    role: 'Hidden',
     quote: 'Is this a good time? Great.',
-    ability: 'He does not read email. He calls. Nothing DIGITAL touches him: no Auto-Reply, no Quick Reply, no Reply All.',
-    counter: 'Anything PHYSICAL: Office Artillery, The Shredder, Thumbtacks, Keyboard Smash, the Office Chair.',
-    short: 'Does not read email. DIGITAL towers do nothing.',
-    helps: 'Anything PHYSICAL.',
-    counters: ['artillery', 'thumbtacks', 'shredder'],
-    hp: 24,
+    ability: 'Number withheld. Your towers cannot aim at him until a Shredder zone shows him up, or a tower that can see hidden colleagues spots him. Tracking Pixel and Paper Trail keep him in sight for good.',
+    counter: 'A Shredder zone on his route, or Thumbtacks, which hit him anyway. Tracking Pixel (Auto-Reply READ RECEIPTS tier 2) sees him, and keeps him in sight for every tower.',
+    short: 'Number withheld. Towers that aim cannot see him.',
+    helps: 'A Shredder zone shows him. Tacks hit him anyway.',
+    counters: ['shredder', 'thumbtacks'],
+    // Lighter than before he was hidden (24 HP): fewer towers can reach him now. He pays the
+    // same Coffee as he did, so the economy of his floors stays where it was.
+    hp: 16,
     speed: 2.3,
     focus: 4,
-    rewardRate: REWARD_SPECIAL,
-    immune: 'digital',
+    rewardRate: 0.225,
+    invisible: true,
     scale: 1,
     accent: '#3fa7a0',
     model: 'coldcaller',

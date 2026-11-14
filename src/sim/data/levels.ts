@@ -683,7 +683,7 @@ const L5: LevelDef = {
   startFocus: 100,
   // Dark wood, and a burgundy runner where everyone walks.
   look: { floorA: '#6b5644', floorB: '#634f3e', walkway: '#8f3b33', edge: '#6d2b25', wall: '#e7e1d5' },
-  // A smooth curve of about 10% per wave, with Board Members (only DIGITAL hurts them) from wave 7.
+  // A smooth curve of about 10% per wave, with Board Members (a laptop to break first) from wave 7.
   waves: [
     'intern:14@0.65 + newhire:3@1.10',
     'intern:12@0.60 + newhire:3@1.00 + chaser:6@0.25',
@@ -799,7 +799,7 @@ const L6: LevelDef = {
   look: { floorA: '#b98d5f', floorB: '#ad8256', walkway: '#6f8f7a', edge: '#56705f', wall: '#ece6da' },
   hazard: { type: 'nointernet', first: 60, every: 55, window: 12, reward: 6 },
   // Medior: 15 waves that start where the junior floors left off and climb about 15% a wave.
-  // The Cold Caller (only PHYSICAL hurts him) from wave 3.
+  // The Cold Caller (hidden: number withheld) from wave 3.
   waves: [
     'intern:16@0.50 + newhire:3@0.95 + chaser:4@0.20',
     'intern:14@0.48 + newhire:4@0.90 + chaser:4@0.20',

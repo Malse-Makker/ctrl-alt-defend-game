@@ -27,23 +27,24 @@ function put(g: Game, type: string, d: number): Enemy {
 }
 
 describe('idle reasons', () => {
-  it('a physical tower next to the Board Member says it may not touch him, after a moment', () => {
+  it('a tower that cannot break boxes keeps hitting the box and bounces off, like darts off lead', () => {
     const g = game();
-    const t = g.place('artillery', 8, 1).tower!;
-    put(g, 'boardmember', 9);
-    g.runFor(IDLE_AFTER / 2);
+    const t = g.place('autoreply', 8, 1).tower!;
+    const bm = put(g, 'boardmember', 9);
+    bm.shield = bm.maxShield = 16;
+    g.runFor(IDLE_AFTER + 0.5);
+    expect(t.stats.shots).toBeGreaterThan(0);
+    expect(bm.shield).toBe(16);
     expect(t.idle).toBeNull();
-    g.runFor(IDLE_AFTER);
-    expect(t.idle).toBe('immune');
-    expect(t.idleWho).toBe('boardmember');
   });
 
-  it('the Shredder says so too', () => {
+  it('the Shredder bounces off a box too, until the Compactor', () => {
     const g = game();
-    const t = g.place('shredder', 8, 1).tower!;
-    put(g, 'boardmember', 8.6);
-    g.runFor(IDLE_AFTER + 0.5);
-    expect(t.idle).toBe('immune');
+    g.place('shredder', 8, 1);
+    const og = put(g, 'oldguard', 8.6);
+    og.shield = og.maxShield = 30;
+    g.runFor(1);
+    expect(og.shield).toBe(30);
   });
 
   it('an aiming tower that cannot see a hidden colleague says it cannot see him', () => {
@@ -53,6 +54,15 @@ describe('idle reasons', () => {
     g.runFor(IDLE_AFTER + 0.5);
     expect(t.idle).toBe('hidden');
     expect(t.idleWho).toBe('impersonator');
+  });
+
+  it('the Cold Caller is hidden now, not immune to DIGITAL', () => {
+    const g = game();
+    const t = g.place('autoreply', 8, 1).tower!;
+    put(g, 'coldcaller', 9);
+    g.runFor(IDLE_AFTER + 0.5);
+    expect(t.idle).toBe('hidden');
+    expect(t.idleWho).toBe('coldcaller');
   });
 
   it('furniture in the way: something is in the way', () => {
@@ -68,27 +78,18 @@ describe('idle reasons', () => {
     const t = g.place('autoreply', 8, 1).tower!;
     g.runFor(IDLE_AFTER + 0.5);
     expect(t.idle).toBeNull();
-    put(g, 'boardmember', 9);
+    put(g, 'newhire', 9);
     g.runFor(IDLE_AFTER + 0.5);
     expect(t.idle).toBeNull();
     expect(t.stats.shots).toBeGreaterThan(0);
   });
 
-  it('an immune colleague outranks one it cannot see', () => {
-    const g = game();
-    const t = g.place('artillery', 8, 1).tower!;
-    put(g, 'impersonator', 8.6);
-    put(g, 'boardmember', 9.4);
-    g.runFor(IDLE_AFTER + 0.5);
-    expect(t.idle).toBe('immune');
-  });
-
   it('goes away once the tower has something to hit', () => {
     const g = game();
-    const t = g.place('artillery', 8, 1).tower!;
-    put(g, 'boardmember', 9);
+    const t = g.place('autoreply', 8, 1).tower!;
+    put(g, 'impersonator', 9);
     g.runFor(IDLE_AFTER + 0.5);
-    expect(t.idle).toBe('immune');
+    expect(t.idle).toBe('hidden');
     put(g, 'newhire', 9.2);
     g.runFor(0.2);
     expect(t.idle).toBeNull();
@@ -96,14 +97,14 @@ describe('idle reasons', () => {
 
   it('survives a snapshot, colleague and all', () => {
     const g = game();
-    g.place('artillery', 8, 1);
+    g.place('autoreply', 8, 1);
     g.place('autoreply', 12, 1);
-    put(g, 'boardmember', 9);
+    put(g, 'impersonator', 9);
     g.runFor(IDLE_AFTER + 0.5);
     const mirror = game();
     mirror.applySnapshot(g.toSnapshot());
     expect(mirror.towers.map((t) => [t.idle, t.idleWho])).toEqual(g.towers.map((t) => [t.idle, t.idleWho]));
-    expect(mirror.towers[0].idle).toBe('immune');
+    expect(mirror.towers[0].idle).toBe('hidden');
     // And it clears again on the next snapshot.
     g.enemies.length = 0;
     g.runFor(0.2);
@@ -114,8 +115,8 @@ describe('idle reasons', () => {
 
 describe('icons over colleagues', () => {
   it('say what each one shrugs off', () => {
-    expect(colleagueBadges(COLLEAGUES.boardmember, 0, false)).toEqual(['no-physical']);
-    expect(colleagueBadges(COLLEAGUES.coldcaller, 0, false)).toEqual(['no-digital']);
+    expect(colleagueBadges(COLLEAGUES.boardmember, COLLEAGUES.boardmember.shield!, false)).toEqual(['box']);
+    expect(colleagueBadges(COLLEAGUES.coldcaller, 0, false)).toEqual(['hidden']);
     expect(colleagueBadges(COLLEAGUES.impersonator, 0, false)).toEqual(['hidden']);
     expect(colleagueBadges(COLLEAGUES.impersonator, 0, true)).toEqual([]);
     expect(colleagueBadges(COLLEAGUES.phonecaller, 0, false)).toEqual(['taunt']);
@@ -139,8 +140,6 @@ describe('icons over towers', () => {
   });
 
   it('a grey icon for hitting nothing, in the kind of the tower', () => {
-    expect(towerBadge({ ...base, idle: 'immune', def: { damageClass: 'physical' } })).toBe('idle-physical');
-    expect(towerBadge({ ...base, idle: 'immune', def: { damageClass: 'digital' } })).toBe('idle-digital');
     expect(towerBadge({ ...base, idle: 'hidden' })).toBe('idle-hidden');
     expect(towerBadge({ ...base, idle: 'sight' })).toBe('idle-sight');
     expect(towerBadge(base)).toBeNull();
@@ -164,18 +163,17 @@ describe('icons over towers', () => {
     Object.assign(t, { silenced: false, quiet: null, mopped: 3 });
     seen.add(towerStatus(g, t)!.icon);
     expect(seen.size).toBe(6);
-    Object.assign(t, { mopped: 0, idle: 'immune', idleWho: 'boardmember' });
+    Object.assign(t, { mopped: 0, idle: 'hidden', idleWho: 'impersonator' });
     const idle = towerStatus(g, t)!;
-    expect(idle).toEqual({ icon: 'laptop', tone: 'warn', text: idleNote('immune', 'digital', 'The Board Member') });
+    expect(idle).toEqual({ icon: 'eye-slash', tone: 'warn', text: idleNote('hidden', 'The Impersonator') });
     Object.assign(t, { idle: null });
     const cold = towerStatus({ rangeFactor: () => 1, slowWifi: () => false, isCold: () => true, isLit: () => true }, t)!;
     expect(cold.text).toBe(UI_TEXT.coldNote);
   });
 
   it('the panel names the colleague', () => {
-    expect(idleNote('immune', 'physical', 'The Board Member')).toContain('The Board Member');
-    expect(idleNote('hidden', 'digital', 'The Impersonator')).toContain('The Impersonator');
-    expect(idleNote('sight', 'digital', 'x')).not.toContain('{');
+    expect(idleNote('hidden', 'The Impersonator')).toContain('The Impersonator');
+    expect(idleNote('sight', 'x')).not.toContain('{');
   });
 });
 

@@ -226,22 +226,32 @@ describe('towers in action', () => {
     expect(g2.enemies.filter((e) => e.type === 'chaser').length).toBe(2);
   });
 
-  it('shields stop light hits and immunities stop a whole damage class', () => {
+  it('a box stops every hit from towers that do not break boxes; once it is gone, anything goes', () => {
     const g = new Game(corridor(['intern:1@1']));
     g.phase = 'running';
     const e = g.spawn('newhire', 0, 9, false);
-    // Synthetic tank: shield 30, light hits under 10 bounce off.
-    e.def = { ...e.def, shield: 30, shieldMinHit: 10 };
+    // Synthetic tank: a box of 30 on 12 HP.
+    e.def = { ...e.def, shield: 30, box: true };
     e.shield = 30;
-    expect(g.damage(e, 4).result).toBe('blocked');
+    expect(g.damage(e, 40).result).toBe('blocked');
     expect(e.shield).toBe(30);
-    expect(g.damage(e, 15).dealt).toBe(15);
+    expect(g.damage(e, 15, undefined, true, true).dealt).toBe(15);
     expect(e.shield).toBe(15);
-    expect(g.damage(e, 20).dealt).toBe(15 + 5);
+    expect(g.damage(e, 20, undefined, true, true).dealt).toBe(15 + 5);
     expect(e.hp).toBe(7);
-    e.def = { ...e.def, immune: 'digital' };
-    expect(g.damage(e, 50, 'digital').result).toBe('immune');
-    expect(e.hp).toBe(7);
+    // The box is gone: light hits from anyone land now.
+    expect(g.damage(e, 2).dealt).toBe(2);
+    expect(e.hp).toBe(5);
+  });
+
+  it('a shield that is not a box takes any hit', () => {
+    const g = new Game(corridor(['intern:1@1']));
+    g.phase = 'running';
+    const e = g.spawn('newhire', 0, 9, false);
+    e.def = { ...e.def, shield: 30 };
+    e.shield = 30;
+    expect(g.damage(e, 1).dealt).toBe(1);
+    expect(e.shield).toBe(29);
   });
 });
 

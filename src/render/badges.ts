@@ -24,9 +24,7 @@ interface Look {
 }
 
 const LOOKS: Record<BadgeKind, Look> = {
-  'no-digital': { glyph: '', color: CLASS_COLOR.digital, cross: true, ring: CLASS_COLOR.digital },
-  'no-physical': { glyph: '', color: CLASS_COLOR.physical, cross: true, ring: CLASS_COLOR.physical },
-  box: { glyph: '', color: '#c8995a', label: '10', ring: '#6fb6ff' },
+  box: { glyph: '', color: '#c8995a', ring: '#6fb6ff' },
   hidden: { glyph: '', color: '#f6f3ea', ring: '#9a8cff' },
   taunt: { glyph: '!', color: '#1d2230', ring: '#f2c641' },
   chat: { glyph: '', color: '#f6f3ea', ring: RED },
@@ -35,8 +33,6 @@ const LOOKS: Record<BadgeKind, Look> = {
   phone: { glyph: '', color: '#f6f3ea', ring: RED },
   audit: { glyph: '', color: '#f6f3ea', ring: RED },
   mop: { glyph: '', color: '#f2c641', ring: RED },
-  'idle-digital': { glyph: '', color: GREY, cross: true, ring: GREY },
-  'idle-physical': { glyph: '', color: GREY, cross: true, ring: GREY },
   'idle-hidden': { glyph: '', color: GREY, ring: GREY },
   'idle-sight': { glyph: '', color: GREY, ring: GREY },
 };

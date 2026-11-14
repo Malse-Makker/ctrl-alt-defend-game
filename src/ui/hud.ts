@@ -70,14 +70,10 @@ export interface HudState {
 
 export const SPEEDS = [1, 2, 4, 8];
 
-/** The heaviest shield in the game: a hit has to be at least this hard to get through it. */
-const SHIELD_MIN_HIT = Math.max(...Object.values(COLLEAGUES).map((c) => c.shieldMinHit ?? 0));
-
-/** One line for the tower panel: can this tower hurt a shielded colleague? */
+/** One line for the tower panel: can this tower hurt a colleague with a box? */
 function shieldLine(s: LiveTowerStats): { text: string; ok: boolean; help: string } {
-  const help = T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT));
-  if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true, help };
-  return { text: 'bounces off', ok: false, help };
+  if (s.breaksBoxes) return { text: 'breaks through', ok: true, help: T.boxesHelp };
+  return { text: 'bounces off', ok: false, help: T.boxesHelp };
 }
 
 /** Under an upgrade button: what it changes in numbers, from computeStats before and after. */
@@ -636,8 +632,9 @@ export class Hud {
         h('span', { class: 'k', text: 'Zone size' }),
         h('span', { class: 'v', text: fmt(s.range, 2) }),
       );
-      // Zone damage comes in tiny ticks: a box stops all of it. Other shields it grinds down.
-      stats.append(h('span', { class: 'k', text: T.boxes, title: T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT)) }), h('span', { class: 'v faint', text: 'bounce it off' }));
+      // A box stops the zone, until the Compactor. Other shields it grinds down.
+      const zl = shieldLine(s);
+      stats.append(h('span', { class: 'k', text: T.boxes, title: zl.help }), h('span', { class: `v ${zl.ok ? 'good' : 'faint'}`, text: zl.text, title: zl.help }));
       if (s.slow < 1) stats.append(h('span', { class: 'k', text: 'Slows to' }), h('span', { class: 'v', text: `${Math.round(s.slow * 100)}%${s.slowTime > 0.5 ? `, ${fmt(s.slowTime, 0)}s after` : ''}` }));
       const extra = ['reveals hidden', s.bleed > 0 ? `sticks for ${s.bleed}s` : '', s.killCoffee > 0 ? `+${s.killCoffee} Coffee per colleague` : '', s.hpPulse ? `a quarter of their HP every ${s.hpPulse.every}s` : ''].filter(Boolean);
       if (extra.length) stats.append(h('span', { class: 'k', text: 'Also' }), h('span', { class: 'v wrap', text: extra.join(', ') }));

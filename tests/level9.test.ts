@@ -38,7 +38,7 @@ describe('Motivational Poster', () => {
     for (let i = 0; i < 3; i++) expect(g.upgrade(p.id, 1).ok).toBe(true);
     const s = g.liveStats(a);
     expect(s.damage).toBeCloseTo((before + 1) * 1.2);
-    expect(s.ignoresMinHit).toBe(true);
+    expect(s.breaksBoxes).toBe(true);
   });
 
   it('LED WALL reaches further and makes upgrades cheaper around it', () => {

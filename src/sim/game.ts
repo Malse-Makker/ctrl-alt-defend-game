@@ -79,6 +79,8 @@ export interface Enemy {
   revealed: boolean;
   /** Brown Noise: shown up until this time (the next pulse), wherever he walks meanwhile. */
   revealUntil: number;
+  /** Tracking Pixel, Paper Trail: hit by one, so every tower sees him from now on. */
+  exposed: boolean;
   /** Extra damage from every hit while this lasts (Focus Music). */
   vulnerable: number;
   vulnerableTime: number;
@@ -230,7 +232,9 @@ export interface LiveTowerStats {
   pierce: number;
   pileLife: number;
   piles: number;
-  ignoresMinHit: boolean;
+  breaksBoxes: boolean;
+  /** Whoever it hits stays visible for good (Tracking Pixel, Paper Trail). */
+  exposes: boolean;
   /** Keyboard Smash: slam radius, barrier HP and seconds, damage to kickers, double smash. */
   smashRadius: number;
   barrierHp: number;
@@ -253,9 +257,9 @@ export interface LiveTowerStats {
   discount: number;
 }
 
-export type ShotResult = 'hit' | 'blocked' | 'immune';
-export type IdleReason = 'immune' | 'hidden' | 'sight';
-const IDLE_CODES: (IdleReason | null)[] = [null, 'immune', 'hidden', 'sight'];
+export type ShotResult = 'hit' | 'blocked';
+export type IdleReason = 'hidden' | 'sight';
+const IDLE_CODES: (IdleReason | null)[] = [null, 'hidden', 'sight'];
 /** Seconds a tower has to sit next to colleagues it cannot hit before it says so. */
 export const IDLE_AFTER = 2;
 
@@ -369,7 +373,7 @@ export interface TowerSnap {
   sil: number;
   /** 1 while The Cleaner has mopped it. */
   mop: number;
-  /** Why it hits nothing: [1 immune / 2 hidden / 3 no line of sight, colleague type index]. */
+  /** Why it hits nothing: [1 hidden / 2 no line of sight, colleague type index]. */
   idl?: [number, number];
   /** Office chair: direction, how far out, which way rolling. */
   dir: number;
@@ -527,7 +531,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     pierce: b.pierce ?? 0,
     pileLife: b.pileLife ?? 0,
     piles: 1,
-    ignoresMinHit: false,
+    breaksBoxes: b.breaksBoxes ?? false,
+    exposes: false,
     smashRadius: b.smashRadius ?? 0,
     barrierHp: b.barrierHp ?? 0,
     barrierTime: b.barrierTime ?? 0,
@@ -575,7 +580,8 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     s.pierce += e.pierceAdd ?? 0;
     s.piles += e.pilesAdd ?? 0;
     pileLifeMult *= e.pileLifeMult ?? 1;
-    if (e.ignoresMinHit) s.ignoresMinHit = true;
+    if (e.breaksBoxes) s.breaksBoxes = true;
+    if (e.exposes) s.exposes = true;
     radiusMult *= e.radiusMult ?? 1;
     aoeMult *= e.aoeMult ?? 1;
     bounceRangeMult *= e.bounceRangeMult ?? 1;
@@ -1029,7 +1035,7 @@ export class Game {
         s.damage = (s.damage + a.add) * a.damage;
         s.dot *= a.damage;
         if (Number.isFinite(s.range)) s.range *= a.range;
-        if (a.shield) s.ignoresMinHit = true;
+        if (a.shield) s.breaksBoxes = true;
         if (a.hidden) s.seesHidden = true;
       }
     }
@@ -1480,7 +1486,7 @@ export class Game {
         r3(e.dist),
         e.stunTime > 0 ? 1 : 0,
         e.slowTime > 0 || e.aura < 1 ? 1 : 0,
-        e.revealed ? 1 : 0,
+        e.exposed ? 2 : e.revealed ? 1 : 0,
       ]),
       piles: this.piles.map((p) => [p.id, r3(p.x), r3(p.y), p.pierce, p.maxPierce]),
       barriers: this.barriers.map((b) => [b.id, r3(b.x), r3(b.y), r3(b.dirX), r3(b.dirY), r3(b.hp), r3(b.maxHp)]),
@@ -1604,8 +1610,9 @@ export class Game {
         stunTime: a[14] === 1 ? 0.5 : 0,
         aura: 1,
         haste: 1,
-        revealed: a[16] === 1,
+        revealed: a[16] >= 1,
         revealUntil: 0,
+        exposed: a[16] === 2,
         vulnerable: 0,
         vulnerableTime: 0,
         stunnedTakes: 1,
@@ -1937,6 +1944,7 @@ export class Game {
       haste: 1,
       revealed: false,
       revealUntil: 0,
+      exposed: false,
       vulnerable: 0,
       vulnerableTime: 0,
       stunnedTakes: 1,
@@ -2209,7 +2217,7 @@ export class Game {
 
   private updateTowers(dt: number): void {
     // Shredder zones reveal hidden colleagues; recomputed every tick. Brown Noise lasts a pulse.
-    for (const e of this.enemies) e.revealed = e.revealUntil > this.time;
+    for (const e of this.enemies) e.revealed = e.exposed || e.revealUntil > this.time;
     for (const t of this.towers) {
       if (t.mopped > 0) t.mopped = Math.max(0, t.mopped - dt);
       if (t.hushed > 0) t.hushed = Math.max(0, t.hushed - dt);
@@ -2269,7 +2277,7 @@ export class Game {
       if (s.ability) this.updateAbility(t, s, dt);
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;
-      const targets = this.pickTargets(t, s.range, s.targets, s.seesHidden);
+      const targets = this.pickTargets(t, s.range, s.targets, s.seesHidden, s.breaksBoxes);
       if (targets.length === 0) {
         t.cooldown = 0;
         this.noteIdle(t, this.blockedBy(t, s.range, s.seesHidden), dt);
@@ -2370,10 +2378,9 @@ export class Game {
         if (!e.alive || p.hit.has(e.id) || !this.onFloor(e)) continue;
         if (Math.hypot(e.x - p.x, e.y - p.y) > PILE_RADIUS) continue;
         p.hit.add(e.id);
-        if (e.def.immune === t.def.damageClass) continue;
         p.pierce--;
         const amount = s.damage * (e.def.boss ? s.bossMult : 1);
-        const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
+        const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.breaksBoxes);
         t.stats.damage += dealt;
         const killed = !e.alive;
         if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
@@ -2413,7 +2420,7 @@ export class Game {
     const cy = target.y;
     for (const e of [...this.enemies]) {
       if (!e.alive || !this.onFloor(e) || Math.hypot(e.x - cx, e.y - cy) > s.smashRadius) continue;
-      const { dealt, result } = this.damage(e, s.damage * (e.def.boss ? s.bossMult : 1), t.def.damageClass, true, s.ignoresMinHit);
+      const { dealt, result } = this.damage(e, s.damage * (e.def.boss ? s.bossMult : 1), t.def.damageClass, true, s.breaksBoxes);
       t.stats.damage += dealt;
       const killed = !e.alive;
       if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
@@ -2571,7 +2578,6 @@ export class Game {
           .filter((e) => e.alive && this.onFloor(e) && Math.hypot(e.x - sh.x, e.y - sh.y) <= s.aoe)
           .sort((a, b) => a.id - b.id);
         for (const e of near) {
-          if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
           this.hitOne(t, e, s, sh.x, sh.y, 0, 'hop', hit);
           if (e.alive && s.knockback > 0) {
             // Snooze: back towards the door. Bosses barely budge.
@@ -2662,9 +2668,8 @@ export class Game {
       if (t.chairHp <= 0) break;
       if (!e.alive || t.knocked.has(e.id) || !this.onFloor(e) || Math.hypot(e.x - cx, e.y - cy) > 0.5) continue;
       t.knocked.add(e.id);
-      if (e.def.immune === t.def.damageClass) continue;
       const amount = Math.min(s.damage * (e.def.boss ? s.bossMult : 1), t.chairHp);
-      const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
+      const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.breaksBoxes);
       t.chairHp -= result === 'blocked' ? amount : Math.max(dealt, 1);
       t.stats.damage += dealt;
       const killed = !e.alive;
@@ -2723,12 +2728,9 @@ export class Game {
   /** The Shredder: slows and damages everyone inside. Damage is shared out unless upgraded. */
   private updateZone(t: Tower, s: LiveTowerStats, dt: number): void {
     const inside = this.enemies.filter(
-      (e) => e.alive && this.onFloor(e) && e.def.immune !== t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
+      (e) => e.alive && this.onFloor(e) && Math.hypot(e.x - t.x, e.y - t.y) <= s.range,
     );
-    if (inside.length === 0) {
-      const near = this.enemies.find((e) => e.alive && this.onFloor(e) && e.def.immune === t.def.damageClass && Math.hypot(e.x - t.x, e.y - t.y) <= s.range);
-      this.noteIdle(t, near ? { reason: 'immune', who: near.type } : null, dt);
-    } else this.clearIdle(t);
+    this.clearIdle(t);
     if (inside.length > 0) {
       const each = s.unshared ? s.dot : s.dot / inside.length;
       for (const e of inside) {
@@ -2739,7 +2741,7 @@ export class Game {
           e.bleedTime = s.bleed;
           e.bleedTower = t.id;
         }
-        const { dealt } = this.damage(e, each * dt, t.def.damageClass, false, s.ignoresMinHit);
+        const { dealt } = this.damage(e, each * dt, t.def.damageClass, false, s.breaksBoxes);
         t.stats.damage += dealt;
         if (!e.alive) {
           t.stats.kills++;
@@ -2808,12 +2810,11 @@ export class Game {
    */
   blockedBy(t: Tower, range: number, seesHidden: boolean): { reason: IdleReason; who: string } | null {
     let best: { reason: IdleReason; who: string } | null = null;
-    const rank = { immune: 3, hidden: 2, sight: 1 };
+    const rank = { hidden: 2, sight: 1 };
     for (const e of this.enemies) {
       if (!e.alive || !this.onFloor(e) || dist(t, e) > range) continue;
       let reason: IdleReason;
-      if (t.def.damageClass && e.def.immune === t.def.damageClass) reason = 'immune';
-      else if (!this.visibleTo(e, seesHidden)) reason = 'hidden';
+      if (!this.visibleTo(e, seesHidden)) reason = 'hidden';
       else reason = 'sight';
       if (!best || rank[reason] > rank[best.reason]) best = { reason, who: e.type };
     }
@@ -2836,11 +2837,10 @@ export class Game {
   }
 
   /** Valid targets in range, best first according to the tower's targeting mode. */
-  pickTargets(t: Tower, range: number, n: number, seesHidden = false): Enemy[] {
+  pickTargets(t: Tower, range: number, n: number, seesHidden = false, breaksBoxes = true): Enemy[] {
     const cands: { e: Enemy; d: number; score: number }[] = [];
     for (const e of this.enemies) {
       if (!e.alive) continue;
-      if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
       if (!this.visibleTo(e, seesHidden)) continue;
       const d = dist(t, e);
       if (d > range) continue;
@@ -2850,7 +2850,9 @@ export class Game {
       if (this.level.closedZone && !t.def.base.global && this.inClosedZone(t) !== this.inClosedZone(e)) continue;
       // All the attention: towers close to a taunting colleague aim at him first.
       const taunt = e.def.taunt !== undefined && d <= e.def.taunt && this.seenBy(e, t) ? 1e6 : 0;
-      cands.push({ e, d, score: taunt + this.targetScore(t.target, e, d) });
+      // A box it cannot break comes last: no shots wasted while someone else is in range.
+      const bounces = !breaksBoxes && e.def.box && e.shield > 0 ? -1e5 : 0;
+      cands.push({ e, d, score: taunt + bounces + this.targetScore(t.target, e, d) });
     }
     cands.sort((a, b) => b.score - a.score || a.e.id - b.e.id);
     return cands.slice(0, n).map((c) => c.e);
@@ -2886,7 +2888,6 @@ export class Game {
       // Reply All: everyone near the target gets it too.
       for (const e of this.enemies) {
         if (!e.alive || hit.has(e) || !this.visibleTo(e, s.seesHidden) || Math.hypot(e.x - target.x, e.y - target.y) > s.aoe) continue;
-        if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
         this.hitOne(t, e, s, target.x, target.y, travel + 0.03, 'hop', hit);
       }
     }
@@ -2902,7 +2903,6 @@ export class Game {
       let best = s.bounceRange;
       for (const e of this.enemies) {
         if (!e.alive || hit.has(e) || !this.visibleTo(e, s.seesHidden)) continue;
-        if (t.def.damageClass && e.def.immune === t.def.damageClass) continue;
         const d = Math.hypot(e.x - from.x, e.y - from.y);
         if (d < best || (d === best && next !== null && e.id < next.id)) {
           best = d;
@@ -2923,7 +2923,9 @@ export class Game {
     // The Phone Caller can take it from towers that deal with one colleague at a time.
     const single = s.targets === 1 && s.aoe === 0 && s.splash === 0 && s.bounce === 0;
     const amount = s.damage * mult * (e.def.boss ? s.bossMult : 1) * (single && e.def.pointResist ? e.def.pointResist : 1);
-    const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.ignoresMinHit);
+    const { dealt, result } = this.damage(e, amount, t.def.damageClass, true, s.breaksBoxes);
+    // Tracking Pixel, Paper Trail: found once, found for good.
+    if (s.exposes && e.alive) e.exposed = true;
     t.stats.damage += dealt;
     const killed = !e.alive;
     if (!killed && result === 'hit' && s.stunOnHit > 0) this.stunEnemy(e, s.stunOnHit, t);
@@ -2936,9 +2938,8 @@ export class Game {
   }
 
   /** Apply damage. One checkpoint for shields and immunities, so no damage source can skip them. */
-  damage(e: Enemy, amount: number, cls?: string, isHit = true, ignoresMinHit = false): { dealt: number; result: ShotResult } {
+  damage(e: Enemy, amount: number, _cls?: string, isHit = true, breaksBoxes = false): { dealt: number; result: ShotResult } {
     if (!e.alive) return { dealt: 0, result: 'hit' };
-    if (e.def.immune && cls === e.def.immune) return { dealt: 0, result: 'immune' };
     // The Consultant covers for everyone else.
     if (this.cover && !e.def.boss) amount *= this.cover.taken;
     // Focus Music: every hit lands a bit harder. Soundproof Booth: stunned colleagues take more.
@@ -2946,7 +2947,8 @@ export class Game {
     if (e.stunTime > 0 && e.stunnedTakes > 1) amount *= e.stunnedTakes;
     let dealt = 0;
     if (e.shield > 0) {
-      if (e.def.shieldMinHit !== undefined && amount < e.def.shieldMinHit && !ignoresMinHit) return { dealt: 0, result: 'blocked' };
+      // A box (archive, laptop, toolbox): everything bounces off it but towers that break boxes.
+      if (e.def.box && !breaksBoxes) return { dealt: 0, result: 'blocked' };
       const onShield = Math.min(e.shield, amount);
       e.shield -= onShield;
       dealt += onShield;

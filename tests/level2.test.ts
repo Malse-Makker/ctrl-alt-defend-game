@@ -170,11 +170,12 @@ describe('Office Artillery', () => {
     expect(n.stunTime).toBeGreaterThan(0.9);
   });
 
-  it('is physical: the Board Member does not even notice', () => {
+  it('breaks boxes: the Board Member\'s laptop goes first, then he does', () => {
     const { g } = setup('artillery');
     const b = put(g, 'boardmember', 9);
-    g.step(TICK);
-    expect(b.hp).toBe(40);
+    b.stunTime = 1e9;
+    for (let i = 0; i < 120; i++) g.step(TICK);
+    expect(b.shield).toBeLessThan(6);
   });
 });
 
@@ -204,14 +205,14 @@ describe('The Shredder', () => {
     expect(b.slowTime).toBeGreaterThan(2.9);
   });
 
-  it('may not touch the Old Guard archive, and does nothing to the Board Member', () => {
+  it('bounces off boxes: the Old Guard\'s archive and the Board Member\'s laptop', () => {
     const { g } = setup('shredder', [2, 0, 0], 8, 1);
     const og = put(g, 'oldguard', 9);
     const bm = put(g, 'boardmember', 9.2);
     og.stunTime = bm.stunTime = 1e9;
     for (let i = 0; i < 120; i++) g.step(TICK);
     expect(og.hp + og.shield).toBe(76);
-    expect(bm.hp).toBe(40);
+    expect(bm.hp + bm.shield).toBe(46);
   });
 
   it('reveals hidden colleagues inside it', () => {

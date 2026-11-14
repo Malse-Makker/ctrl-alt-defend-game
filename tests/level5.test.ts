@@ -122,15 +122,15 @@ describe('the Office Chair', () => {
     expect(parseCommand({ c: 'dir', id: t.id, dir: 7 })).toBeNull();
   });
 
-  it('rolls straight through The Board Member, who is not there in person (it is PHYSICAL)', () => {
+  it('bounces off the Board Member\'s laptop until it is Ergonomic, and pays for it', () => {
     const g = game();
     const t = g.place('chair', 8, 0).tower!;
     g.phase = 'running';
     const bm = put(g, 'boardmember', 9);
     bm.stunTime = 1e9;
     g.runFor(0.6);
-    expect(bm.hp).toBe(40);
-    expect(t.chairHp).toBe(20);
+    expect(bm.hp + bm.shield).toBe(46);
+    expect(t.chairHp).toBeLessThan(20);
   });
 });
 

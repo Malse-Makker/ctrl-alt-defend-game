@@ -385,7 +385,6 @@ export class Session {
           this.bounces.set(ev.enemyId, n + 1);
           if (n < BOUNCE_POPUPS) this.popups.spawn(T.bounced, ev.tx, ev.ty, 1.1, 'warn', { delay: ev.travel });
         }
-        else if (ev.result === 'immune') this.popups.spawn('IMMUNE', ev.tx, ev.ty, 1.1, 'info', { delay: ev.travel });
         else if (st.damageNumbers && this.speed <= 2) this.popups.spawn(ev.damage >= 10 ? ev.damage.toFixed(0) : ev.damage.toFixed(1), ev.tx, ev.ty, 1.0, 'dmg', { delay: ev.travel, life: 0.6 });
         break;
       case 'kill': {

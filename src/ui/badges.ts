@@ -2,21 +2,19 @@
 // The drawing is in src/render/badges.ts.
 
 import { COLLEAGUES, type ColleagueDef } from '../sim/data/colleagues';
-import { TOWERS, type DamageClass, type TowerDef } from '../sim/data/towers';
+import { TOWERS, type TowerDef } from '../sim/data/towers';
 import type { Game, IdleReason, Tower } from '../sim/game';
 import { UI_TEXT as T } from './text';
 
 /** Over a colleague: what he shrugs off, or why towers act strangely around him. */
-export type ColleagueBadge = 'no-digital' | 'no-physical' | 'box' | 'hidden' | 'taunt';
+export type ColleagueBadge = 'box' | 'hidden' | 'taunt';
 
 /** Over a tower: why it is quiet (six reasons), or why it hits nothing (grey). */
-export type TowerBadge = 'chat' | 'cry' | 'net' | 'phone' | 'audit' | 'mop' | 'idle-digital' | 'idle-physical' | 'idle-hidden' | 'idle-sight';
+export type TowerBadge = 'chat' | 'cry' | 'net' | 'phone' | 'audit' | 'mop' | 'idle-hidden' | 'idle-sight';
 
 export function colleagueBadges(def: ColleagueDef, shield: number, revealed: boolean): ColleagueBadge[] {
   const out: ColleagueBadge[] = [];
-  if (def.immune === 'digital') out.push('no-digital');
-  if (def.immune === 'physical') out.push('no-physical');
-  if (def.shieldMinHit !== undefined && shield > 0) out.push('box');
+  if (def.box && shield > 0) out.push('box');
   if (def.invisible && !revealed) out.push('hidden');
   if (def.taunt !== undefined) out.push('taunt');
   return out;
@@ -25,7 +23,6 @@ export function colleagueBadges(def: ColleagueDef, shield: number, revealed: boo
 export function towerBadge(t: Pick<Tower, 'silenced' | 'quiet' | 'mopped' | 'idle'> & { def: Pick<TowerDef, 'damageClass'> }): TowerBadge | null {
   if (t.silenced && t.quiet) return t.quiet;
   if (t.mopped > 0) return 'mop';
-  if (t.idle === 'immune') return t.def.damageClass === 'physical' ? 'idle-physical' : 'idle-digital';
   if (t.idle === 'hidden') return 'idle-hidden';
   if (t.idle === 'sight') return 'idle-sight';
   return null;
@@ -46,8 +43,6 @@ const BADGE_ICON: Record<TowerBadge, string> = {
   phone: 'phone',
   audit: 'clipboard-list',
   mop: 'broom',
-  'idle-digital': 'laptop',
-  'idle-physical': 'hand',
   'idle-hidden': 'eye-slash',
   'idle-sight': 'road-barrier',
 };
@@ -68,7 +63,7 @@ export function towerStatus(g: Pick<Game, 'rangeFactor' | 'slowWifi' | 'isCold' 
   const badge = towerBadge(t);
   if (t.silenced) return { icon: BADGE_ICON[badge ?? 'chat'], tone: 'bad', text: QUIET_NOTE[t.quiet ?? 'chat'] };
   if (t.mopped > 0) return { icon: BADGE_ICON.mop, tone: 'bad', text: T.moppedNote };
-  if (t.idle && badge) return { icon: BADGE_ICON[badge], tone: 'warn', text: idleNote(t.idle, t.def.damageClass, COLLEAGUES[t.idleWho ?? '']?.name ?? '') };
+  if (t.idle && badge) return { icon: BADGE_ICON[badge], tone: 'warn', text: idleNote(t.idle, COLLEAGUES[t.idleWho ?? '']?.name ?? '') };
   if (g.rangeFactor(t) < 1) return { icon: 'smog', tone: 'bad', text: T.smokedNote };
   if (g.slowWifi(t)) return { icon: 'wifi', tone: 'bad', text: T.wifiNote };
   if (g.isCold(t.tx, t.ty)) return { icon: 'snowflake', tone: 'bad', text: T.coldNote };
@@ -77,15 +72,14 @@ export function towerStatus(g: Pick<Game, 'rangeFactor' | 'slowWifi' | 'isCold' 
 }
 
 /** The line in the tower panel for a tower that hits nothing. */
-export function idleNote(reason: IdleReason, cls: DamageClass | undefined, name: string): string {
-  if (reason === 'immune') return (cls === 'digital' ? T.idleDigital : T.idlePhysical).replace('{name}', name);
+export function idleNote(reason: IdleReason, name: string): string {
   if (reason === 'hidden') return T.idleHidden.replace('{name}', name);
   return T.idleSight;
 }
 
 /** A colleague with a rule of his own: plain numbers (fast, tough) need no hint. */
 function isSpecial(def: ColleagueDef): boolean {
-  return !!(def.immune || def.shieldMinHit !== undefined || def.invisible || def.silence || def.taunt !== undefined || def.pointResist || def.stunOnlyFrom);
+  return !!(def.box || def.invisible || def.silence || def.taunt !== undefined || def.pointResist || def.stunOnlyFrom);
 }
 
 /**

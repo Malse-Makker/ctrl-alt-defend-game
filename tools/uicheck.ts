@@ -434,8 +434,8 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   console.log(`  ${await ff('chatter')}`);
   await new Promise((r) => setTimeout(r, 1500));
   total += await check(page, 'l2-chatterbox', size);
-  // Saying what does not work: icons over the Board Member and the Impersonator, and an Office
-  // Artillery that says it may not touch the Board Member.
+  // Saying what does not work: the Board Member's box, and an Office Artillery that says it
+  // cannot see the Impersonator.
   const immune = await page.evaluate(() => {
     type Any = any;
     const s = (window as unknown as { cad: { session: Any } }).cad.session;
@@ -456,7 +456,9 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
       e.stunTime = 1e9;
       return e;
     };
-    put('boardmember', best.d);
+    // The box over the Board Member, out of the Artillery's way: it only fires at the hidden one
+    // if there is nobody else, so the Board Member stands outside the door.
+    put('boardmember', -0.6);
     // Away from the Shredder: inside its zone he would give it something to do.
     let far = Math.max(0.5, best.d - 6);
     while (far > 0.5 && Math.hypot(path.pointAt(far).x - sh.x, path.pointAt(far).y - sh.y) < 4) far -= 0.5;
@@ -467,7 +469,7 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
     return `artillery idle=${sh.idle} about ${sh.idleWho}`;
   });
   console.log(`  ${immune}`);
-  if (!immune.includes('idle=immune')) errors.push(`l2: Office Artillery did not say it cannot touch the Board Member (${immune})`);
+  if (!immune.includes('idle=hidden')) errors.push(`l2: Office Artillery did not say it cannot see the Impersonator (${immune})`);
   await new Promise((r) => setTimeout(r, 600));
   total += await check(page, 'l2-immune', size);
   await page.evaluate(() => {

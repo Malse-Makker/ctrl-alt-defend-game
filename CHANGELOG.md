@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.47.0] - 2026-11-14
+
+### Changed
+- Two things a colleague can shrug off, no more: a box and being hidden. Nobody is immune to DIGITAL or PHYSICAL towers any more; that only matters for the wifi and the internet now.
+- A box is yes or no. Office Artillery, Keyboard Smash and the Pomodoro Timer break boxes, and so do a few upgrades (Out of Office, Seen, Drawing Pins, URGENT, the Compactor, Ergonomic, Compliance). Everything else bounces off, however hard it hits. Once the box is gone, anything goes.
+- The Board Member walks in behind his laptop: a box. Shut it, and he is quick but not tough.
+- The Cold Caller withholds his number: he is hidden now, like The Impersonator, and a bit lighter.
+- Tracking Pixel and Paper Trail find hidden colleagues for good: whoever they hit stays visible to every tower.
+- A tower that cannot break a box aims at someone it can hurt first, and only bounces off the box when nobody else is in range.
+- Out of Office (Auto-Reply, tier 3) breaks boxes. Do Not Disturb (Pomodoro Timer, tier 2) gives a 25% bigger bang instead, since the timer breaks boxes by itself now.
+
 ## [0.46.0] - 2026-11-14
 
 ### New

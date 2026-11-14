@@ -135,8 +135,10 @@ export interface Effect {
   pileLifeMult?: number;
   /** Extra piles per drop. */
   pilesAdd?: number;
-  /** Hits get through a shield no matter how light they are (the Old Guard's archive box). */
-  ignoresMinHit?: boolean;
+  /** Breaks boxes (the Old Guard's archive, the Board Member's laptop): towers without it bounce off. */
+  breaksBoxes?: boolean;
+  /** Whoever it hits stays visible to every tower from then on. */
+  exposes?: boolean;
   /** Reply All: a wider circle around the target. */
   aoeMult?: number;
   /** Delegation: each jump hits this much harder than the one before (highest counts). */
@@ -210,6 +212,8 @@ export interface TowerBase {
   targets?: number;
   /** Everyone in range walks at this share of their speed (Self-Service: "Please hold"). */
   slowAura?: number;
+  /** Heavy enough to break boxes without an upgrade (Office Artillery, Keyboard Smash, the Pomodoro Timer). */
+  breaksBoxes?: boolean;
   /** Reply All: everyone within this distance of the target is hit too, as many as there are. */
   aoe?: number;
   /** Delegation: jumps after the first hit, each one hitting this much harder than the last. */
@@ -349,7 +353,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Canned Response', desc: '+1 damage per reply.', cost: 12, effect: { damageAdd: 1 } },
           { name: 'Mail Merge', desc: '+1 damage, and each reply also hits one colleague standing next to the target.', cost: 18, effect: { damageAdd: 1, splash: 1 } },
-          { name: 'Out of Office', desc: '+2 damage, and every reply bounces on to 2 more colleagues.', cost: 50, effect: { damageAdd: 2, bounce: 2 } },
+          { name: 'Out of Office', desc: '+2 damage, every reply bounces on to 2 more colleagues, and it breaks boxes: nobody argues with an out-of-office.', cost: 50, effect: { damageAdd: 2, bounce: 2, breaksBoxes: true } },
           {
             name: 'Inbox Zero',
             desc: '+4 damage. Every 8 seconds, everyone in range loses half their HP (bosses 10%).',
@@ -375,7 +379,7 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#b48ce0',
         tiers: [
           { name: 'Read Receipt', desc: '+20% range.', cost: 8, effect: { rangeMult: 1.2 } },
-          { name: 'Tracking Pixel', desc: '+10% range, and it can see colleagues nobody else can.', cost: 15, effect: { rangeMult: 1.1, seesHidden: true } },
+          { name: 'Tracking Pixel', desc: '+10% range, it sees hidden colleagues, and whoever it hits stays visible to every tower.', cost: 15, effect: { rangeMult: 1.1, seesHidden: true, exposes: true } },
           { name: 'CC Your Manager', desc: '+1 damage, and triple damage against bosses.', cost: 40, effect: { damageAdd: 1, bossMult: 3 } },
           { name: 'Legal Hold', desc: '+1 damage, everyone in range walks 30% slower, and four times the damage against bosses.', cost: 100, effect: { damageAdd: 1, slowAura: 0.7, bossMult: 4 } },
         ],
@@ -455,7 +459,7 @@ export const TOWERS: Record<string, TowerDef> = {
       ['artillery_p1_3', 'artillery_p1_4'],
       ['artillery_p2_3', 'artillery_p2_4'],
     ],
-    base: { cost: 25, range: 99, interval: 3.2, damage: 15, global: true },
+    base: { cost: 25, range: 99, interval: 3.2, damage: 15, global: true, breaksBoxes: true },
     paths: [
       {
         name: 'HEAVY DUTY',
@@ -539,7 +543,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Recycling', desc: 'Every colleague dealt with by the zone pays 1 extra Coffee.', cost: 15, effect: { killCoffee: 1 } },
           { name: 'Confidential Bin', desc: '+2 damage per second.', cost: 25, effect: { dotAdd: 2 } },
-          { name: 'Compactor', desc: '+3 damage per second, 2 more Coffee per colleague, and it crushes boxes: the Old Guard\'s archive no longer stops it.', cost: 60, effect: { dotAdd: 3, killCoffee: 2, ignoresMinHit: true } },
+          { name: 'Compactor', desc: '+3 damage per second, 2 more Coffee per colleague, and it crushes boxes: the Old Guard\'s archive and the Board Member\'s laptop no longer stop it.', cost: 60, effect: { dotAdd: 3, killCoffee: 2, breaksBoxes: true } },
           { name: 'Document Destruction', desc: 'Every 10 seconds, everyone in the zone loses a quarter of their HP (bosses 5%).', cost: 170, effect: { hpPulse: { every: 10, share: 0.25, bossShare: 0.05 } } },
         ],
       },
@@ -570,7 +574,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: '"OK"', desc: '+0.5 damage per reply.', cost: 16, effect: { damageAdd: 0.5 } },
           { name: 'Thumbs-Up', desc: '+0.5 damage per reply.', cost: 35, effect: { damageAdd: 0.5 } },
-          { name: 'Seen', desc: '+1.6 damage, and the replies get through the Old Guard\'s box: nobody ignores "Seen".', cost: 80, effect: { damageAdd: 1.6, ignoresMinHit: true } },
+          { name: 'Seen', desc: '+1.6 damage, and the replies break boxes: nobody ignores "Seen".', cost: 80, effect: { damageAdd: 1.6, breaksBoxes: true } },
           { name: 'Typing Forever', desc: '+4.5 damage per reply.', cost: 200, effect: { damageAdd: 4.5 } },
         ],
       },
@@ -623,7 +627,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Brass Tacks', desc: '+1 damage per tack.', cost: 10, effect: { damageAdd: 1 } },
           { name: 'Push Pins', desc: '+3 tacks in every pile.', cost: 25, effect: { pierceAdd: 3 } },
-          { name: 'Drawing Pins', desc: '+3 damage per tack, and tacks get through any shield.', cost: 70, effect: { damageAdd: 3, ignoresMinHit: true } },
+          { name: 'Drawing Pins', desc: '+3 damage per tack, and tacks break boxes.', cost: 70, effect: { damageAdd: 3, breaksBoxes: true } },
           { name: 'Tack Carpet', desc: '+2 damage, +10 tacks in every pile, and piles last twice as long.', cost: 220, effect: { damageAdd: 2, pierceAdd: 10, pileLifeMult: 2 } },
         ],
       },
@@ -708,7 +712,7 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'keyboardsmash',
     name: 'Keyboard Smash',
     flavour: 'ASDFGHJKL.',
-    verb: 'Special, one each. Every few seconds it slams the walkway in front of the first colleague, hitting everyone around, and leaves the keyboard lying across the walkway. Nobody gets past until they have kicked it out of the way.',
+    verb: 'Special, one each. Every few seconds it slams the walkway in front of the first colleague, hitting everyone around, and leaves the keyboard lying across the walkway. Nobody gets past until they have kicked it out of the way. Heavy enough to break boxes.',
     short: 'Slams the walkway and leaves a barrier they have to kick away.',
     role: 'smash',
     damageClass: 'physical',
@@ -721,7 +725,7 @@ export const TOWERS: Record<string, TowerDef> = {
       ['keyboardsmash_p1_3', 'keyboardsmash_p1_4'],
       ['keyboardsmash_p2_3', 'keyboardsmash_p2_4'],
     ],
-    base: { cost: 60, range: 2.2, interval: 8, damage: 8, smashRadius: 1.2, barrierHp: 30, barrierTime: 5 },
+    base: { cost: 60, range: 2.2, interval: 8, damage: 8, smashRadius: 1.2, barrierHp: 30, barrierTime: 5, breaksBoxes: true },
     paths: [
       {
         name: 'SLAM',
@@ -806,7 +810,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Cushion', desc: '+15 HP per run.', cost: 15, effect: { chairHpAdd: 15 } },
           { name: 'Steel Frame', desc: '+20 HP per run.', cost: 30, effect: { chairHpAdd: 20 } },
-          { name: 'Ergonomic', desc: '+20 HP, and it gets through any shield.', cost: 80, effect: { chairHpAdd: 20, ignoresMinHit: true } },
+          { name: 'Ergonomic', desc: '+20 HP, and it breaks boxes.', cost: 80, effect: { chairHpAdd: 20, breaksBoxes: true } },
           { name: 'Throne', desc: 'Three times the HP, and everyone it knocks stops for half a second.', cost: 210, effect: { chairHpMult: 3, stunOnHit: 0.5 } },
         ],
       },
@@ -837,7 +841,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'High Priority', desc: '+2 damage.', cost: 15, effect: { damageAdd: 2 } },
           { name: 'Read Receipt', desc: '+3 damage.', cost: 35, effect: { damageAdd: 3 } },
-          { name: 'URGENT', desc: '+7 damage, and it gets through any shield.', cost: 100, effect: { damageAdd: 7, ignoresMinHit: true } },
+          { name: 'URGENT', desc: '+7 damage, and it breaks boxes.', cost: 100, effect: { damageAdd: 7, breaksBoxes: true } },
           { name: 'Escalated', desc: '+16 damage, and bosses take double.', cost: 260, effect: { damageAdd: 16, bossMult: 2 } },
         ],
       },
@@ -912,9 +916,9 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#8fa0b4',
         tiers: [
           { name: 'Wider Circle', desc: 'Jumps reach 40% further.', cost: 12, effect: { bounceRangeMult: 1.4 } },
-          { name: 'Paper Trail', desc: 'Can see hidden colleagues.', cost: 25, effect: { seesHidden: true } },
+          { name: 'Paper Trail', desc: 'Sees hidden colleagues, and whoever it hits stays visible to every tower.', cost: 25, effect: { seesHidden: true, exposes: true } },
           { name: 'Sign-Off', desc: 'Everyone in the chain slows down for a moment.', cost: 70, effect: { slowOnHit: { mult: 0.7, time: 0.8 } } },
-          { name: 'Compliance', desc: 'Gets through any shield, and bosses take double.', cost: 200, effect: { ignoresMinHit: true, bossMult: 2 } },
+          { name: 'Compliance', desc: 'Breaks boxes, and bosses take double.', cost: 200, effect: { breaksBoxes: true, bossMult: 2 } },
         ],
       },
     ],
@@ -923,7 +927,7 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'pomodoro',
     name: 'Pomodoro Timer',
     flavour: 'Twenty-five minutes. Then a break. Then twenty-five minutes.',
-    verb: 'Lobs a tomato at a tile you pick, anywhere on the floor, over walls and furniture. Everyone around that tile gets it.',
+    verb: 'Lobs a tomato at a tile you pick, anywhere on the floor, over walls and furniture. Everyone around that tile gets it, and the bang breaks boxes.',
     short: 'Lobs a tomato over walls onto a tile you pick.',
     role: 'mortar',
     damageClass: 'physical',
@@ -935,7 +939,7 @@ export const TOWERS: Record<string, TowerDef> = {
       ['pomodoro_p1_3', 'pomodoro_p1_4'],
       ['pomodoro_p2_3', 'pomodoro_p2_4'],
     ],
-    base: { cost: 26, range: 99, interval: 3.0, damage: 7, aoe: 1.0, global: true },
+    base: { cost: 26, range: 99, interval: 3.0, damage: 7, aoe: 1.0, global: true, breaksBoxes: true },
     paths: [
       {
         name: 'FOCUS SPRINT',
@@ -954,7 +958,7 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#e2553f',
         tiers: [
           { name: 'Louder Ticking', desc: '+3 damage.', cost: 22, effect: { damageAdd: 3 } },
-          { name: 'Do Not Disturb', desc: '+3 damage, and it gets through any shield.', cost: 34, effect: { damageAdd: 3, ignoresMinHit: true } },
+          { name: 'Do Not Disturb', desc: '+3 damage and a 25% bigger bang.', cost: 34, effect: { damageAdd: 3, aoeMult: 1.25 } },
           { name: 'Burnt Out', desc: 'Leaves a burning patch for 3 seconds that hurts whoever walks through.', cost: 100, effect: { crater: { time: 3, dps: 5 } } },
           { name: 'Deep Work', desc: 'Two and a half times the damage, and the patch burns 5 seconds.', cost: 270, effect: { damageMult: 2.5, crater: { time: 5, dps: 9 } } },
         ],
