@@ -19,7 +19,8 @@ import { View } from './render/view';
 import { Session } from './session';
 import { lobbyScreen, mpMenu } from './ui/lobby';
 import { buyPerk } from './meta/perks';
-import { careerScreen, changelogView, howToBody, loadingScreen, mainMenu, perkShopScreen, settingsScreen, textScreen } from './ui/screens';
+import { careerScreen, changelogView, highestOpen, howToBody, loadingScreen, mainMenu, perkShopScreen, settingsScreen, textScreen } from './ui/screens';
+import { almanacBody } from './ui/almanac';
 import { UI_TEXT as T } from './ui/text';
 import { VERSION } from './version';
 
@@ -127,7 +128,15 @@ class App {
 
   career(): void {
     this.demo();
-    this.show(careerScreen(this.save, (id) => this.play(id), () => this.menu(), () => this.perkShop()));
+    this.show(
+      careerScreen(
+        this.save,
+        (id) => this.play(id),
+        () => this.menu(),
+        () => this.perkShop(),
+        () => this.show(textScreen(T.almanac, almanacBody(this.save.seenColleagues, highestOpen(this.save)), () => this.career())),
+      ),
+    );
   }
 
   perkShop(): void {

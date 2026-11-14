@@ -117,7 +117,7 @@ export function perkShopScreen(save: SaveData, buy: (id: PerkId) => string | nul
   );
 }
 
-export function careerScreen(save: SaveData, play: (id: number) => void, back: () => void, shop?: () => void): HTMLElement {
+export function careerScreen(save: SaveData, play: (id: number) => void, back: () => void, shop?: () => void, almanac?: () => void): HTMLElement {
   const blocks = [
     { key: 'junior', from: 1 },
     { key: 'medior', from: 6 },
@@ -165,6 +165,7 @@ export function careerScreen(save: SaveData, play: (id: number) => void, back: (
           'span',
           { class: 'career-meta' },
           h('span', { class: 'muted' }, icon('award'), ` ${T.recognition}: ${save.recognition}`),
+          almanac ? h('button', { class: 'btn small', on: { click: almanac } }, icon('address-book'), h('span', { text: ` ${T.almanac}` })) : null,
           shop ? h('button', { class: 'btn small', on: { click: shop } }, icon('store'), h('span', { text: ` ${T.shopTitle}` })) : null,
         ),
       ),
@@ -249,6 +250,13 @@ function settingsCard(save: SaveData, act: SettingsActions, cls: string): HTMLEl
   );
 }
 
+/** The highest floor this save may play: the first one without stars, or the last. */
+export function highestOpen(save: SaveData): number {
+  let n = 1;
+  for (const id of Object.keys(LEVELS).map(Number).sort((a, b) => a - b)) if ((save.stars[String(id)] ?? 0) > 0) n = Math.max(n, id + 1);
+  return n;
+}
+
 /** Render CHANGELOG.md (headings and bullets only) without innerHTML. */
 export function changelogView(): HTMLElement {
   const root = h('div', { class: 'changelog' });
@@ -300,6 +308,7 @@ export interface PauseActions {
   resume(): void;
   settings(): void;
   howTo(): void;
+  almanac(): void;
   giveUp(): void;
   quit(): void;
 }
@@ -319,6 +328,7 @@ export function pauseOverlay(act: PauseActions, mode: { online: boolean; host: b
         h('button', { class: 'btn primary', on: { click: act.resume } }, icon('play'), h('span', { text: mode.online ? T.back : T.resume })),
         h('button', { class: 'btn', on: { click: act.settings } }, icon('sliders'), h('span', { text: T.settings })),
         h('button', { class: 'btn', on: { click: act.howTo } }, icon('circle-question'), h('span', { text: T.howTo })),
+        h('button', { class: 'btn', on: { click: act.almanac } }, icon('address-book'), h('span', { text: T.almanac })),
         mode.host ? h('button', { class: 'btn danger', on: { click: act.giveUp } }, icon('flag'), h('span', { text: mode.online ? T.mpGiveUp : T.giveUp })) : null,
         h('button', { class: 'btn', on: { click: act.quit } }, icon('arrow-left'), h('span', { text: mode.online ? T.mpLeave : T.quitToCareer })),
       ),

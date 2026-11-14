@@ -266,6 +266,20 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
   await clickText(page, 'Clock in');
   total += await check(page, 'l2-career', size);
+  // Who is who: the colleagues you met (a few, set here) and silhouettes for the rest; then the towers.
+  await page.evaluate(() => {
+    (window as unknown as { cad: { save: { seenColleagues: string[] } } }).cad.save.seenColleagues = ['intern', 'newhire', 'requester', 'chaser', 'oldguard', 'boardmember'];
+  });
+  await clickText(page, 'Who is who');
+  await page.waitForFunction(() => document.querySelector('.almanac'));
+  total += await check(page, 'almanac', size);
+  await clickText(page, 'Towers');
+  total += await check(page, 'almanac-towers', size);
+  await clickText(page, 'Back');
+  await page.waitForFunction(() => document.querySelector('.career'));
+  await page.evaluate(() => {
+    (window as unknown as { cad: { save: { seenColleagues: string[] } } }).cad.save.seenColleagues = [];
+  });
   await clickText(page, 'Coffee Corner');
   await page.waitForFunction(() => document.querySelector('.hud'));
   type G = {

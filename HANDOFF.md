@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-8 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-9 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -97,7 +97,12 @@ rustiger (Chaser en Old Guard in L2, Impersonator in L4), L3 golf 9 27 Chasers @
 (Headphones bij de Auto-Replies) en L3 (Self-Service bij het bureau, PORTAL). Balans, solid / greedy
 Focus voor -> na: L2 100/96 -> 100/98, L3 100/98 -> 100/99, L10 70/100 -> 100/100, L15 82/40 ->
 92/68; de rest gelijk. **Voor de maker:** L10 en L15 zijn door de vertragende Self-Service
-makkelijker geworden; stap 12 (Quick Reply, Reply All, tier 3's) meet alles opnieuw. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+makkelijker geworden; stap 12 (Quick Reply, Reply All, tier 3's) meet alles opnieuw.
+Stap 9 (0.39.0): `src/ui/almanac.ts` ("Who is who", tabbladen Colleagues en Towers; niet ontmoet
+= silhouet; torens na de hoogste open vloer op slot), knop op het carrièrescherm en in het
+pauzemenu. Golf-preview als gezichten met aantal (speciaal eerst, NEW, klik = kaart). Kleine
+DOM-badges (`badgeIcons`) in "On the floor". Eindscherm: counter-torens per collega en "You had
+none of these". Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

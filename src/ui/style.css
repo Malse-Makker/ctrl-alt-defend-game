@@ -947,8 +947,161 @@ button:disabled {
 }
 
 .next-wave {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.next-wave .wp-label {
+  width: 100%;
+}
+
+/* Who comes next: an icon with a count. Colleagues with a rule of their own in the warning colour. */
+.wp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 2px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.wp-chip img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.wp-chip.special {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+/* The icons from over their heads, small: a crossed laptop or hand, a box, a crossed eye, a "!". */
+.cbadges {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 5px;
+  vertical-align: 1px;
+}
+
+.cbadge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #161a24;
+  border: 1px solid var(--line);
+  font-size: 9px;
+}
+
+.cbadge.no-digital {
+  color: #4aa3ff;
+  border-color: #4aa3ff;
+}
+
+.cbadge.no-physical {
+  color: #d9a05b;
+  border-color: #d9a05b;
+}
+
+.cbadge.box {
+  color: #c8995a;
+  border-color: #6fb6ff;
+}
+
+.cbadge.hidden {
+  color: #f6f3ea;
+  border-color: #9a8cff;
+}
+
+.cbadge.taunt {
+  color: #1d2230;
+  background: #f2c641;
+  border-color: #f2c641;
+}
+
+.cbadge.cross::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  height: 2px;
+  background: #e5534b;
+  transform: rotate(-45deg);
+}
+
+/* The end screen: a counter you did not have. */
+.hurt-none {
+  font-size: 12px;
+  color: var(--warn);
+  align-self: center;
+}
+
+/* Who is who */
+.almanac {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alm-tabs {
+  grid-template-columns: repeat(2, minmax(0, 140px));
+}
+
+.alm-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px;
+}
+
+.alm-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.alm-row > img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.alm-row.unseen > img {
+  filter: brightness(0);
+  opacity: 0.45;
+}
+
+.alm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.alm-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .info-card {
@@ -983,13 +1136,13 @@ button:disabled {
   font-size: 15px;
 }
 
-.info-card .card-towers {
+.card-towers {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.info-card .card-tower {
+.card-tower {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -999,7 +1152,7 @@ button:disabled {
   font-size: 12px;
 }
 
-.info-card .card-tower img {
+.card-tower img {
   width: 26px;
   height: 26px;
 }

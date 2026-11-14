@@ -24,7 +24,8 @@ import { CHAIR_DIRS, Game, needsSight, TICK, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
-import { confirmOverlay, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
+import { confirmOverlay, highestOpen, howToBody, mpEndActions, pauseOverlay, settingsOverlay, textScreen } from './ui/screens';
+import { almanacBody } from './ui/almanac';
 import { dinoGame } from './ui/dino';
 import { formGame } from './ui/form';
 import { phoneGame } from './ui/phone';
@@ -784,6 +785,7 @@ export class Session {
           resume: () => this.closeOverlay(),
           settings: () => this.openSettings(true),
           howTo: () => this.setOverlay(textScreen(T.howTo, howToBody(), () => this.togglePauseMenu())),
+          almanac: () => this.setOverlay(textScreen(T.almanac, almanacBody(this.host.save.seenColleagues, Math.max(this.game.level.id, highestOpen(this.host.save))), () => this.togglePauseMenu())),
           giveUp: () =>
             this.setOverlay(
               confirmOverlay(

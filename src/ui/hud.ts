@@ -22,7 +22,8 @@ import {
 import { DUPLICATE_SURCHARGE, earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
-import { idleNote } from './badges';
+import { colleagueBadges, idleNote } from './badges';
+import { badgeIcons } from './almanac';
 import { upgradeDiff } from './statdiff';
 import { cardCountdown, colleagueCard } from './colleaguecard';
 import { fmt, h, icon, img, setText, toggle } from './dom';
@@ -412,6 +413,8 @@ export class Hud {
         const def = COLLEAGUES[type];
         const count = h('span', { class: 'count' });
         const name = h('span', { class: 'name', text: def.name.replace(/^The /, '') });
+        const marks = badgeIcons(def);
+        if (marks) name.append(marks);
         if (this.newBadges.has(type)) name.append(h('span', { class: 'badge', text: T.newBadge }));
         const el = h('button', { class: 'colleague-row', title: def.ability, on: { click: () => this.showColleague(def, 0) } }, img(`icons/${def.model}.png`, def.name), name, count);
         row = { row: el, count };
@@ -432,15 +435,44 @@ export class Hud {
       this.colleagueList.querySelector('.faint')?.remove();
     }
     const g = this.game;
-    if (g.waveIndex < g.totalWaves) {
-      const groups = g.waves[g.waveIndex];
-      const merged = new Map<string, number>();
-      for (const gr of groups) merged.set(gr.type, (merged.get(gr.type) ?? 0) + gr.count);
-      const text = [...merged].map(([t, n]) => `${n} ${COLLEAGUES[t].name.replace(/^The /, '')}`).join(', ');
-      setText(this.nextWave, `Wave ${g.waveIndex + 1}: ${text}`);
-    } else {
-      setText(this.nextWave, '');
+    if (this.nextWaveKey !== g.waveIndex) {
+      this.nextWaveKey = g.waveIndex;
+      this.buildWavePreview();
     }
+  }
+
+  private nextWaveKey = -1;
+
+  /**
+   * Who comes next, as icons with a count: colleagues with a rule of their own first, in the
+   * warning colour, new ones marked. Click one for his card, so the answer comes before he does.
+   */
+  private buildWavePreview(): void {
+    const g = this.game;
+    if (g.waveIndex >= g.totalWaves) {
+      this.nextWave.replaceChildren();
+      return;
+    }
+    const merged = new Map<string, number>();
+    for (const gr of g.waves[g.waveIndex]) merged.set(gr.type, (merged.get(gr.type) ?? 0) + gr.count);
+    const special = (t: string) => {
+      const d = COLLEAGUES[t];
+      return !!d.boss || !!d.silence || colleagueBadges(d, d.shield ?? 0, false).length > 0;
+    };
+    const order = [...merged].sort((a, b) => Number(special(b[0])) - Number(special(a[0])));
+    this.nextWave.replaceChildren(
+      h('span', { class: 'wp-label', text: `${T.wavePreview} (${g.waveIndex + 1}):` }),
+      ...order.map(([t, n]) => {
+        const def = COLLEAGUES[t];
+        return h(
+          'button',
+          { class: `wp-chip${special(t) ? ' special' : ''}`, title: `${n} ${def.name}: ${def.short ?? def.ability}`, on: { click: () => this.showColleague(def, 0) } },
+          img(`icons/${def.model}.png`, def.name),
+          h('span', { class: 'wp-n', text: String(n) }),
+          this.newBadges.has(t) ? h('span', { class: 'badge', text: T.newBadge }) : null,
+        );
+      }),
+    );
   }
 
   /**

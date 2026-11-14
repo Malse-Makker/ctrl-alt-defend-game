@@ -2,6 +2,7 @@
 // and the feedback form with one button. Reached by winning, burning out, or Give up.
 
 import { COLLEAGUES } from '../sim/data/colleagues';
+import { TOWERS } from '../sim/data/towers';
 import type { Game } from '../sim/game';
 import type { LevelResult } from '../meta/save';
 import { sendFeedback, type RoundSummary } from '../net/api';
@@ -13,6 +14,19 @@ export interface EndActions {
   career(): void;
   /** Single player: switch the explanations off before playing again (or back on). */
   tips?: { on: boolean; set(on: boolean): void };
+}
+
+/** The towers that answer him, and whether you had any of them on the floor. */
+function counterLine(game: Game, type: string): HTMLElement | null {
+  const ids = (COLLEAGUES[type].counters ?? []).filter((id) => TOWERS[id] && game.level.towers.includes(id));
+  if (ids.length === 0) return null;
+  const had = game.towers.some((t) => ids.includes(t.defId));
+  return h(
+    'div',
+    { class: 'card-towers' },
+    ...ids.map((id) => h('span', { class: 'card-tower', title: TOWERS[id].short }, img(`icons/${TOWERS[id].models[0]}.png`, TOWERS[id].name), h('span', { text: TOWERS[id].name }))),
+    had ? null : h('span', { class: 'hurt-none', text: T.hurtNone }),
+  );
 }
 
 export function endScreen(game: Game, summary: RoundSummary, result: LevelResult | null, act: EndActions): HTMLElement {
@@ -55,7 +69,7 @@ export function endScreen(game: Game, summary: RoundSummary, result: LevelResult
           'div',
           { class: 'hurt-row' },
           img(`icons/${def.model}.png`, def.name),
-          h('div', {}, h('div', { class: 'wrap', text: `${def.name} x${n}` }), h('div', { class: 'tip wrap', text: def.counter })),
+          h('div', {}, h('div', { class: 'wrap', text: `${def.name} x${n}` }), h('div', { class: 'tip wrap', text: def.counter }), counterLine(game, type)),
           h('span', { class: 'loss', text: `-${focus} ${T.focus}` }),
         ),
       );

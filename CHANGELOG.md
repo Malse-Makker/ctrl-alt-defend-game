@@ -3,6 +3,14 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.39.0] - 2026-11-14
+
+### New
+- Who is who: a page with every colleague you have met (what he does, what helps, the towers that answer him, and on which floors he turns up) and every tower (what it does and who it is good against). Colleagues you have not met yet are a silhouette. Open it from the career screen or the pause menu.
+- The next wave is a row of faces with a count. Colleagues with a rule of their own come first, in the warning colour; new ones say NEW. Click one for his card.
+- The list of who is on the floor shows the same small icons as over their heads.
+- WHAT HURT YOU on the end screen shows the towers that answer each colleague, and says so when you had none of them.
+
 ## [0.38.0] - 2026-11-14
 
 ### Changed
