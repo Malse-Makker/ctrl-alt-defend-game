@@ -255,19 +255,19 @@ async function briefingFlow(browser: import('puppeteer-core').Browser, errors: s
 }
 
 /** The looks per path: four towers, each path at tier 3 and then tier 4, next to each other. */
-async function looksFlow(browser: import('puppeteer-core').Browser, errors: string[], towers: string[], label: string): Promise<number> {
+async function looksFlow(browser: import('puppeteer-core').Browser, errors: string[], towers: string[], label: string, level = 5): Promise<number> {
   const size = '1600x900';
   console.log(`\n${size} (looks per path: ${label})`);
   let total = 0;
   const page = await browser.newPage();
   page.on('pageerror', (e) => errors.push(`looks: ${String(e)}`));
   await page.setViewport({ width: 1600, height: 900 });
-  const stars = Object.fromEntries(Array.from({ length: 4 }, (_, i) => [String(i + 1), 3]));
+  const stars = Object.fromEntries(Array.from({ length: level - 1 }, (_, i) => [String(i + 1), 3]));
   await page.evaluateOnNewDocument(SETUP.replace("v: 1, settings:", `v: 1, stars: ${JSON.stringify(stars)}, settings:`));
   await page.goto(URL_, { waitUntil: 'networkidle0' });
   await page.waitForFunction(() => document.querySelector('#ui .menu-buttons'), { timeout: 30000 });
   await clickText(page, 'Clock in');
-  await clickText(page, LEVELS[5].name);
+  await clickText(page, LEVELS[level].name);
   await page.waitForFunction(() => document.querySelector('.hud'));
   const placed = await page.evaluate((towers) => {
     type Any = any;
@@ -282,6 +282,8 @@ async function looksFlow(browser: import('puppeteer-core').Browser, errors: stri
             if (!g.canPlace(def, x, y).ok) continue;
             const r = g.place(def, x, y);
             if (r.ok) {
+              // Specials are one each: lift that here, in this page only, to show all three paths.
+              r.tower.def.special = false;
               r.tower.tiers = [0, 0, 0];
               r.tower.tiers[p] = 3;
               n++;
@@ -310,6 +312,8 @@ async function looksFlow(browser: import('puppeteer-core').Browser, errors: stri
 async function looksAll(browser: import('puppeteer-core').Browser, errors: string[]): Promise<number> {
   let total = await looksFlow(browser, errors, ['coffee', 'autoreply', 'headphones', 'artillery'], 'a');
   total += await looksFlow(browser, errors, ['quickreply', 'thumbtacks', 'selfservice'], 'b');
+  total += await looksFlow(browser, errors, ['keyboardsmash', 'chair', 'replyall'], 'c', 9);
+  total += await looksFlow(browser, errors, ['delegation', 'pomodoro', 'poster'], 'd', 9);
   return total;
 }
 

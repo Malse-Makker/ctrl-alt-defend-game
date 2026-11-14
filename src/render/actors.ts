@@ -8,6 +8,7 @@ import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
 import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
 import { tierDots } from './tierdots';
+import { PROJECTILE_LOOK, projectileFor, type ProjectileKind } from './projectiles';
 import { PAL } from './palette';
 import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
 
@@ -101,7 +102,6 @@ export class Actors {
   private towers = new Map<number, TowerView>();
   private shots: Shot[] = [];
   private scraps: Scrap[] = [];
-  private shotPool: THREE.Group[] = [];
   private scrapGeo = new THREE.PlaneGeometry(0.09, 0.12);
   private scrapMats = new Map<string, THREE.MeshStandardMaterial>();
   private readonly hpBackMat = new THREE.SpriteMaterial({ color: PAL.hpBack, depthTest: false });
@@ -111,10 +111,6 @@ export class Actors {
     crit: new THREE.SpriteMaterial({ color: PAL.hpCrit, depthTest: false }),
     shield: new THREE.SpriteMaterial({ color: PAL.shield, depthTest: false }),
   };
-  private readonly envGeo = new THREE.BoxGeometry(0.2, 0.02, 0.13);
-  private readonly envMat = new THREE.MeshStandardMaterial({ color: PAL.envelope, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0.35 });
-  private readonly flapGeo = new THREE.BoxGeometry(0.2, 0.024, 0.04);
-  private readonly flapMat = new THREE.MeshStandardMaterial({ color: PAL.envelopeFlap });
   readonly rangeRing: THREE.Mesh;
   private cover: THREE.InstancedMesh | null = null;
   private coverKey = '';
@@ -579,8 +575,9 @@ export class Actors {
           break;
         }
         const travel = ev.travel;
-        const staple = game.tower(ev.towerId)?.defId === 'artillery';
-        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, staple ? 'staple' : 'reply', this.towers.get(ev.towerId)?.root.position.y ?? 0);
+        const kind = projectileFor(game.tower(ev.towerId)?.defId);
+        const staple = kind === 'staple';
+        this.fireShot(ev.fx, ev.fy, ev.tx, ev.ty, travel, kind, this.towers.get(ev.towerId)?.root.position.y ?? 0);
         if (staple) this.burst(ev.tx, 0.5, ev.ty, 5, '#a7adb5');
         const tv = this.towers.get(ev.towerId);
         if (tv) tv.recoil = 1;
@@ -1051,25 +1048,31 @@ export class Actors {
     this.pulses = keep;
   }
 
-  private staplePool: THREE.Group[] = [];
-  private readonly stapleGeo = new THREE.BoxGeometry(0.22, 0.04, 0.05);
-  private readonly stapleMat = new THREE.MeshStandardMaterial({ color: '#c8ccd2', metalness: 0.8, roughness: 0.3 });
+  private shotPools = new Map<ProjectileKind, THREE.Group[]>();
 
-  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number, kind: 'reply' | 'staple' = 'reply', lift = 0): void {
-    const pool = kind === 'staple' ? this.staplePool : this.shotPool;
-    let mesh = pool.pop();
-    if (!mesh) {
-      mesh = new THREE.Group();
-      mesh.userData.kind = kind;
-      if (kind === 'staple') {
-        mesh.add(new THREE.Mesh(this.stapleGeo, this.stapleMat));
-      } else {
-        const env = new THREE.Mesh(this.envGeo, this.envMat);
-        const flap = new THREE.Mesh(this.flapGeo, this.flapMat);
-        flap.position.set(0, 0.012, -0.045);
-        mesh.add(env, flap);
-      }
+  /** One mesh per kind of projectile: a body and, for most, a strip of trim (a flap, a tab). */
+  private makeProjectile(kind: ProjectileKind): THREE.Group {
+    const look = PROJECTILE_LOOK[kind];
+    const g = new THREE.Group();
+    g.userData.kind = kind;
+    const [w, h, d] = look.size;
+    const metal = kind === 'staple';
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: look.body, metalness: metal ? 0.8 : 0, roughness: metal ? 0.3 : 0.6, emissive: new THREE.Color(metal ? '#000000' : look.body), emissiveIntensity: metal ? 0 : 0.3 })));
+    if (look.trim) {
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(w, h * 1.2, d * 0.3), new THREE.MeshStandardMaterial({ color: look.trim }));
+      trim.position.set(0, h * 0.6, -d * 0.35);
+      g.add(trim);
     }
+    return g;
+  }
+
+  private fireShot(fx: number, fy: number, tx: number, ty: number, dur: number, kind: ProjectileKind = 'envelope', lift = 0): void {
+    let pool = this.shotPools.get(kind);
+    if (!pool) {
+      pool = [];
+      this.shotPools.set(kind, pool);
+    }
+    const mesh = pool.pop() ?? this.makeProjectile(kind);
     mesh.visible = true;
     this.group.add(mesh);
     this.shots.push({ mesh, fx, fy, tx, ty, t: 0, dur: Math.max(0.05, dur), lift });
@@ -1088,7 +1091,7 @@ export class Actors {
       s.mesh.rotation.z = Math.sin(s.t * 20) * 0.3;
       if (k >= 1) {
         this.group.remove(s.mesh);
-        (s.mesh.userData.kind === 'staple' ? this.staplePool : this.shotPool).push(s.mesh);
+        this.shotPools.get(s.mesh.userData.kind as ProjectileKind)?.push(s.mesh);
         this.burst(s.tx, 0.5, s.ty, 2, '#f6f3ea');
       } else keep.push(s);
     }

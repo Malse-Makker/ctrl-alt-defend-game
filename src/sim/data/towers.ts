@@ -716,6 +716,11 @@ export const TOWERS: Record<string, TowerDef> = {
     special: true,
     accent: '#e5534b',
     models: ['keyboardsmash_1', 'keyboardsmash_2', 'keyboardsmash_3'],
+    pathModels: [
+      ['keyboardsmash_p0_3', 'keyboardsmash_p0_4'],
+      ['keyboardsmash_p1_3', 'keyboardsmash_p1_4'],
+      ['keyboardsmash_p2_3', 'keyboardsmash_p2_4'],
+    ],
     base: { cost: 60, range: 2.2, interval: 8, damage: 8, smashRadius: 1.2, barrierHp: 30, barrierTime: 5 },
     paths: [
       {
@@ -765,6 +770,11 @@ export const TOWERS: Record<string, TowerDef> = {
     special: true,
     accent: '#3e7cc9',
     models: ['chair_1', 'chair_2', 'chair_3'],
+    pathModels: [
+      ['chair_p0_3', 'chair_p0_4'],
+      ['chair_p1_3', 'chair_p1_4'],
+      ['chair_p2_3', 'chair_p2_4'],
+    ],
     base: { cost: 45, range: 5, interval: 2.5, damage: 5, chairHp: 20, rollSpeed: 6 },
     paths: [
       {
@@ -813,6 +823,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 6,
     accent: '#e2557a',
     models: ['replyall_1', 'replyall_2', 'replyall_3'],
+    pathModels: [
+      ['replyall_p0_3', 'replyall_p0_4'],
+      ['replyall_p1_3', 'replyall_p1_4'],
+      ['replyall_p2_3', 'replyall_p2_4'],
+    ],
     base: { cost: 26, range: 3.0, interval: 1.4, damage: 2, aoe: 1.3 },
     paths: [
       {
@@ -862,6 +877,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 7,
     accent: '#f2c641',
     models: ['delegation_1', 'delegation_2', 'delegation_3'],
+    pathModels: [
+      ['delegation_p0_3', 'delegation_p0_4'],
+      ['delegation_p1_3', 'delegation_p1_4'],
+      ['delegation_p2_3', 'delegation_p2_4'],
+    ],
     base: { cost: 28, range: 3.0, interval: 1.1, damage: 2, bounce: 3, bounceMult: 1.4 },
     paths: [
       {
@@ -910,6 +930,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 8,
     accent: '#e2553f',
     models: ['pomodoro_1', 'pomodoro_2', 'pomodoro_3'],
+    pathModels: [
+      ['pomodoro_p0_3', 'pomodoro_p0_4'],
+      ['pomodoro_p1_3', 'pomodoro_p1_4'],
+      ['pomodoro_p2_3', 'pomodoro_p2_4'],
+    ],
     base: { cost: 26, range: 99, interval: 3.0, damage: 7, aoe: 1.0, global: true },
     paths: [
       {
@@ -957,6 +982,11 @@ export const TOWERS: Record<string, TowerDef> = {
     unlockLevel: 9,
     accent: '#f2c641',
     models: ['poster_1', 'poster_2', 'poster_3'],
+    pathModels: [
+      ['poster_p0_3', 'poster_p0_4'],
+      ['poster_p1_3', 'poster_p1_4'],
+      ['poster_p2_3', 'poster_p2_4'],
+    ],
     base: { cost: 30, range: 2.5, buffRate: 0.9 },
     paths: [
       {

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_models as bm  # noqa: E402
 import kit  # noqa: E402
 
-PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter", "impersonator", "cleaner", "linemanager", "coldcaller", "baby", "phonecaller", "smoker", "consultant", "hrmanager", "projectmanager"]
+PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter", "impersonator", "cleaner", "linemanager", "coldcaller", "baby", "phonecaller", "smoker", "consultant", "hrmanager", "projectmanager", "finalreview"]
 ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3",
                   "coffee_p0_3", "coffee_p0_4", "coffee_p1_3", "coffee_p1_4", "coffee_p2_3", "coffee_p2_4", "autoreply_1", "autoreply_2", "autoreply_3",
                   "autoreply_p0_3", "autoreply_p0_4", "autoreply_p1_3", "autoreply_p1_4", "autoreply_p2_3", "autoreply_p2_4",

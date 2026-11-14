@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-12 klaar, stap 13 deels
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-14 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -124,12 +124,19 @@ Stap 12 (0.42.0), keuzes van mij:
   Botscripts: L15 Auto-Reply bij het bureau in plaats van Quick Reply; L13 een derde Auto-Reply.
 - **Voor de maker:** L13 greedy wint nu met 2 Focus (was 10), L15 solid 59 en 2 sterren (was 92 en
   3). L13 was al het zwaarste level (zie OPEN bij L13).
-Stap 13 (0.43.0, deels): looks per pad (tier 3 en 4) voor Coffee Machine, Auto-Reply, Headphones,
-Office Artillery, Quick Reply, Thumbtacks en Self-Service (`b_<toren>_p<pad>_<tier>` in
-`build_models.py`, iconen, `MODEL_NAMES`, `pathModels`). Nog te doen: Keyboard Smash, Office Chair,
-Reply All, Delegation, Pomodoro Timer, Motivational Poster. Uicheck `--looks-only` zet per groep
-torens elk pad op tier 3 en 4 neer (`looks-a/b-tier3/4.png`). `tests/assets.test.ts` gebruikt nu
-Delegation als voorbeeld van een toren zonder eigen looks. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+Stap 13 (0.43.0 en 0.44.0): looks per pad (tier 3 en 4) voor alle 14 torens
+(`b_<toren>_p<pad>_<tier>` in `build_models.py`, iconen, `MODEL_NAMES`, `pathModels`). Uicheck
+`--looks-only` (ook in de volledige run) zet per groep torens elk pad op tier 3 en 4 neer
+(`looks-a..d-tier3/4.png`; groep c en d in Town Hall; specials daar tijdelijk niet "1 each"). Niet
+gedaan uit 8.2: kleine voorwerpen per pad op tier 1 en 2 (laag 2); de tier-lampjes doen dat werk.
+Stap 14 (0.45.0): Cold Caller eigen uiterlijk (kaki, blond, rode headset, kaartenbak), Speakerphone
+Caller met vergadertelefoon (armen naar voren), eigen model `finalreview` voor de 360, haarstijl
+`bob` in `person()` (bestond niet, daardoor had The HR Manager geen haar). Projectiel per toren:
+`src/render/projectiles.ts` (puur) en pools per soort in `actors.ts`. Niet gedaan: "kringen van
+bosses" uit de review (geen ontwerp; nu alleen de Chatterbox-kring).
+
+**Review klaar.** Alle 14 stappen zijn verwerkt. Open voor de maker: L13 greedy wint met 2 Focus,
+L15 solid 59 en 2 sterren (stap 12); L10 is met de vertragende Self-Service makkelijk geworden. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

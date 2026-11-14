@@ -62,8 +62,8 @@ describe('assets', () => {
     expect(modelFor(def, [2, 1, 0])).toBe(def.models[1]);
     expect(modelFor(def, [2, 3, 0])).toBe('b3');
     expect(modelFor(def, [0, 2, 4])).toBe('c4');
-    // Without its own looks a tower keeps the old base / mid / top models.
-    expect(modelFor(TOWERS.delegation, [4, 2, 0])).toBe(TOWERS.delegation.models[2]);
+    // Below tier 3 a tower keeps the base / mid models.
+    expect(modelFor(TOWERS.delegation, [2, 2, 0])).toBe(TOWERS.delegation.models[1]);
   });
 
   it('the typing in the background speeds up and gets louder as Focus runs out', () => {

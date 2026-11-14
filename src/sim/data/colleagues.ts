@@ -524,7 +524,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     stunResist: 0.35,
     scale: 1.2,
     accent: '#8e6fbf',
-    model: 'linemanager',
+    model: 'finalreview',
     armSwing: 0.3,
   },
   coldcaller: {

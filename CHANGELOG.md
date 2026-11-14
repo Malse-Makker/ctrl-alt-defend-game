@@ -3,6 +3,20 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.45.0] - 2026-11-14
+
+### Changed
+- The Cold Caller looks like himself now: a khaki suit, a big red headset and a box of index cards, instead of The New Hire's teal shirt.
+- The Speakerphone Caller holds a conference phone out in front of him, the call going out in waves.
+- Your Line Manager, 360 has a look of his own: a charcoal suit, a tablet, and a ring of feedback all round him.
+- The HR Manager has her hair back.
+- Every tower that fires at colleagues throws something of its own: Auto-Reply an envelope, Quick Reply a speech bubble, Self-Service a ticket, Reply All a pink email, Delegation a yellow folder, Office Artillery a staple.
+
+## [0.44.0] - 2026-11-14
+
+### New
+- The last six towers look different on every path from tier 3 too: Keyboard Smash (a spiked keyboard, a server rack, one giant key), the Office Chair (a racing chair, a throne), Reply All (a siren, a ring of mail, a screen full of faces), Delegation (a steering group of pawns, a globe, a filing cabinet), the Pomodoro Timer (burnt out, under a glass dome, an alarm clock) and the Motivational Poster (Employee of the Month, a mission statement, an LED wall). Every tower now shows which path it went down.
+
 ## [0.43.0] - 2026-11-14
 
 ### New

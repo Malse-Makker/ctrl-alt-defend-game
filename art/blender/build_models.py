@@ -65,6 +65,17 @@ def person(name, shirt, pants, skin, hair, style="short", h=1.0, shoes="plastic_
                           subdiv=2, scale=(1.0, 0.98, 0.7)))
         parts.append(box("Quiff", (0.16 * s, 0.1 * s, 0.05 * s), loc=(0.03 * s, -0.06 * s, head_z + 0.1 * s),
                          material=hm, bevel=0.015 * s, rot_z=0.2))
+    elif style == "bob":
+        # Chin-length all round, a straight fringe.
+        parts.append(ball("Hair", 0.137 * s, loc=(0, 0.01 * s, head_z + 0.03 * s), material=hm,
+                          subdiv=2, scale=(1.03, 1.0, 0.75)))
+        for side in (-1, 1):
+            parts.append(box(f"HairSide{side}", (0.05 * s, 0.2 * s, 0.17 * s), loc=(side * 0.115 * s, 0.02 * s, head_z - 0.12 * s),
+                             material=hm, bevel=0.02 * s))
+        parts.append(box("HairBack", (0.24 * s, 0.06 * s, 0.17 * s), loc=(0, 0.1 * s, head_z - 0.12 * s), material=hm,
+                         bevel=0.02 * s))
+        parts.append(box("Fringe", (0.2 * s, 0.05 * s, 0.05 * s), loc=(0, -0.1 * s, head_z + 0.06 * s), material=hm,
+                         bevel=0.015 * s))
     elif style == "bald":
         parts.append(ball("Hair", 0.131 * s, loc=(0, 0.03 * s, head_z - 0.01 * s), material=hm,
                           subdiv=2, scale=(1.0, 0.9, 0.55)))
@@ -1463,6 +1474,26 @@ def b_linemanager():
     return root
 
 
+def b_finalreview():
+    """Your Line Manager, 360: a charcoal suit, a tablet, and a ring of feedback all round him."""
+    s = 1.55
+    root, body, hz = person("finalreview", "charcoal", "charcoal", "skin_1", "hair_grey", style="side", h=s)
+    shirt = box("ShirtV", (0.1 * s, 0.012 * s, 0.16 * s), loc=(0, -0.104 * s, 0.52 * s), material=mat("plastic_white"), taper=0.4)
+    tie = box("Tie", (0.035 * s, 0.014 * s, 0.15 * s), loc=(0, -0.108 * s, 0.5 * s), material=mat("red"), taper=0.6)
+    glasses = box("Glasses", (0.17 * s, 0.02 * s, 0.03 * s), loc=(0, -0.125 * s, hz), material=mat("yellow", metal=0.6))
+    ring = [box(f"Feedback{i}", (0.16 * s, 0.03 * s, 0.025 * s), loc=(0.42 * s * math.cos(a), 0.42 * s * math.sin(a), 0.5 * s), material=mat("teal", emit=1.2), rot_z=a + math.pi / 2) for i, a in enumerate([k * TAU / 16 for k in range(16)])]
+    stars = [box(f"Star{i}", (0.05 * s, 0.05 * s, 0.05 * s), loc=(0.42 * s * math.cos(a), 0.42 * s * math.sin(a), 0.53 * s), material=mat("yellow", emit=1.4), rot_z=a) for i, a in enumerate([k * TAU / 5 for k in range(5)])]
+    acc = join("Props", [shirt, tie, glasses] + ring + stars)
+    parent(acc, root)
+    arm = _arm(root, "R")
+    arm.rotation_euler[0] = -0.9
+    hp = _hand_world(arm, s)
+    tab = box("Tablet", (0.02 * s, 0.22 * s, 0.3 * s), loc=(hp.x, hp.y - 0.02 * s, hp.z - 0.18 * s), material=mat("plastic_black"), bevel=0.01)
+    scr = box("TabletScreen", (0.022 * s, 0.18 * s, 0.24 * s), loc=(hp.x - 0.002 * s, hp.y - 0.02 * s, hp.z - 0.16 * s), material=mat("teal", emit=1.0))
+    _hold(root, "R", s, [tab, scr])
+    return root
+
+
 def b_boardroom_table():
     """Nine by three tiles: a long dark table with leather chairs, glasses and notepads."""
     root = empty("boardroom_table")
@@ -1554,18 +1585,21 @@ def b_replyall_3():
 
 def b_coldcaller():
     s = 1.0
-    root, body, hz = person("coldcaller", "teal", "charcoal", "skin_2", "hair_dark", style="short", h=s)
-    band = box("Band", (0.28, 0.03, 0.03), loc=(0, 0.01, hz + 0.13), material=mat("plastic_black"))
-    cup = ball("Cup", 0.045, loc=(-0.13, 0, hz), material=mat("plastic_black"), subdiv=1)
-    mic = box("Mic", (0.02, 0.12, 0.02), loc=(-0.12, -0.08, hz - 0.06), material=mat("plastic_black"))
-    badge = box("Badge", (0.06, 0.012, 0.04), loc=(0.08, -0.106, 0.6), material=mat("plastic_white"))
-    acc = join("Props", [band, cup, mic, badge])
+    # He does not read email, he calls: a khaki suit, a big headset and a box of index cards with
+    # everyone's number. Nothing like The New Hire's teal shirt.
+    root, body, hz = person("coldcaller", "khaki", "navy", "skin_2", "hair_blond", style="side", h=s)
+    lapels = [box(f"Lapel{i}", (0.06, 0.012, 0.18), loc=(x, -0.104, 0.5), material=mat("#8a7a52"), taper=0.5) for i, x in enumerate((-0.05, 0.05))]
+    shirt = box("ShirtV", (0.06, 0.011, 0.14), loc=(0, -0.103, 0.53), material=mat("plastic_white"), taper=0.4)
+    band = box("Band", (0.29, 0.035, 0.035), loc=(0, 0.01, hz + 0.13), material=mat("red"))
+    cups = [ball(f"Cup{i}", 0.05, loc=(x, 0, hz), material=mat("red"), subdiv=1) for i, x in enumerate((-0.135, 0.135))]
+    mic = box("Mic", (0.02, 0.14, 0.02), loc=(-0.12, -0.09, hz - 0.07), material=mat("plastic_black"))
+    tip = ball("MicTip", 0.022, loc=(-0.1, -0.16, hz - 0.07), material=mat("red"), subdiv=1)
+    acc = join("Props", lapels + [shirt, band, mic, tip] + cups)
     parent(acc, root)
-    arm = _arm(root, "R")
-    arm.rotation_euler[0] = -2.4
-    hp = _hand_world(arm, s)
-    phone = box("Phone", (0.04, 0.02, 0.12), loc=(hp.x, hp.y, hp.z - 0.04), material=mat("plastic_black"), bevel=0.006)
-    _hold(root, "R", s, [phone])
+    hp = _hand_world(_arm(root, "R"), s)
+    rolo = box("CardBox", (0.16, 0.12, 0.1), loc=(hp.x, hp.y - 0.03, hp.z - 0.06), material=mat("charcoal"), bevel=0.01)
+    cards = [box(f"Card{i}", (0.13, 0.008, 0.07), loc=(hp.x, hp.y - 0.07 + i * 0.02, hp.z + 0.02), material=mat("plastic_white" if i % 2 else "yellow")) for i in range(4)]
+    _hold(root, "R", s, [rolo] + cards)
     return root
 
 
@@ -1735,19 +1769,20 @@ def b_delegation_3():
 
 def b_phonecaller():
     s = 1.0
-    root, body, hz = person("phonecaller", "orange", "denim", "skin_3", "hair_brown", style="side", h=s)
+    root, body, hz = person("phonecaller", "orange", "denim", "skin_3", "hair_brown", style="side", h=s,
+                            arms_forward=-1.2)
     tie = box("Tie", (0.035, 0.014, 0.15), loc=(0, -0.108, 0.5), material=mat("navy"), taper=0.6)
     acc = join("Props", [tie])
     parent(acc, root)
-    arm = _arm(root, "R")
-    arm.rotation_euler[0] = -2.5
-    hp = _hand_world(arm, s)
-    handset = box("Handset", (0.05, 0.05, 0.16), loc=(hp.x, hp.y, hp.z - 0.06), material=mat("plastic_black"), bevel=0.01)
-    _hold(root, "R", s, [handset])
+    # On speaker: a three-legged conference phone held out in front, the call going out in waves.
     hl = _hand_world(_arm(root, "L"), s)
-    phone = box("DeskPhone", (0.14, 0.12, 0.06), loc=(hl.x, hl.y - 0.04, hl.z - 0.08), material=mat("plastic_black"), bevel=0.01)
-    pad = box("Keypad", (0.08, 0.06, 0.005), loc=(hl.x, hl.y - 0.06, hl.z - 0.019), material=mat("plastic_white"))
-    _hold(root, "L", s, [phone, pad])
+    hr = _hand_world(_arm(root, "R"), s)
+    cx, cy, cz = (hl.x + hr.x) / 2, min(hl.y, hr.y) - 0.02, max(hl.z, hr.z) + 0.02
+    legs = [box(f"Lobe{i}", (0.07, 0.13, 0.025), loc=(cx + 0.06 * math.sin(a), cy - 0.06 * math.cos(a), cz), material=mat("charcoal"), bevel=0.01, rot_z=a) for i, a in enumerate((0, 2.1, 4.2))]
+    hub = cyl("Hub", 0.05, 0.035, loc=(cx, cy, cz), material=mat("plastic_black"), verts=12)
+    light = cyl("HubLight", 0.02, 0.008, loc=(cx, cy, cz + 0.035), material=mat("plant", emit=2.0), verts=10)
+    waves = [box(f"Wave{i}", (0.12 + 0.07 * i, 0.012, 0.012), loc=(cx, cy - 0.12 - 0.05 * i, cz + 0.12 + 0.04 * i), material=mat("orange", emit=1.0)) for i in range(3)]
+    _hold(root, "L", s, legs + [hub, light] + waves)
     return root
 
 
@@ -4504,6 +4539,7 @@ BUILDERS = {
     "replyall_2": b_replyall_2,
     "replyall_3": b_replyall_3,
     "coldcaller": b_coldcaller,
+    "finalreview": b_finalreview,
     "baby": b_baby,
     "sofa": b_sofa,
     "tv_stand": b_tv_stand,
