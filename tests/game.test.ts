@@ -429,8 +429,10 @@ describe('players and wallets', () => {
     b.pot = 20;
     other.pot = 50;
     const before = g.wallets[0];
+    // Since review step 12 a claim from tier 3 up pays a quarter extra: 30 + 7 and 20 + 5.
+    expect(g.claimValue(a)).toBe(62);
     expect(g.claim(a.id, 0).ok).toBe(true);
-    expect(g.wallets[0] - before).toBe(50);
+    expect(g.wallets[0] - before).toBe(62);
     expect(a.pot).toBe(0);
     expect(b.pot).toBe(0);
     expect(other.pot).toBe(50);

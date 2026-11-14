@@ -1,4 +1,4 @@
-// Level 3: Quick Reply's build-up, The Presenter, and the projector mini-game.
+// Level 3: Quick Reply, The Presenter, and the projector mini-game.
 
 import { describe, expect, it } from 'vitest';
 import { applyCommand, parseCommand } from '../src/sim/commands';
@@ -20,36 +20,48 @@ function setup(tiers: [number, number, number] = [0, 0, 0]) {
 }
 
 describe('Quick Reply', () => {
-  it('builds up on the same target, to double', () => {
-    const { g, t } = setup();
-    const e = g.spawn('newhire', 0, 9, false);
-    e.hp = e.maxHp = 1e6;
-    e.stunTime = 1e9;
-    for (let i = 0; i < 60 * 5; i++) g.step(TICK);
-    expect(t.ramp).toBeCloseTo(2);
+  // Review step 12 (maker's decision 12): the build-up is gone, Quick Reply is the crowd tower.
+  function crowd(g: Game, n: number) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const e = g.spawn('newhire', 0, 8.6 + i * 0.3, false);
+      e.hp = e.maxHp = 1e6;
+      e.stunTime = 1e9;
+      out.push(e);
+    }
+    return out;
+  }
+
+  it('replies to three colleagues at once', () => {
+    const { g } = setup();
+    const es = crowd(g, 5);
+    g.runFor(2);
+    expect(es.filter((e) => e.hp < e.maxHp).length).toBe(3);
   });
 
-  it('starts over on a new target, unless it has Seen', () => {
-    for (const [tiers, keep] of [
-      [[0, 0, 0], 0],
-      [[3, 0, 0], 0.5],
-    ] as const) {
-      const { g, t } = setup([...tiers] as [number, number, number]);
-      const a = g.spawn('newhire', 0, 9, false);
-      a.hp = a.maxHp = 1e6;
-      a.stunTime = 1e9;
-      for (let i = 0; i < 60 * 4; i++) g.step(TICK);
-      const peak = t.ramp;
-      a.alive = false;
-      const b = g.spawn('newhire', 0, 9, false);
-      b.hp = b.maxHp = 1e6;
-      b.stunTime = 1e9;
-      g.step(TICK);
-      g.step(TICK);
-      // One or two replies on the new target since the switch.
-      expect(t.ramp).toBeLessThan(1 + (peak - 1) * keep + 0.25);
-      expect(t.ramp).toBeGreaterThan(1 + (peak - 1) * keep - 0.01);
-    }
+  it('Reply in Thread: five at once', () => {
+    const { g } = setup([0, 3, 0]);
+    const es = crowd(g, 6);
+    g.runFor(2);
+    expect(es.filter((e) => e.hp < e.maxHp).length).toBe(5);
+  });
+
+  it('every reply is light: against one colleague it does less than an Auto-Reply', () => {
+    const { g, t } = setup();
+    const a = g.place('autoreply', 12, 1).tower!;
+    const qs = g.liveStats(t);
+    const as = g.liveStats(a);
+    expect(qs.damage / qs.interval).toBeLessThan(as.damage / as.interval);
+    expect((qs.damage / qs.interval) * qs.targets).toBeGreaterThan((as.damage / as.interval) * 2);
+  });
+
+  it('Seen gets through the Old Guard\'s box', () => {
+    const { g } = setup([3, 0, 0]);
+    const og = g.spawn('oldguard', 0, 9, false);
+    og.stunTime = 1e9;
+    const before = og.shield;
+    g.runFor(1);
+    expect(og.shield).toBeLessThan(before);
   });
 });
 

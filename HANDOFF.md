@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-11 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-12 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -109,7 +109,21 @@ in stap 8. Balans: geen uitkomst of ster veranderd (alleen L5 deepest 85 -> 86%)
 "repeated stuns land shorter" is omgezet naar de nieuwe regel (besluit 7).
 Stap 11 (0.41.0): `src/render/tierdots.ts` (puur): per pad een rij lampjes, één per tier. In
 `actors.ts` op de zijkant van het kastje die naar de camera wijst (groep gedraaid met `camRight`,
-op 0,445 van het midden: het kastje is 0,86 x 0,77 na schalen); op een aanrecht liggen ze ervoor. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+op 0,445 van het midden: het kastje is 0,86 x 0,77 na schalen); op een aanrecht liggen ze ervoor.
+Stap 12 (0.42.0), keuzes van mij:
+- Quick Reply: opbouw (ramp) helemaal uit de code; basis 0,6 schade per 0,25 s op 3 doelen. KEEP
+  TYPING +0,5/+0,5/+1,6 (T3 Seen breekt dozen)/+4,5; Reply in Thread 5 doelen +0,3. Getallen zo dat
+  de economieregels kloppen (upgrade beter dan kopie). De economietest rekende met `rampMax`; die
+  regel is vereenvoudigd (geen ramp meer).
+- Reply All: basis 2 schade, straal 1,3 (was 3 en 0,9); Reply Storm +2 in plaats van +1.
+- Tier 3: Barista Station +5 per golf, Corporate Card (en Offshore) claim +25%, Studio Monitors
+  gestopten x1,5, Compactor breekt dozen, Send to Service Desk ziet verborgen (Knowledge Base nu
+  half tempo), Ticket Queue 2 s nawerking, Steering Group 0,25 s stop per sprong. Nieuwe test eist
+  dat elke tier 3 iets anders doet dan schade, tempo of bereik ophogen.
+- Board Member counters nu Auto-Reply en Delegation (Quick Reply is geen enkel-doel-toren meer).
+  Botscripts: L15 Auto-Reply bij het bureau in plaats van Quick Reply; L13 een derde Auto-Reply.
+- **Voor de maker:** L13 greedy wint nu met 2 Focus (was 10), L15 solid 59 en 2 sterren (was 92 en
+  3). L13 was al het zwaarste level (zie OPEN bij L13). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

@@ -104,11 +104,9 @@ describe('upgrade paths (Bloons rule: 4-2-0)', () => {
 });
 
 describe('tower balance rule', () => {
-  // Ramping towers (Quick Reply) are built for one big target: count them fully built up, with any
-  // extra targets unramped. Reply All lands on everyone near its target: count the colleagues an
-  // email catches in a crowd spaced 0.8 tiles apart. Everything else is measured against a crowd
-  // of five.
-  const ramped = (s: ReturnType<typeof computeStats>) => (s.rampMax > 0 ? s.rampMax : 1);
+  // Reply All lands on everyone near its target: count the colleagues an email catches in a crowd
+  // spaced 0.8 tiles apart. Everything else is measured against a crowd of five. (Quick Reply's
+  // build-up went in review step 12: it is a crowd tower now, counted like any other.)
   const aoeHits = (s: ReturnType<typeof computeStats>) => Math.min(5, s.targets * (1 + (2 * s.aoe) / 0.8));
   /** Delegation: the chain through a crowd of five, every jump harder than the last. */
   const chain = (s: ReturnType<typeof computeStats>) => {
@@ -116,14 +114,12 @@ describe('tower balance rule', () => {
     for (let i = 0; i <= Math.min(4, s.bounce); i++) sum += Math.pow(s.bounceMult, i);
     return s.targets * sum;
   };
-  /** What one copy is worth on its own terms: one target, built up, the circle it lands on, or the chain. */
-  const worth = (s: ReturnType<typeof computeStats>) => (s.damage / s.interval) * (s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : ramped(s));
-  const reach = (s: ReturnType<typeof computeStats>) =>
-    s.rampMax > 0 ? s.rampMax : s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : Math.min(5, s.targets + s.splash + s.bounce);
+  /** What one copy is worth on its own terms: one target, the circle it lands on, or the chain. */
+  const worth = (s: ReturnType<typeof computeStats>) => (s.damage / s.interval) * (s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : 1);
+  const reach = (s: ReturnType<typeof computeStats>) => (s.aoe > 0 ? aoeHits(s) : s.bounceMult > 1 ? chain(s) : Math.min(5, s.targets + s.splash + s.bounce));
   const crowdDps = (def: (typeof TOWERS)[string], tiers: Tiers) => {
     const s = computeStats(def, tiers);
     const dps = s.damage / s.interval;
-    if (s.rampMax > 0) return dps * s.rampMax + dps * (s.targets - 1);
     return dps * reach(s);
   };
   const copiesDps = (def: (typeof TOWERS)[string], coffee: number) => {

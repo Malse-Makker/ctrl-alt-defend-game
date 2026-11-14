@@ -88,7 +88,8 @@ export interface Effect {
   coffeeAdd?: number;
   coffeeMult?: number;
   /** Brewing goes into a pot with interest instead of straight to you. Click Claim to cash it. */
-  bank?: { interest: number; cap: number; perWave: number; claimAll?: boolean };
+  /** claimBonus: claiming pays this share on top (Corporate Card). */
+  bank?: { interest: number; cap: number; perWave: number; claimAll?: boolean; claimBonus?: number };
   /** Colleagues dealt with in range pay this much extra (0.5 = +50%). */
   tip?: number;
   /** Every colleague dealt with anywhere pays this much extra. */
@@ -111,11 +112,6 @@ export interface Effect {
   silenceProof?: boolean;
   // Ramping towers (Quick Reply)
   /** Extra damage per hit on the same target (0.06 = +6% each time). */
-  rampAdd?: number;
-  /** Highest damage multiplier the ramp reaches (highest counts). */
-  rampMax?: number;
-  /** Share of the ramp kept when switching to a new target (highest counts). */
-  rampKeep?: number;
   /** Each hit slows the target a little for a moment. */
   slowOnHit?: { mult: number; time: number };
   // Zone towers (The Shredder)
@@ -223,8 +219,6 @@ export interface TowerBase {
   pierce?: number;
   pileLife?: number;
   /** Pomodoro Timer: how far from the tile it lands the impact reaches is `aoe`. */
-  /** Quick Reply: damage builds up per hit on the same target, to this multiplier. */
-  ramp?: { add: number; max: number };
   interval?: number;
   damage?: number;
   coffeeAmount?: number;
@@ -287,7 +281,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Bigger Pot', desc: '+1 Coffee per brew.', cost: 15, effect: { coffeeAdd: 1 } },
           { name: 'Espresso Machine', desc: 'Brews 25% faster.', cost: 20, effect: { intervalMult: 0.8 } },
-          { name: 'Barista Station', desc: 'Twice the Coffee per brew.', cost: 60, effect: { coffeeMult: 2 } },
+          { name: 'Barista Station', desc: 'Twice the Coffee per brew, and a fresh pot of 5 at the start of every wave.', cost: 60, effect: { coffeeMult: 2, waveIncome: 5 } },
           { name: 'Coffee Subscription', desc: 'Twice the Coffee again.', cost: 170, effect: { coffeeMult: 2 } },
         ],
       },
@@ -303,12 +297,12 @@ export const TOWERS: Record<string, TowerDef> = {
             effect: { bank: { interest: 0.1, cap: 60, perWave: 3 } },
           },
           { name: 'Expense Report', desc: 'Pot: +5 and 15% interest per wave, up to 140.', cost: 30, effect: { bank: { interest: 0.15, cap: 140, perWave: 5 } } },
-          { name: 'Corporate Card', desc: 'Pot: +8 and 20% interest per wave, up to 300.', cost: 45, effect: { bank: { interest: 0.2, cap: 300, perWave: 8 } } },
+          { name: 'Corporate Card', desc: 'Pot: +8 and 20% interest per wave, up to 300. Claiming pays a quarter extra.', cost: 45, effect: { bank: { interest: 0.2, cap: 300, perWave: 8, claimBonus: 0.25 } } },
           {
             name: 'Offshore Account',
-            desc: 'Pot: +12 and 25% interest per wave, up to 700. Claiming it empties every pot of yours at once.',
+            desc: 'Pot: +12 and 25% interest per wave, up to 700. Claiming it empties every pot of yours at once, a quarter extra.',
             cost: 120,
-            effect: { bank: { interest: 0.25, cap: 700, perWave: 12, claimAll: true } },
+            effect: { bank: { interest: 0.25, cap: 700, perWave: 12, claimAll: true, claimBonus: 0.25 } },
           },
         ],
       },
@@ -402,7 +396,7 @@ export const TOWERS: Record<string, TowerDef> = {
             cost: 35,
             effect: { stun: 1.2, silenceProof: true },
           },
-          { name: 'Studio Monitors', desc: 'Stops everyone for 1.8 seconds, a bit more often.', cost: 80, effect: { stun: 1.8, intervalMult: 0.85 } },
+          { name: 'Studio Monitors', desc: 'Stops everyone for 1.8 seconds, a bit more often, and stopped colleagues take half again the damage.', cost: 80, effect: { stun: 1.8, intervalMult: 0.85, stunnedTakes: 1.5 } },
           { name: 'Soundproof Booth', desc: 'Stops everyone for 2.5 seconds, and stopped colleagues take double damage.', cost: 200, effect: { stun: 2.5, stunnedTakes: 2 } },
         ],
       },
@@ -525,7 +519,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Recycling', desc: 'Every colleague dealt with by the zone pays 1 extra Coffee.', cost: 15, effect: { killCoffee: 1 } },
           { name: 'Confidential Bin', desc: '+2 damage per second.', cost: 25, effect: { dotAdd: 2 } },
-          { name: 'Compactor', desc: '+3 damage per second, and 2 more Coffee per colleague it deals with.', cost: 60, effect: { dotAdd: 3, killCoffee: 2 } },
+          { name: 'Compactor', desc: '+3 damage per second, 2 more Coffee per colleague, and it crushes boxes: the Old Guard\'s archive no longer stops it.', cost: 60, effect: { dotAdd: 3, killCoffee: 2, ignoresMinHit: true } },
           { name: 'Document Destruction', desc: 'Every 10 seconds, everyone in the zone loses a quarter of their HP (bosses 5%).', cost: 170, effect: { hpPulse: { every: 10, share: 0.25, bossShare: 0.05 } } },
         ],
       },
@@ -535,24 +529,24 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'quickreply',
     name: 'Quick Reply',
     flavour: 'Two words. Efficient.',
-    verb: 'Every reply on the SAME colleague hits harder than the last, up to double. Switch target and it starts over. Hopeless against a swarm, relentless against one big problem.',
-    short: 'Fast small replies that hit harder on the same colleague.',
+    verb: 'Short, fast replies to three colleagues at once. Each one is light, so it shines against a crowd of small ones and does little to one big problem.',
+    short: 'Short replies to three colleagues at once. Made for a crowd.',
     role: 'damage',
     damageClass: 'digital',
     unlockLevel: 3,
     accent: '#8fa0b4',
     models: ['quickreply_1', 'quickreply_2', 'quickreply_3'],
-    base: { cost: 16, range: 2.875, interval: 0.13, damage: 0.5, ramp: { add: 0.06, max: 2 } },
+    base: { cost: 16, range: 2.875, interval: 0.25, damage: 0.6, targets: 3 },
     paths: [
       {
         name: 'KEEP TYPING',
         quote: 'Typing...',
         color: '#8fa0b4',
         tiers: [
-          { name: '"OK"', desc: '+0.5 damage, and it builds up faster.', cost: 18, effect: { damageAdd: 0.5, rampAdd: 0.04 } },
-          { name: 'Thumbs-Up', desc: '+0.5 damage, and it builds up to three times the damage.', cost: 35, effect: { damageAdd: 0.5, rampMax: 3 } },
-          { name: 'Seen', desc: '+1 damage, and it keeps half its build-up when it switches to someone new.', cost: 80, effect: { damageAdd: 1, rampKeep: 0.5 } },
-          { name: 'Typing Forever', desc: '+2.5 damage, and it builds up to five times the damage.', cost: 200, effect: { damageAdd: 2.5, rampMax: 5 } },
+          { name: '"OK"', desc: '+0.5 damage per reply.', cost: 16, effect: { damageAdd: 0.5 } },
+          { name: 'Thumbs-Up', desc: '+0.5 damage per reply.', cost: 35, effect: { damageAdd: 0.5 } },
+          { name: 'Seen', desc: '+1.6 damage, and the replies get through the Old Guard\'s box: nobody ignores "Seen".', cost: 80, effect: { damageAdd: 1.6, ignoresMinHit: true } },
+          { name: 'Typing Forever', desc: '+4.5 damage per reply.', cost: 200, effect: { damageAdd: 4.5 } },
         ],
       },
       {
@@ -562,7 +556,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Ctrl+Enter', desc: 'Replies 40% faster.', cost: 9, effect: { intervalMult: 0.7 } },
           { name: 'Text Expander', desc: 'Replies 40% faster again.', cost: 20, effect: { intervalMult: 0.7 } },
-          { name: 'Reply in Thread', desc: '+0.5 damage, and it replies to 2 colleagues at once. The build-up stays on the first one.', cost: 65, effect: { targetsAdd: 1, damageAdd: 0.5 } },
+          { name: 'Reply in Thread', desc: '+0.3 damage, and it replies to five colleagues at once instead of three.', cost: 65, effect: { targetsAdd: 2, damageAdd: 0.3 } },
           { name: 'Autocomplete', desc: 'Replies twice as fast.', cost: 180, effect: { intervalMult: 0.5 } },
         ],
       },
@@ -647,8 +641,8 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Send the FAQ', desc: '+1 damage.', cost: 14, effect: { damageAdd: 1 } },
           { name: 'Send the Wiki', desc: '+1 damage and +15% range.', cost: 28, effect: { damageAdd: 1, rangeMult: 1.15 } },
-          { name: 'Send to Service Desk', desc: '+3 damage.', cost: 75, effect: { damageAdd: 3 } },
-          { name: 'Knowledge Base', desc: '+6 damage, and it finds hidden colleagues.', cost: 230, effect: { damageAdd: 6, seesHidden: true } },
+          { name: 'Send to Service Desk', desc: '+2 damage, and it finds hidden colleagues.', cost: 75, effect: { damageAdd: 2, seesHidden: true } },
+          { name: 'Knowledge Base', desc: '+6 damage, and everyone in the circle walks at half speed.', cost: 230, effect: { damageAdd: 6, slowAura: 0.5 } },
         ],
       },
       {
@@ -658,7 +652,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Canned Response', desc: 'Answers 33% faster.', cost: 12, effect: { intervalMult: 0.75 } },
           { name: 'Chatbot', desc: 'Answers 33% faster again.', cost: 26, effect: { intervalMult: 0.75 } },
-          { name: 'Ticket Queue', desc: 'Answers twice as fast, and +0.5 damage.', cost: 70, effect: { intervalMult: 0.5, damageAdd: 0.5 } },
+          { name: 'Ticket Queue', desc: 'Answers twice as fast, and whoever leaves the circle stays on hold for 2 more seconds.', cost: 70, effect: { intervalMult: 0.5, slowOnHit: { mult: 0.6, time: 2 } } },
           { name: 'AI Assistant', desc: 'Answers twice as fast again, and +2 damage.', cost: 210, effect: { intervalMult: 0.5, damageAdd: 2 } },
         ],
       },
@@ -777,14 +771,14 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'replyall',
     name: 'Reply All',
     flavour: 'Adding a few more people.',
-    verb: 'Slow, but every email lands on everyone standing near the colleague it was meant for. The bigger the crowd, the better.',
+    verb: 'Slow, but every email lands on everyone standing near the colleague it was meant for, in a wide circle. Each copy is light: the bigger and tighter the crowd, the better.',
     short: 'Slow mail that lands on everyone near the one it was meant for.',
     role: 'damage',
     damageClass: 'digital',
     unlockLevel: 6,
     accent: '#e2557a',
     models: ['replyall_1', 'replyall_2', 'replyall_3'],
-    base: { cost: 26, range: 3.0, interval: 1.4, damage: 3, aoe: 0.9 },
+    base: { cost: 26, range: 3.0, interval: 1.4, damage: 2, aoe: 1.3 },
     paths: [
       {
         name: 'URGENT',
@@ -804,7 +798,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Reply', desc: 'Sends 33% more often.', cost: 12, effect: { intervalMult: 0.75 } },
           { name: 'Reply Again', desc: 'Sends 33% more often again.', cost: 25, effect: { intervalMult: 0.75 } },
-          { name: 'Reply Storm', desc: 'Two emails at once, to two different colleagues, a bit faster and +1 damage.', cost: 90, effect: { targetsAdd: 1, intervalMult: 0.85, damageAdd: 1 } },
+          { name: 'Reply Storm', desc: 'Two emails at once, to two different colleagues, a bit faster and +2 damage.', cost: 90, effect: { targetsAdd: 1, intervalMult: 0.85, damageAdd: 2 } },
           { name: 'Infinite Loop', desc: 'Sends twice as often.', cost: 230, effect: { intervalMult: 0.5 } },
         ],
       },
@@ -842,7 +836,7 @@ export const TOWERS: Record<string, TowerDef> = {
         tiers: [
           { name: 'Loop In', desc: '+1 jump, and +1 damage.', cost: 18, effect: { bounce: 1, damageAdd: 1 } },
           { name: 'Escalate', desc: 'Every jump hits 60% harder than the last.', cost: 35, effect: { bounceMult: 1.6 } },
-          { name: 'Steering Group', desc: '+2 jumps and +1 damage.', cost: 95, effect: { bounce: 2, damageAdd: 1 } },
+          { name: 'Steering Group', desc: '+2 jumps and +1 damage, and everyone it reaches stops for a moment to read it.', cost: 95, effect: { bounce: 2, damageAdd: 1, stunOnHit: 0.25 } },
           { name: 'Company Policy', desc: 'Every jump hits twice as hard as the last, +2 jumps and +2 damage.', cost: 260, effect: { bounceMult: 2, bounce: 2, damageAdd: 2 } },
         ],
       },

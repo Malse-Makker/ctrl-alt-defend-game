@@ -140,9 +140,6 @@ export interface Tower {
   /** Reload multiplier from Flow State headphones nearby (1 = none). */
   rateBuff: number;
   pulseTimer: number;
-  /** Quick Reply: who it is building up on, and how far (1 = none yet). */
-  rampTarget: number;
-  ramp: number;
   /** Seconds left before a mopped Shredder zone works again (The Cleaner). */
   mopped: number;
   /** Office chair: lane direction (0 +x, 1 +y, 2 -x, 3 -y), how far out it is, which way it rolls
@@ -223,10 +220,6 @@ export interface LiveTowerStats {
   killCoffee: number;
   waveIncome: number;
   silenceProof: boolean;
-  /** Quick Reply: build-up per hit, its ceiling (0 = no build-up), and what is kept on a switch. */
-  rampAdd: number;
-  rampMax: number;
-  rampKeep: number;
   slowOnHit: Effect['slowOnHit'] | null;
   /** Reply All: radius of the hit around the target. */
   aoe: number;
@@ -518,9 +511,6 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     killCoffee: 0,
     waveIncome: 0,
     silenceProof: false,
-    rampAdd: b.ramp?.add ?? 0,
-    rampMax: b.ramp?.max ?? 0,
-    rampKeep: 0,
     slowOnHit: null,
     aoe: b.aoe ?? 0,
     bounceMult: b.bounceMult ?? 1,
@@ -572,9 +562,6 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     if (e.bleed !== undefined) s.bleed = Math.max(s.bleed, e.bleed);
     if (e.unshared) s.unshared = true;
     if (e.silenceProof) s.silenceProof = true;
-    s.rampAdd += e.rampAdd ?? 0;
-    if (e.rampMax !== undefined) s.rampMax = Math.max(s.rampMax, e.rampMax);
-    if (e.rampKeep !== undefined) s.rampKeep = Math.max(s.rampKeep, e.rampKeep);
     if (e.slowOnHit) s.slowOnHit = e.slowOnHit;
     s.pierce += e.pierceAdd ?? 0;
     s.piles += e.pilesAdd ?? 0;
@@ -1225,8 +1212,6 @@ export class Game {
       idleTime: 0,
       rateBuff: 1,
       pulseTimer: 0,
-      rampTarget: 0,
-      ramp: 1,
       mopped: 0,
       dir: 0,
       roll: 0,
@@ -1305,6 +1290,19 @@ export class Game {
    * Expense Claim: empty the pot into your Coffee. An Offshore Account empties every pot of the
    * same owner at once.
    */
+  /** What claiming this tower's pot (or all of them, Offshore Account) would pay right now. */
+  claimValue(t: Tower): number {
+    const bank = this.liveStats(t).bank;
+    if (!bank) return 0;
+    const pots = bank.claimAll ? this.towers.filter((x) => x.owner === t.owner && x.pot >= 1) : [t];
+    let total = 0;
+    for (const x of pots) {
+      const inPot = Math.floor(x.pot);
+      if (inPot > 0) total += inPot + Math.floor(inPot * (bank.claimBonus ?? 0));
+    }
+    return total;
+  }
+
   claim(towerId: number, player = 0): Check {
     const t = this.tower(towerId);
     if (!t) return { ok: false, reason: 'No such tower.' };
@@ -1313,9 +1311,11 @@ export class Game {
     const pots = all ? this.towers.filter((x) => x.owner === t.owner && x.pot >= 1) : [t];
     let total = 0;
     for (const x of pots) {
-      const amount = Math.floor(x.pot);
-      if (amount <= 0) continue;
-      x.pot -= amount;
+      const inPot = Math.floor(x.pot);
+      if (inPot <= 0) continue;
+      x.pot -= inPot;
+      // Corporate Card: the claim pays a share on top of what was in the pot.
+      const amount = inPot + Math.floor(inPot * (this.liveStats(t).bank?.claimBonus ?? 0));
       this.payTo(x.owner, amount);
       this.stats.coffeeFromBank += amount;
       x.stats.coffee += amount;
@@ -1515,8 +1515,6 @@ export class Game {
         idleTime: 0,
         rateBuff: 1,
         pulseTimer: 0,
-        rampTarget: 0,
-        ramp: 1,
         mopped: 0,
         dir: 0,
         roll: 0,
@@ -2249,19 +2247,7 @@ export class Game {
         continue;
       }
       this.clearIdle(t);
-      if (s.rampMax > 0) {
-        // Quick Reply: the build-up belongs to the first target; switching costs most of it.
-        const first = targets[0];
-        if (t.rampTarget !== first.id) {
-          t.ramp = 1 + (t.ramp - 1) * s.rampKeep;
-          t.rampTarget = first.id;
-        }
-        this.fire(t, first, s, t.ramp);
-        t.ramp = Math.min(s.rampMax, t.ramp + s.rampAdd);
-        for (const e of targets.slice(1)) this.fire(t, e, s);
-      } else {
-        for (const e of targets) this.fire(t, e, s);
-      }
+      for (const e of targets) this.fire(t, e, s);
       t.stats.shots++;
       const interval = s.interval * t.rateBuff;
       t.cooldown += interval;
@@ -2724,7 +2710,7 @@ export class Game {
           e.bleedTime = s.bleed;
           e.bleedTower = t.id;
         }
-        const { dealt } = this.damage(e, each * dt, t.def.damageClass, false);
+        const { dealt } = this.damage(e, each * dt, t.def.damageClass, false, s.ignoresMinHit);
         t.stats.damage += dealt;
         if (!e.alive) {
           t.stats.kills++;

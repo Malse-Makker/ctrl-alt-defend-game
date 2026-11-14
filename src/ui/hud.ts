@@ -77,7 +77,6 @@ const SHIELD_MIN_HIT = Math.max(...Object.values(COLLEAGUES).map((c) => c.shield
 function shieldLine(s: LiveTowerStats): { text: string; ok: boolean; help: string } {
   const help = T.boxesHelp.replace('{n}', String(SHIELD_MIN_HIT));
   if (s.ignoresMinHit || s.damage >= SHIELD_MIN_HIT) return { text: 'breaks through', ok: true, help };
-  if (s.rampMax > 0 && s.damage * s.rampMax >= SHIELD_MIN_HIT) return { text: 'once built up', ok: true, help };
   return { text: 'bounces off', ok: false, help };
 }
 
@@ -779,7 +778,7 @@ export class Hud {
         setText(potText, `${Math.floor(t.pot)} / ${bank.cap}`);
         fill.style.width = `${Math.min(100, (t.pot / bank.cap) * 100).toFixed(1)}%`;
         toggle(fill, 'full', t.pot >= bank.cap - 0.01);
-        const amount = bank.claimAll ? g.potsOf(t.owner) : Math.floor(t.pot);
+        const amount = g.claimValue(t);
         setText(claim, `${bank.claimAll ? T.claimAll : 'Claim'} ${amount}`);
         claim.disabled = amount <= 0;
       });

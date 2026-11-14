@@ -262,7 +262,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     counter: 'Send him something. Auto-Reply and everything else DIGITAL works. PHYSICAL towers do nothing at all.',
     short: 'Attends on a screen. PHYSICAL towers do nothing.',
     helps: 'Anything DIGITAL.',
-    counters: ['autoreply', 'quickreply'],
+    counters: ['autoreply', 'delegation'],
     hp: 40,
     speed: 1.5,
     focus: 8,
@@ -280,7 +280,7 @@ export const COLLEAGUES: Record<string, ColleagueDef> = {
     quote: 'Can everyone see my screen?',
     ability:
       'Hides behind a loading screen that fills up again at every phase. Every few seconds he beams the next slide straight at your desk: a handful of Chasers appear on the last stretch before it.',
-    counter: 'Keep something near your desk for the slides. Quick Reply builds up on him; break the loading screen again at 66% and 33%.',
+    counter: 'Keep something near your desk for the slides: Quick Reply clears the Chasers he beams in. Office Artillery and Self-Service for him; break the loading screen again at 66% and 33%.',
     hp: 560,
     shield: 180,
     speed: 1.05,

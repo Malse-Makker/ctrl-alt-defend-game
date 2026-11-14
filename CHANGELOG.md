@@ -3,6 +3,21 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.42.0] - 2026-11-14
+
+### Changed
+- Quick Reply is the crowd tower now: short replies to three colleagues at once, light each, with no build-up. Against one big problem it does less than an Auto-Reply; against a crowd of small ones much more. KEEP TYPING adds damage, and at tier 3 (Seen) the replies get through the Old Guard's box. Reply in Thread answers five at once.
+- Reply All lands in a wider circle (1.3 instead of 0.9) and every copy is lighter (2 instead of 3): it wins in a tight crowd, Delegation along a line. Reply Storm hits a bit harder to make up for it.
+- Seven tier 3 upgrades that only raised numbers now do something new:
+  - Barista Station brews a fresh pot of 5 at the start of every wave.
+  - Corporate Card makes a claim pay a quarter extra.
+  - Studio Monitors make stopped colleagues take half again the damage.
+  - Compactor lets The Shredder crush the Old Guard's box.
+  - Send to Service Desk lets Self-Service find hidden colleagues.
+  - Ticket Queue keeps whoever leaves the circle on hold for two more seconds.
+  - Steering Group stops everyone a Delegation email reaches for a moment.
+- The Presenter's card no longer says Quick Reply builds up on him.
+
 ## [0.41.0] - 2026-11-14
 
 ### New
