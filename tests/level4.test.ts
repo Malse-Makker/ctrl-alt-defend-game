@@ -112,6 +112,29 @@ describe('Self-Service', () => {
     });
     expect(most).toBeGreaterThanOrEqual(5);
   });
+
+  it('please hold: everyone in its circle walks slower, more with Hold Music', () => {
+    const g = game(['intern:1@1']);
+    const t = g.place('selfservice', 8, 1).tower!;
+    g.phase = 'running';
+    const near = g.spawn('newhire', 0, 9.5, false);
+    const far = g.spawn('newhire', 0, 16, false);
+    near.hp = near.maxHp = far.hp = far.maxHp = 1000;
+    g.step();
+    expect(near.aura).toBeCloseTo(0.6);
+    expect(far.aura).toBe(1);
+    expect(g.upgrade(t.id, 2).ok).toBe(true);
+    expect(g.upgrade(t.id, 2).ok).toBe(true);
+    g.step();
+    expect(near.aura).toBeCloseTo(0.45);
+  });
+
+  it('holds them up more than it hurts them', () => {
+    const g = game();
+    const s = g.liveStats(g.place('selfservice', 8, 1).tower!);
+    expect(s.damage / s.interval).toBeLessThan(2);
+    expect(s.slowAura).toBeLessThan(1);
+  });
 });
 
 describe('The Impersonator', () => {

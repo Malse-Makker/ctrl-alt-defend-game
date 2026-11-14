@@ -101,3 +101,29 @@ describe('Sharp Keycaps', () => {
     expect(before - (og.hp + og.shield)).toBeGreaterThan(5);
   });
 });
+
+describe('Noise Cancelling covers its neighbours', () => {
+  it('a tower in range of Noise Cancelling Headphones keeps working next to a Chatterbox', () => {
+    const g = game();
+    const auto = g.place('autoreply', 9, 1).tower!;
+    const hp = g.place('headphones', 10, 3).tower!;
+    put(g, 'chatterbox', 10.5);
+    g.step(TICK);
+    g.step(TICK);
+    expect(auto.silenced).toBe(true);
+    upgrade(g, hp.id, 0, 2);
+    g.step(TICK);
+    expect(auto.silenced).toBe(false);
+  });
+
+  it('outside their range it does not', () => {
+    const g = game();
+    const auto = g.place('autoreply', 3, 1).tower!;
+    const hp = g.place('headphones', 10, 3).tower!;
+    upgrade(g, hp.id, 0, 2);
+    put(g, 'chatterbox', 4.5);
+    g.step(TICK);
+    g.step(TICK);
+    expect(auto.silenced).toBe(true);
+  });
+});

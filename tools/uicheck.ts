@@ -314,7 +314,7 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
     tryPlace('autoreply', 4, 3);
     tryPlace('autoreply', 9, 5);
     tryPlace('autoreply', 9, 7);
-    const sh = tryPlace('shredder', 11, 3);
+    const sh = tryPlace('artillery', 11, 3);
     const hp = tryPlace('headphones', 4, 7);
     const art = tryPlace('artillery', 0, 12);
     out.push(`on a table: ${g.place('autoreply', 6, 8).reason}`);
@@ -357,15 +357,15 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   console.log(`  ${await ff('chatter')}`);
   await new Promise((r) => setTimeout(r, 1500));
   total += await check(page, 'l2-chatterbox', size);
-  // Saying what does not work: icons over the Board Member, the Old Guard's box and the
-  // Impersonator, and a Shredder that says it may not touch the Board Member.
+  // Saying what does not work: icons over the Board Member and the Impersonator, and an Office
+  // Artillery that says it may not touch the Board Member.
   const immune = await page.evaluate(() => {
     type Any = any;
     const s = (window as unknown as { cad: { session: Any } }).cad.session;
     const g = s.game;
     for (const e of g.enemies) e.alive = false;
     g.enemies = [];
-    const sh = g.towers.find((t: Any) => t.defId === 'shredder');
+    const sh = g.towers.find((t: Any) => t.tx === 11 && t.ty === 3);
     const path = g.paths[0];
     let best = { d: 0, dd: Infinity };
     for (let d = 0; d <= path.length; d += 0.1) {
@@ -380,7 +380,6 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
       return e;
     };
     put('boardmember', best.d);
-    put('oldguard', Math.max(0.5, best.d - 3));
     // Away from the Shredder: inside its zone he would give it something to do.
     let far = Math.max(0.5, best.d - 6);
     while (far > 0.5 && Math.hypot(path.pointAt(far).x - sh.x, path.pointAt(far).y - sh.y) < 4) far -= 0.5;
@@ -388,10 +387,10 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
     for (let i = 0; i < 60 * 3; i++) g.step();
     g.drainEvents();
     s.selected = sh.id;
-    return `shredder idle=${sh.idle} about ${sh.idleWho}`;
+    return `artillery idle=${sh.idle} about ${sh.idleWho}`;
   });
   console.log(`  ${immune}`);
-  if (!immune.includes('idle=immune')) errors.push(`l2: the Shredder did not say it cannot touch the Board Member (${immune})`);
+  if (!immune.includes('idle=immune')) errors.push(`l2: Office Artillery did not say it cannot touch the Board Member (${immune})`);
   await new Promise((r) => setTimeout(r, 600));
   total += await check(page, 'l2-immune', size);
   await page.evaluate(() => {
@@ -399,7 +398,7 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
     for (const e of g.enemies) e.alive = false;
     g.enemies = [];
   });
-  for (const def of ['shredder', 'headphones', 'artillery']) {
+  for (const def of ['headphones', 'artillery']) {
     await page.evaluate((d) => {
       const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;
       s.selected = s.game.towers.find((t) => t.defId === d)?.id ?? null;
@@ -1167,7 +1166,7 @@ async function level3Flow(browser: import('puppeteer-core').Browser, errors: str
   const placed = await page.evaluate(() => {
     const g = (window as unknown as { cad: { session: { game: G } } }).cad.session.game;
     g.coffee = 4000;
-    const want = ['quickreply', 'quickreply', 'autoreply', 'shredder', 'headphones', 'artillery'];
+    const want = ['quickreply', 'quickreply', 'autoreply', 'selfservice', 'headphones', 'artillery'];
     let n = 0;
     for (let y = 2; y < g.level.size.h && n < want.length; y += 2)
       for (let x = 1; x < g.level.size.w && n < want.length; x += 3) {

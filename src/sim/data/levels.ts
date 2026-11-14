@@ -319,7 +319,7 @@ const L2: LevelDef = {
   name: 'Coffee Corner',
   block: 'junior',
   intro: 'The office kitchen. One good coffee machine, one queue, and everyone is in a hurry.',
-  gimmick: 'A small kitchen with a lot of furniture in it. You build on the bit of floor that is left. Headphones, Office Artillery and The Shredder arrive.',
+  gimmick: 'A small kitchen with a lot of furniture in it. You build on the bit of floor that is left. Headphones and Office Artillery arrive.',
   rule: 'A small kitchen. Furniture blocks the view of towers that aim.',
   size: { w: 14, h: 14 },
   paths: [
@@ -397,7 +397,7 @@ const L2: LevelDef = {
   ],
   // Kitchen tiles, with a dark anti-slip mat as the walkway.
   look: { floorA: '#e7e2d6', floorB: '#d5cfc1', walkway: '#6f7c8a', edge: '#4f5a66', wall: '#eef0ee' },
-  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder'],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery'],
   startFocus: 100,
   // Godot v0.88 table, translated: Notification -> Intern, Question -> New Hire, Thread and
   // Nudge -> Chaser, Micro-manager and User Story -> Requester, Printer -> Board Member,
@@ -405,11 +405,11 @@ const L2: LevelDef = {
   waves: [
     'intern:10@0.65 + newhire:3@1.10',
     'intern:12@0.60 + newhire:3@1.10',
-    'intern:10@0.60 + chaser:8@0.30 + newhire:2@1.10',
+    'chaser:6@0.32 + intern:6@0.60',
     'chaser:10@0.26 + newhire:5@1.00 + intern:2@0.60',
     'requester:1@2.00 + intern:10@0.60 + newhire:3@1.00 + chaser:2@0.30',
     'boardmember:1@2.00 + intern:10@0.60 + newhire:3@1.00',
-    'oldguard:1@2.00 + chaser:10@0.24 + intern:4@0.60',
+    'oldguard:1@2.00 + intern:6@0.60',
     'chatterbox:1@2.00 + intern:12@0.55 + newhire:4@1.00 + chaser:4@0.24',
     'chaser:14@0.20 + requester:2@1.60 + newhire:4@0.95 + intern:2@0.55',
     'chaser:14@0.20 + chatterbox:1@2.00 + newhire:7@0.90',
@@ -433,7 +433,7 @@ const L3: LevelDef = {
   name: 'Presentation Room',
   block: 'junior',
   intro: 'You are giving the presentation. Everyone has a laptop open, and nobody is looking at you.',
-  gimmick: 'They wind through the rows of tables towards you. The projector acts up, but it warns you three seconds early. Quick Reply arrives.',
+  gimmick: 'They wind through the rows of tables towards you. The projector acts up, but it warns you three seconds early. Quick Reply and Self-Service arrive.',
   rule: 'The projector cuts out now and then. It warns you three seconds early.',
   size: { w: 21, h: 12 },
   paths: [
@@ -494,7 +494,7 @@ const L3: LevelDef = {
     ...run('bookshelf', 14, 11, 3, 'x', { turn: 2 }),
     { model: 'plant', rect: { x: 20, y: 11, w: 1, h: 1 } },
   ],
-  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply'],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'quickreply', 'selfservice'],
   startFocus: 100,
   // Meeting room carpet: a deep blue.
   look: { floorA: '#5f6f8c', floorB: '#58678a', walkway: '#d8c9ab', edge: '#b9a888' },
@@ -510,7 +510,7 @@ const L3: LevelDef = {
     'chaser:16@0.18 + intern:8@0.60 + newhire:4@1.00',
     'intern:10@0.55 + newhire:4@1.00 + requester:2@1.50 + chaser:2@0.20',
     'oldguard:1@2.00 + chaser:20@0.14 + newhire:1@1.00',
-    'chaser:30@0.12 + newhire:6@0.90',
+    'chaser:27@0.13 + newhire:6@0.90',
     'intern:13@0.50 + newhire:4@0.95 + oldguard:1@2.00',
     'chaser:34@0.11 + requester:4@1.40',
     'oldguard:2@1.80 + intern:14@0.50 + chaser:2@0.20',
@@ -531,7 +531,7 @@ const L4: LevelDef = {
   name: 'Canteen',
   block: 'junior',
   intro: 'Everyone eats at twelve. The queue for the soup winds all the way round the canteen.',
-  gimmick: 'A long spiral round the tables, and a queue for the soup where only Thumbtacks may go. Thumbtacks and Self-Service arrive, and so does lunch.',
+  gimmick: 'A long spiral round the tables, and a queue for the soup where only Thumbtacks may go. The Shredder and Thumbtacks arrive, and so does lunch.',
   rule: 'At lunch a crowd of Interns rushes in and everyone walks faster. Only Thumbtacks go in the soup queue.',
   size: { w: 21, h: 12 },
   paths: [
@@ -586,7 +586,7 @@ const L4: LevelDef = {
     { model: 'plant', rect: { x: 0, y: 11, w: 1, h: 1 } },
     ...run('serving_counter', 4, 11, 10, 'x', { turn: 2 }),
   ],
-  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder', 'quickreply', 'thumbtacks', 'selfservice'],
+  towers: ['coffee', 'autoreply', 'headphones', 'artillery', 'quickreply', 'selfservice', 'shredder', 'thumbtacks'],
   startFocus: 100,
   // Canteen vinyl, light and easy to mop.
   look: { floorA: '#c9d3d6', floorB: '#bcc7cb', walkway: '#e0cfa9', edge: '#bba67c', wall: '#ece8de' },
@@ -597,7 +597,7 @@ const L4: LevelDef = {
     'intern:12@0.65 + newhire:3@1.10',
     'intern:12@0.60 + newhire:3@1.00 + chaser:4@0.25',
     'chaser:14@0.20 + intern:10@0.55 + newhire:2@1.00',
-    'impersonator:3@1.40 + intern:10@0.60 + newhire:4@1.00',
+    'impersonator:3@1.40 + intern:6@0.60',
     'oldguard:1@2.00 + intern:10@0.60 + chaser:4@0.20',
     'chaser:20@0.16 + impersonator:4@1.00 + intern:10@0.55',
     'intern:12@0.50 + newhire:4@0.95 + requester:2@1.50 + chaser:4@0.20',

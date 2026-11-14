@@ -496,7 +496,7 @@ export function computeStats(def: TowerDef, tiers: Tiers): LiveTowerStats {
     bounce: b.bounce ?? 0,
     seesHidden: false,
     bossMult: 1,
-    slowAura: 1,
+    slowAura: b.slowAura ?? 1,
     ability: null,
     coffeeAmount: b.coffeeAmount ?? 0,
     coffeeInterval: b.coffeeInterval ?? 0,
@@ -2048,6 +2048,9 @@ export class Game {
       e.haste = h;
     }
     const talkers = this.enemies.filter((e) => e.alive && e.def.silence && e.stunTime <= 0);
+    const quietZones = talkers.length
+      ? this.towers.filter((h) => h.def.role !== 'economy' && this.liveStats(h).silenceProof).map((h) => ({ id: h.id, x: h.x, y: h.y, r: this.liveStats(h).range }))
+      : [];
     const offline = this.hazardOn && this.level.hazard?.type === 'nointernet';
     // Your Line Manager's last phase: towers near him reload slower.
     const nags = this.enemies.filter((e) => e.alive && e.def.boss?.towerSlow && e.phase >= e.def.boss.towerSlow.fromPhase);
@@ -2065,7 +2068,9 @@ export class Game {
       else if (this.audit && this.audit.defId === t.defId && this.time < this.audit.until) t.quiet = 'audit';
       else if (t.def.role !== 'economy') {
         const proof = this.liveStats(t).silenceProof;
-        if (!proof && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence! && this.seenBy(e, t))) t.quiet = 'chat';
+        // Noise Cancelling Headphones also cover every tower in their range against a Chatterbox.
+        const covered = proof || quietZones.some((q) => q.id !== t.id && Math.hypot(q.x - t.x, q.y - t.y) <= q.r);
+        if (!covered && talkers.some((e) => Math.hypot(e.x - t.x, e.y - t.y) <= e.def.silence! && this.seenBy(e, t))) t.quiet = 'chat';
         else if (!proof && t.hushed > 0) t.quiet = 'cry';
         else if (offline && t.def.damageClass === 'digital' && !this.hazardSolved.includes(t.owner)) t.quiet = 'net';
       }

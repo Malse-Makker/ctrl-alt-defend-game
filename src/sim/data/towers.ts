@@ -213,6 +213,8 @@ export interface TowerBase {
   rollSpeed?: number;
   /** How many colleagues one shot hits (Self-Service answers everyone around it). */
   targets?: number;
+  /** Everyone in range walks at this share of their speed (Self-Service: "Please hold"). */
+  slowAura?: number;
   /** Reply All: everyone within this distance of the target is hit too, as many as there are. */
   aoe?: number;
   /** Delegation: jumps after the first hit, each one hitting this much harder than the last. */
@@ -381,7 +383,7 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'headphones',
     name: 'Headphones',
     flavour: "Can't quite hear you.",
-    verb: 'Every few seconds everyone in range just stops for a moment. No damage, no slowing: a pause. Noise Cancelling stops them for longer, and cannot be talked quiet by the Chatterbox.',
+    verb: 'Every few seconds everyone in range just stops for a moment. No damage, no slowing: a pause. Noise Cancelling stops them for longer, and keeps the Chatterbox from talking it or the towers around it quiet.',
     short: 'Everyone in range stops for a moment. No damage.',
     role: 'pulse',
     unlockLevel: 2,
@@ -397,7 +399,7 @@ export const TOWERS: Record<string, TowerDef> = {
           { name: 'Over-Ear', desc: 'Everyone stops for 0.9 seconds.', cost: 22, effect: { stun: 0.9 } },
           {
             name: 'Noise Cancelling',
-            desc: 'Everyone stops for 1.2 seconds, and the Chatterbox cannot talk these quiet.',
+            desc: 'Everyone stops for 1.2 seconds, and the Chatterbox cannot talk these, or any tower in their range, quiet.',
             cost: 35,
             effect: { stun: 1.2, silenceProof: true },
           },
@@ -485,7 +487,7 @@ export const TOWERS: Record<string, TowerDef> = {
     short: 'A zone that grinds down everyone in it and shows hidden colleagues.',
     role: 'zone',
     damageClass: 'physical',
-    unlockLevel: 2,
+    unlockLevel: 4,
     accent: '#3fa7a0',
     models: ['shredder_1', 'shredder_2', 'shredder_3'],
     pathModels: [
@@ -630,14 +632,14 @@ export const TOWERS: Record<string, TowerDef> = {
     id: 'selfservice',
     name: 'Self-Service',
     flavour: 'Have you tried the portal?',
-    verb: 'Answers EVERYONE in a small circle around it at once, as many as there are. Weak against one colleague, great when they bunch up.',
-    short: 'Answers everyone in a small circle around it at once.',
+    verb: 'Please hold. Everyone in a small circle around it walks slower, and gets a small answer now and then, as many as there are. It holds them up more than it hurts them.',
+    short: 'Please hold: everyone in its small circle walks slower.',
     role: 'damage',
     damageClass: 'digital',
-    unlockLevel: 4,
+    unlockLevel: 3,
     accent: '#3fa7a0',
     models: ['selfservice_1', 'selfservice_2', 'selfservice_3'],
-    base: { cost: 25, range: 1.6, interval: 0.8, damage: 1.0, targets: 99 },
+    base: { cost: 25, range: 1.8, interval: 0.8, damage: 1.0, targets: 99, slowAura: 0.6 },
     paths: [
       {
         name: 'KNOWLEDGE BASE',
@@ -667,7 +669,7 @@ export const TOWERS: Record<string, TowerDef> = {
         color: '#8fa0b4',
         tiers: [
           { name: 'Pinned Post', desc: '+20% range.', cost: 10, effect: { rangeMult: 1.2 } },
-          { name: 'Read the Manual', desc: 'Everyone it answers slows down for a moment.', cost: 22, effect: { slowOnHit: { mult: 0.7, time: 0.6 } } },
+          { name: 'Hold Music', desc: 'Everyone in the circle walks at 45% instead of 60%.', cost: 22, effect: { slowAura: 0.45 } },
           { name: 'Search Bar', desc: 'Finds hidden colleagues, and +15% range.', cost: 55, effect: { seesHidden: true, rangeMult: 1.15 } },
           { name: 'Closed as Resolved', desc: '+2 damage, and +1 Coffee for every colleague it deals with.', cost: 180, effect: { damageAdd: 2, killCoffee: 1 } },
         ],

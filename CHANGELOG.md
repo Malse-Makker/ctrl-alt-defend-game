@@ -3,6 +3,16 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.38.0] - 2026-11-14
+
+### Changed
+- New towers now arrive next to the colleagues they answer. Coffee Corner brings Headphones and Office Artillery, the Presentation Room Quick Reply and Self-Service, the Canteen The Shredder and Thumbtacks.
+- Self-Service has a verb of its own: please hold. Everyone in its small circle walks slower (60% of their speed), and it still answers them all now and then. Its PORTAL path gets Hold Music instead of Read the Manual: 45%.
+- Noise Cancelling Headphones keep the Chatterbox from talking any tower in their range quiet, not just themselves.
+- A new colleague comes in a calmer wave the first time: The Chaser and The Old Guard on Coffee Corner, The Impersonator in the Canteen.
+- The Presentation Room: the big wave of Chasers is a little smaller (27 instead of 30).
+- The Chaser's card now names Headphones, Quick Reply and Self-Service as answers.
+
 ## [0.37.0] - 2026-11-14
 
 ### Changed
