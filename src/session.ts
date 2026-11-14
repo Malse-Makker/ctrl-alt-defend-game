@@ -20,7 +20,7 @@ import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
 import { LEVELS } from './sim/data/levels';
 import { TOWERS, type TargetMode } from './sim/data/towers';
-import { CHAIR_DIRS, Game, needsSight, TICK, type GameEvent } from './sim/game';
+import { CHAIR_DIRS, Game, needsSight, TICK, walkwayReach, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
 import { Hud, SPEEDS } from './ui/hud';
@@ -1067,7 +1067,9 @@ export class Session {
         const sighted = needsSight(def);
         const c = this.coverFor(this.hover.tx + 0.5, this.hover.ty + 0.5, def.base.global ? Infinity : def.base.range, sighted, !!def.base.global);
         this.actors.showCover(c.points, c.key);
-        this.hud?.placeNote((sighted ? T.coverSees : T.coverReaches).replace('{p}', String(Math.round(c.share * 100))), this.mouse.x, this.mouse.y);
+        if (check.ok && c.share === 0 && walkwayReach(def)) this.actors.ghostOutOfReach();
+        const note = c.share === 0 && walkwayReach(def) ? T.coverNone : (sighted ? T.coverSees : T.coverReaches).replace('{p}', String(Math.round(c.share * 100)));
+        this.hud?.placeNote(note, this.mouse.x, this.mouse.y);
       } else {
         this.actors.showCover(null);
         this.hud?.placeNote(null, 0, 0);

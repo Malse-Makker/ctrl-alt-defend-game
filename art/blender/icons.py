@@ -2,8 +2,8 @@
 
     blender -b --python art/blender/icons.py -- [--only intern,coffee_1] [--size 160]
 
-Same models, same light as the game, transparent background. Framed on the bounding box so
-every icon fills its square the same way.
+Same models, same light as the game, transparent background, without the cabinet a tower stands
+on. Framed on the bounding box so every icon fills its square the same way.
 """
 
 import math
@@ -41,6 +41,10 @@ def render_icon(key, out_dir, size):
     root = bm.BUILDERS[key]()
     # Colleagues look a bit towards the camera.
     root.rotation_euler[2] = math.radians(-25) if key in PEOPLE else 0
+    # The icon is the thing itself: the grey cabinet every tower stands on would only make it
+    # smaller, and in the shop every icon would be the same box.
+    for o in [o for o in bpy.data.objects if o.name.endswith("_Desk")]:
+        bpy.data.objects.remove(o, do_unlink=True)
     bpy.context.view_layer.update()
     pts = []
     for o in bpy.data.objects:

@@ -433,6 +433,15 @@ export function needsSight(def: TowerDef): boolean {
 }
 
 /**
+ * What a tower has to reach on the walkway to be any use, or null when that does not apply: Coffee
+ * Machines, the Chair, towers that fire anywhere, and the Poster (it helps towers, not the walk).
+ */
+export function walkwayReach(def: TowerDef): { range: number; sighted: boolean } | null {
+  if (def.role === 'economy' || def.role === 'chair' || def.role === 'support' || def.base.global) return null;
+  return { range: def.base.range, sighted: needsSight(def) };
+}
+
+/**
  * The tile your chair stands on: right behind your desk, seen from the colleagues walking up to
  * it. Path, desk, chair, in one line (the maker's rule), so they always arrive at the front.
  */
@@ -1109,6 +1118,32 @@ export class Game {
     return { points, share: total ? points.length / total : 0 };
   }
 
+  /** Too far to reach anyone: refused. Coffee Machines and Motivational Posters do not need to. */
+  tooFarFromWalkway(def: TowerDef, tx: number, ty: number): boolean {
+    if (def.role === 'economy' || def.role === 'support' || def.base.global) return false;
+    return this.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > def.base.range - 0.2;
+  }
+
+  /**
+   * Would a tower here reach any of the walkway at all? Close enough is not always enough: the
+   * furniture can be in the way, or a wall. The build grid marks those tiles, so you see it before
+   * you pay. Same rules as walkwayCover, stops at the first hit.
+   */
+  reachesWalkway(x: number, y: number, range: number, sighted: boolean): boolean {
+    const c = { x, y };
+    const z = this.level.closedZone;
+    for (const path of this.paths) {
+      for (let d = 0; d <= path.length; d += 0.25) {
+        const p = path.pointAt(d);
+        if (Math.hypot(p.x - x, p.y - y) > range) continue;
+        if (z && this.inClosedZone(p) !== this.inClosedZone(c)) continue;
+        if (sighted && !this.lineOfSight(x, y, p.x, p.y)) continue;
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Server Room: is this point inside the closed room? */
   private inClosedZone(p: { x: number; y: number }): boolean {
     const z = this.level.closedZone!;
@@ -1159,13 +1194,7 @@ export class Game {
     if (def.special && this.towers.some((t) => t.defId === defId && t.owner === player)) return { ok: false, reason: 'You only get one of these.', cost };
     if (this.hazardBlocks(player)) return { ok: false, reason: 'The projector first. Nobody can concentrate.', cost };
     if (!this.mayBuildAt(player, tx, ty)) return { ok: false, reason: 'That part of the office belongs to someone else.', cost };
-    // Coffee Machines and Motivational Posters do not need to reach the walkway.
-    if (def.role !== 'economy' && def.role !== 'support' && !def.base.global) {
-      const reach = def.base.range - 0.2;
-      if (this.minPathDistance({ x: tx + 0.5, y: ty + 0.5 }) > reach) {
-        return { ok: false, reason: 'Too far from the walkway to reach anyone.', cost };
-      }
-    }
+    if (this.tooFarFromWalkway(def, tx, ty)) return { ok: false, reason: 'Too far from the walkway to reach anyone.', cost };
     if (this.walletOf(player) < cost) return { ok: false, reason: 'Not enough Coffee.', cost };
     return { ok: true, cost };
   }

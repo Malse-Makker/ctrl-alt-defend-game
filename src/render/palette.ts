@@ -10,6 +10,8 @@ export const PAL = {
   window: '#9fc4dd',
   ok: '#6fcf7f',
   bad: '#e5534b',
+  /** A tile you may build on, where the tower would not reach the walkway. */
+  far: '#e0913a',
   coffee: '#d9a05b',
   focus: '#7fb6e3',
   hpBack: '#1d2026',

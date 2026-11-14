@@ -2,7 +2,8 @@
 
 import * as THREE from 'three';
 import type { LevelDef } from '../sim/data/levels';
-import { chairTile, type Game } from '../sim/game';
+import { TOWERS } from '../sim/data/towers';
+import { chairTile, walkwayReach, type Game } from '../sim/game';
 import type { Assets } from './assets';
 import { PAL } from './palette';
 
@@ -294,13 +295,18 @@ export class World {
 
   /**
    * The build grid for the tower you are placing: green where it may stand (at the height of the
-   * worktop, if there is one), a dark tint on bare floor it may not use. Null hides it.
+   * worktop, if there is one), orange where it may stand but would not reach the walkway (the
+   * furniture is in the way), a dark tint on bare floor it may not use. Null hides it.
    */
   showBuildGrid(defId: string | null): void {
     this.buildGrid.visible = defId !== null;
-    if (defId === null || defId === this.gridKey) return;
-    this.gridKey = defId;
     const { game, me } = this.gridFor;
+    // Rebuilt when something new stands on the floor: that tile is taken now.
+    const key = defId === null ? null : `${defId}:${game.towers.length}:${game.towers.at(-1)?.id ?? 0}`;
+    if (key === null || key === this.gridKey) return;
+    this.gridKey = key;
+    const def = TOWERS[defId!];
+    const reach = walkwayReach(def);
     const level = game.level;
     const { w, h } = level.size;
     const furnished = new Uint8Array(w * h);
@@ -309,13 +315,16 @@ export class World {
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (game.inBounds(x, y)) furnished[y * w + x] = 1;
     }
     const free: { x: number; y: number; top: number }[] = [];
+    const far: { x: number; y: number; top: number }[] = [];
     const banned: { x: number; y: number; top: number }[] = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (game.isPathTile(x, y)) continue;
         // Only the tiles this player may build on (multiplayer zones), so the grid shows your patch.
-        if (!game.isBlockedTile(x, y) && game.mayBuildAt(me, x, y) && game.tileAllows(defId, x, y)) free.push({ x, y, top: surfaceAt(level, x, y) ?? 0 });
-        else if (!furnished[y * w + x]) banned.push({ x, y, top: 0 });
+        if (!game.isBlockedTile(x, y) && !game.towerAt(x, y) && game.mayBuildAt(me, x, y) && game.tileAllows(defId!, x, y) && !game.tooFarFromWalkway(def, x, y)) {
+          const useless = reach !== null && !game.reachesWalkway(x + 0.5, y + 0.5, reach.range, reach.sighted);
+          (useless ? far : free).push({ x, y, top: surfaceAt(level, x, y) ?? 0 });
+        } else if (!furnished[y * w + x]) banned.push({ x, y, top: 0 });
       }
     }
     for (const c of [...this.buildGrid.children]) {
@@ -334,6 +343,7 @@ export class World {
       this.buildGrid.add(mesh);
     };
     tiles(free, 0.86, PAL.ok, 0.22);
+    tiles(far, 0.86, PAL.far, 0.34);
     tiles(banned, 1, 0x1b2230, 0.28);
   }
 

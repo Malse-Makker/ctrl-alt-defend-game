@@ -22,7 +22,7 @@ import {
 import { DUPLICATE_SURCHARGE, earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
-import { colleagueBadges, idleNote } from './badges';
+import { colleagueBadges, towerStatus } from './badges';
 import { badgeIcons } from './almanac';
 import { upgradeDiff } from './statdiff';
 import { cardCountdown, colleagueCard } from './colleaguecard';
@@ -818,13 +818,8 @@ export class Hud {
     });
 
     const before = parts.length;
-    if (t.silenced) parts.splice(2, 0, h('div', { class: 'status bad', text: t.quiet === 'cry' ? T.hushedNote : t.quiet === 'net' ? T.offlineNote : t.quiet === 'phone' ? T.phoneNote : t.quiet === 'audit' ? T.auditNote : T.silencedNote }));
-    else if (t.mopped > 0) parts.splice(2, 0, h('div', { class: 'status bad', text: T.moppedNote }));
-    else if (t.idle) parts.splice(2, 0, h('div', { class: 'status warn', text: idleNote(t.idle, t.def.damageClass, COLLEAGUES[t.idleWho ?? '']?.name ?? '') }));
-    else if (g.rangeFactor(t) < 1) parts.splice(2, 0, h('div', { class: 'status bad', text: T.smokedNote }));
-    else if (g.slowWifi(t)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.wifiNote }));
-    else if (g.isCold(t.tx, t.ty)) parts.splice(2, 0, h('div', { class: 'status bad', text: T.coldNote }));
-    else if (!g.isLit(t.tx, t.ty) && t.def.role !== 'economy' && !t.def.base.global) parts.splice(2, 0, h('div', { class: 'status bad', text: T.darkNote }));
+    const status = towerStatus(g, t);
+    if (status) parts.splice(2, 0, h('div', { class: `status ${status.tone}` }, icon(status.icon, 'status-icon'), h('span', { text: status.text })));
 
     // Targeting, right under the name too: you change it mid-wave, upgrades you read once.
     const controls: HTMLElement[] = [];

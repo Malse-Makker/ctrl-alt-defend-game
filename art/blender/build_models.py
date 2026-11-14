@@ -4386,6 +4386,352 @@ def b_poster_p2_4():
     parent(ob, root)
     return root
 
+
+# ---------------------------------------------------------------- path props
+# One small thing per upgrade path, on the floor next to the tower while that path is at tier 1
+# or 2 (tier 3 and 4 have a model of their own). At most 0.22 across and 0.3 high, so two fit
+# beside a cabinet without touching the neighbours.
+
+def _prop(key, parts):
+    root = empty(key)
+    ob = join(key + "_mesh", [p for p in parts if p is not None])
+    parent(ob, root)
+    return root
+
+
+def _paper_stack(n, w=0.16, d=0.2, col="paper", z0=0.0):
+    return [box(f"Sheet{i}", (w, d, 0.012), loc=(0.004 * (i % 2), 0.003 * i, z0 + i * 0.013), material=mat(col)) for i in range(n)]
+
+
+def _sign(col, glyph_col, w=0.16, h=0.12, post=0.14):
+    """A little table sign: a post with a coloured plate on top."""
+    return [cyl("Foot", 0.05, 0.015, material=mat("metal")),
+            cyl("Post", 0.008, post, loc=(0, 0, 0.015), material=mat("metal"), verts=6),
+            box("Plate", (w, 0.015, h), loc=(0, 0, 0.015 + post), material=mat(col), bevel=0.004),
+            box("Glyph", (w * 0.45, 0.005, h * 0.4), loc=(0, -0.009, 0.015 + post + h * 0.3), material=mat(glyph_col, emit=0.4))]
+
+
+def p_coffee_p0():
+    # Bigger Pot: a tall carafe.
+    return _prop("prop_coffee_p0", [cyl("Carafe", 0.07, 0.2, material=mat("window", rough=0.15), verts=12, radius_top=0.05),
+                                    cyl("Brew", 0.066, 0.1, loc=(0, 0, 0.005), material=mat("coffee"), verts=12),
+                                    cyl("Lid", 0.055, 0.03, loc=(0, 0, 0.2), material=mat("plastic_black"), verts=12),
+                                    box("Handle", (0.025, 0.03, 0.12), loc=(0.08, 0, 0.05), material=mat("plastic_black"))])
+
+
+def p_coffee_p1():
+    # Petty Cash: a green cash box with a coin on top.
+    return _prop("prop_coffee_p1", [box("Box", (0.2, 0.15, 0.09), material=mat("#3f7d4e", rough=0.4, metal=0.3), bevel=0.01),
+                                    box("Lid", (0.2, 0.15, 0.015), loc=(0, 0, 0.09), material=mat("#356a42", rough=0.4, metal=0.3)),
+                                    box("Handle", (0.08, 0.015, 0.015), loc=(0, 0, 0.105), material=mat("metal")),
+                                    cyl("Coin", 0.025, 0.008, loc=(0.06, 0.03, 0.105), material=mat("yellow", metal=0.6, rough=0.3), verts=12)])
+
+
+def p_coffee_p2():
+    # Tip Jar: a glass jar with coins and a paper label.
+    return _prop("prop_coffee_p2", [cyl("Jar", 0.06, 0.15, material=mat("window", rough=0.1, alpha=0.5), verts=14),
+                                    cyl("Coins", 0.055, 0.04, loc=(0, 0, 0.005), material=mat("yellow", metal=0.6, rough=0.3), verts=14),
+                                    box("Label", (0.07, 0.005, 0.04), loc=(0, -0.06, 0.07), material=mat("paper"))])
+
+
+def p_autoreply_p0():
+    # Canned Response: a stack of form letters.
+    return _prop("prop_autoreply_p0", _paper_stack(6) + [box("Line", (0.1, 0.12, 0.002), loc=(0, 0.01, 0.079), material=mat("blue"))])
+
+
+def p_autoreply_p1():
+    # Keyboard Shortcuts: an oversized key on a cheat sheet.
+    return _prop("prop_autoreply_p1", [box("Sheet", (0.2, 0.16, 0.006), material=mat("yellow")),
+                                       box("Key", (0.1, 0.1, 0.05), loc=(0, 0, 0.006), material=mat("plastic_white"), bevel=0.012, taper=0.8),
+                                       box("Mark", (0.04, 0.04, 0.003), loc=(0, 0, 0.056), material=mat("charcoal"))])
+
+
+def p_autoreply_p2():
+    # Read Receipt: an envelope with a green tick.
+    env = box("Envelope", (0.2, 0.012, 0.13), loc=(0, 0, 0.02), material=mat("paper"))
+    flap = box("Flap", (0.2, 0.004, 0.06), loc=(0, -0.008, 0.09), material=mat("#e2ddcf"), taper=0.1)
+    tick_a = box("TickA", (0.025, 0.006, 0.06), loc=(-0.02, -0.012, 0.05), material=mat("#4caf50", emit=0.5))
+    tick_b = box("TickB", (0.025, 0.006, 0.1), loc=(0.025, -0.012, 0.045), material=mat("#4caf50", emit=0.5))
+    kit.tilt(tick_a, ry=0.7)
+    kit.tilt(tick_b, ry=-0.5)
+    stand = box("Stand", (0.12, 0.06, 0.02), material=mat("metal"))
+    return _prop("prop_autoreply_p2", [stand, env, flap, tick_a, tick_b])
+
+
+def p_headphones_p0():
+    # Over-Ear: a headphone stand.
+    return _prop("prop_headphones_p0", [cyl("Base", 0.06, 0.015, material=mat("plastic_black"), verts=12),
+                                        cyl("Pole", 0.01, 0.2, loc=(0, 0, 0.015), material=mat("metal_light"), verts=8),
+                                        cyl("Band", 0.07, 0.025, loc=(0, 0, 0.2), material=mat("charcoal"), verts=14, rot=(math.pi / 2, 0, 0)),
+                                        box("CupL", (0.03, 0.06, 0.07), loc=(-0.07, 0, 0.12), material=mat("charcoal"), bevel=0.01),
+                                        box("CupR", (0.03, 0.06, 0.07), loc=(0.07, 0, 0.12), material=mat("charcoal"), bevel=0.01)])
+
+
+def p_headphones_p1():
+    # Volume Up: a small speaker.
+    return _prop("prop_headphones_p1", [box("Cab", (0.13, 0.12, 0.2), material=mat("wood_dark"), bevel=0.01),
+                                        cyl("Woofer", 0.045, 0.01, loc=(0, -0.06, 0.07), material=mat("plastic_black"), verts=14, rot=(math.pi / 2, 0, 0)),
+                                        cyl("Tweeter", 0.018, 0.01, loc=(0, -0.06, 0.155), material=mat("plastic_black"), verts=10, rot=(math.pi / 2, 0, 0))])
+
+
+def p_headphones_p2():
+    # Lo-fi Beats: a record player.
+    return _prop("prop_headphones_p2", [box("Deck", (0.2, 0.2, 0.04), material=mat("wood"), bevel=0.008),
+                                        cyl("Record", 0.08, 0.008, loc=(-0.01, 0, 0.04), material=mat("plastic_black"), verts=16),
+                                        cyl("Label", 0.025, 0.003, loc=(-0.01, 0, 0.048), material=mat("pink"), verts=10),
+                                        box("Arm", (0.012, 0.11, 0.012), loc=(0.075, 0.01, 0.05), material=mat("metal_light"), rot_z=0.4)])
+
+
+def p_artillery_p0():
+    # Stapler: a box of staples.
+    return _prop("prop_artillery_p0", [box("Box", (0.16, 0.1, 0.07), material=mat("red"), bevel=0.006),
+                                       box("Window", (0.1, 0.004, 0.035), loc=(0, -0.05, 0.02), material=mat("metal_light", metal=0.6, rough=0.3)),
+                                       box("Strip", (0.08, 0.02, 0.012), loc=(0.02, 0.0, 0.07), material=mat("metal_light", metal=0.7, rough=0.3))])
+
+
+def p_artillery_p1():
+    # Spring Loaded: a big coiled spring.
+    coils = [cyl(f"Coil{i}", 0.06, 0.014, loc=(0, 0, 0.012 + i * 0.03), material=mat("metal_light", metal=0.8, rough=0.25), verts=14, radius_top=0.06) for i in range(6)]
+    core = cyl("Core", 0.045, 0.19, material=mat("charcoal"), verts=12)
+    return _prop("prop_artillery_p1", coils + [core])
+
+
+def p_artillery_p2():
+    # Reading Glasses, folded on a case.
+    case = box("Case", (0.18, 0.08, 0.045), material=mat("navy"), bevel=0.02)
+    lens = [cyl(f"Lens{i}", 0.032, 0.008, loc=(x, -0.005, 0.05), material=mat("window", rough=0.1), verts=14) for i, x in enumerate((-0.038, 0.038))]
+    rims = [cyl(f"Rim{i}", 0.036, 0.006, loc=(x, -0.005, 0.047), material=mat("plastic_black"), verts=14) for i, x in enumerate((-0.038, 0.038))]
+    bridge = box("Bridge", (0.02, 0.008, 0.006), loc=(0, -0.005, 0.05), material=mat("plastic_black"))
+    return _prop("prop_artillery_p2", [case, bridge] + rims + lens)
+
+
+def p_shredder_p0():
+    # Paper Shredder: a heap of strips.
+    strips = [box(f"Strip{i}", (0.012, 0.18, 0.006), loc=(-0.06 + i * 0.015, 0.004 * (i % 3), 0.006 * (i % 4)), material=mat("paper"), rot_z=0.25 * ((i % 5) - 2)) for i in range(9)]
+    return _prop("prop_shredder_p0", strips)
+
+
+def p_shredder_p1():
+    # Jam: crumpled paper balls.
+    return _prop("prop_shredder_p1", [ball("Ball0", 0.055, loc=(-0.04, 0, 0.05), material=mat("paper"), scale=(1, 0.9, 0.85)),
+                                      ball("Ball1", 0.045, loc=(0.05, 0.03, 0.04), material=mat("paper"), scale=(0.9, 1, 0.85)),
+                                      ball("Ball2", 0.04, loc=(0.0, 0.05, 0.11), material=mat("paper"))])
+
+
+def p_shredder_p2():
+    # Recycling: a small green bin.
+    return _prop("prop_shredder_p2", [box("Bin", (0.16, 0.16, 0.22), material=mat("#3f8f5a", rough=0.6), bevel=0.01, taper=1.12),
+                                      box("Rim", (0.185, 0.185, 0.015), loc=(0, 0, 0.22), material=mat("#2f6f45")),
+                                      box("Mark", (0.07, 0.004, 0.07), loc=(0, -0.088, 0.08), material=mat("plastic_white"))])
+
+
+def p_quickreply_p0():
+    # "OK": a speech bubble on a sign.
+    return _prop("prop_quickreply_p0", _sign("plastic_white", "#4caf50"))
+
+
+def p_quickreply_p1():
+    # Ctrl+Enter: two keycaps.
+    return _prop("prop_quickreply_p1", [box("Ctrl", (0.12, 0.08, 0.045), loc=(-0.03, 0.04, 0), material=mat("plastic_white"), bevel=0.01, taper=0.85),
+                                        box("Enter", (0.08, 0.12, 0.045), loc=(0.06, -0.03, 0), material=mat("teal"), bevel=0.01, taper=0.85)])
+
+
+def p_quickreply_p2():
+    # Reaction: a yellow smiley stress ball.
+    face = ball("Face", 0.08, loc=(0, 0, 0.08), material=mat("yellow", rough=0.5), subdiv=2)
+    eyes = [box(f"Eye{i}", (0.014, 0.01, 0.025), loc=(x, -0.076, 0.095), material=mat("plastic_black")) for i, x in enumerate((-0.025, 0.025))]
+    mouth = box("Mouth", (0.05, 0.01, 0.012), loc=(0, -0.074, 0.055), material=mat("plastic_black"))
+    return _prop("prop_quickreply_p2", [face, mouth] + eyes)
+
+
+def p_thumbtacks_p0():
+    # Brass Tacks: one giant tack.
+    return _prop("prop_thumbtacks_p0", [cyl("Head", 0.07, 0.03, material=mat("yellow", metal=0.7, rough=0.3), verts=14),
+                                        cyl("Grip", 0.035, 0.07, loc=(0, 0, 0.03), material=mat("yellow", metal=0.7, rough=0.3), verts=12),
+                                        cyl("Pin", 0.006, 0.08, loc=(0, 0, 0.1), material=mat("metal_light", metal=0.8), verts=6, radius_top=0.001)])
+
+
+def p_thumbtacks_p1():
+    # Desk Drawer: a pulled-out drawer full of tacks.
+    drawer = box("Drawer", (0.2, 0.16, 0.06), material=mat("metal_light"), bevel=0.005)
+    inside = box("Inside", (0.18, 0.14, 0.01), loc=(0, 0, 0.05), material=mat("charcoal"))
+    tacks = [cyl(f"Tack{i}", 0.012, 0.008, loc=(-0.06 + (i % 4) * 0.04, -0.04 + (i // 4) * 0.04, 0.06), material=mat(["red", "blue", "yellow", "teal"][i % 4]), verts=8) for i in range(12)]
+    return _prop("prop_thumbtacks_p1", [drawer, inside] + tacks)
+
+
+def p_thumbtacks_p2():
+    # Longer Reach: a health and safety cone.
+    return _prop("prop_thumbtacks_p2", [box("Base", (0.16, 0.16, 0.02), material=mat("orange")),
+                                        cyl("Cone", 0.06, 0.22, loc=(0, 0, 0.02), material=mat("orange"), verts=12, radius_top=0.012),
+                                        cyl("Band", 0.043, 0.04, loc=(0, 0, 0.09), material=mat("plastic_white"), verts=12, radius_top=0.035)])
+
+
+def p_selfservice_p0():
+    # Send the FAQ: a booklet on a stand.
+    stand = box("Stand", (0.16, 0.08, 0.02), material=mat("metal"))
+    book = box("Book", (0.15, 0.02, 0.2), loc=(0, 0, 0.02), material=mat("blue"), bevel=0.004)
+    kit.tilt(book, rx=-0.25)
+    q = box("Mark", (0.05, 0.005, 0.07), loc=(0, -0.03, 0.1), material=mat("plastic_white"))
+    kit.tilt(q, rx=-0.25, pivot=(0, 0, 0.02))
+    return _prop("prop_selfservice_p0", [stand, book, q])
+
+
+def p_selfservice_p1():
+    # Chatbot: a little robot head.
+    return _prop("prop_selfservice_p1", [box("Head", (0.15, 0.13, 0.12), loc=(0, 0, 0.05), material=mat("plastic_white"), bevel=0.025),
+                                         box("Neck", (0.05, 0.05, 0.05), material=mat("metal")),
+                                         box("Visor", (0.11, 0.01, 0.045), loc=(0, -0.065, 0.09), material=mat("screen_glow", emit=1.2)),
+                                         cyl("Antenna", 0.006, 0.06, loc=(0, 0, 0.17), material=mat("metal"), verts=6),
+                                         ball("Tip", 0.015, loc=(0, 0, 0.235), material=mat("red", emit=1.0))])
+
+
+def p_selfservice_p2():
+    # Pinned Post: a small cork board on an easel.
+    board = box("Board", (0.2, 0.02, 0.15), loc=(0, 0, 0.1), material=mat("cardboard"))
+    notes = [box(f"Note{i}", (0.05, 0.004, 0.05), loc=(-0.05 + i * 0.05, -0.012, 0.15 - (i % 2) * 0.05), material=mat(["yellow", "pink", "teal"][i])) for i in range(3)]
+    legs = [box(f"Leg{i}", (0.015, 0.015, 0.25), loc=(x, 0.03, 0), material=mat("wood_dark")) for i, x in enumerate((-0.08, 0.08))]
+    return _prop("prop_selfservice_p2", [board] + notes + legs)
+
+
+def p_keyboardsmash_p0():
+    # Mechanical Keys: a keycap puller tray with loose caps.
+    caps = [box(f"Cap{i}", (0.045, 0.045, 0.035), loc=(-0.05 + (i % 3) * 0.05, -0.025 + (i // 3) * 0.05, 0.01), material=mat(["red", "plastic_white", "charcoal"][i % 3]), bevel=0.006, taper=0.8) for i in range(6)]
+    return _prop("prop_keyboardsmash_p0", [box("Tray", (0.18, 0.13, 0.01), material=mat("plastic_black"))] + caps)
+
+
+def p_keyboardsmash_p1():
+    # Wrist Rest: a padded bar.
+    return _prop("prop_keyboardsmash_p1", [box("Rest", (0.22, 0.08, 0.035), material=mat("charcoal", rough=0.95), bevel=0.015),
+                                           box("Gel", (0.2, 0.06, 0.01), loc=(0, 0, 0.032), material=mat("blue", rough=0.4), bevel=0.004)])
+
+
+def p_keyboardsmash_p2():
+    # Hotkeys: a macro pad with bright keys.
+    pad = box("Pad", (0.16, 0.12, 0.025), material=mat("plastic_black"), bevel=0.008)
+    keys = [box(f"Key{i}", (0.035, 0.035, 0.02), loc=(-0.045 + (i % 3) * 0.045, -0.025 + (i // 3) * 0.05, 0.025), material=mat(["teal", "yellow", "pink"][i % 3], emit=0.4)) for i in range(6)]
+    return _prop("prop_keyboardsmash_p2", [pad] + keys)
+
+
+def p_chair_p0():
+    # Gas Lift: a spare gas cylinder.
+    return _prop("prop_chair_p0", [cyl("Tube", 0.03, 0.2, material=mat("metal", metal=0.6, rough=0.3), verts=12),
+                                   cyl("Rod", 0.012, 0.08, loc=(0, 0, 0.2), material=mat("metal_light", metal=0.8, rough=0.2), verts=8),
+                                   cyl("Base", 0.06, 0.015, material=mat("plastic_black"), verts=12)])
+
+
+def p_chair_p1():
+    # Smooth Castors: two loose wheels.
+    wheels = []
+    for i, (x, y) in enumerate(((-0.05, 0.0), (0.05, 0.04))):
+        wheels.append(cyl(f"Wheel{i}", 0.04, 0.035, loc=(x, y - 0.017, 0.04), material=mat("plastic_black"), verts=14, rot=(math.pi / 2, 0, 0)))
+        wheels.append(box(f"Fork{i}", (0.02, 0.04, 0.06), loc=(x, y, 0.06), material=mat("metal_light")))
+    return _prop("prop_chair_p1", wheels)
+
+
+def p_chair_p2():
+    # Cushion: a fat seat cushion.
+    return _prop("prop_chair_p2", [box("Cushion", (0.2, 0.2, 0.06), material=mat("red", rough=0.95), bevel=0.025),
+                                   cyl("Button", 0.012, 0.006, loc=(0, 0, 0.06), material=mat("#9a2f2a"), verts=8)])
+
+
+def p_replyall_p0():
+    # High Priority: a red exclamation flag.
+    return _prop("prop_replyall_p0", [cyl("Foot", 0.05, 0.015, material=mat("metal")),
+                                      cyl("Pole", 0.008, 0.26, loc=(0, 0, 0.015), material=mat("metal_light"), verts=6),
+                                      box("Flag", (0.12, 0.008, 0.08), loc=(0.06, 0, 0.18), material=mat("red")),
+                                      box("Bang", (0.014, 0.004, 0.04), loc=(0.06, -0.006, 0.205), material=mat("plastic_white")),
+                                      box("Dot", (0.014, 0.004, 0.012), loc=(0.06, -0.006, 0.188), material=mat("plastic_white"))])
+
+
+def p_replyall_p1():
+    # Reply: a long thread of printed mails.
+    return _prop("prop_replyall_p1", _paper_stack(3, w=0.12, d=0.22) + [box("Clip", (0.03, 0.01, 0.03), loc=(0, -0.11, 0.025), material=mat("metal_light", metal=0.7))])
+
+
+def p_replyall_p2():
+    # CC the Team: a pile of envelopes.
+    envs = [box(f"Env{i}", (0.16, 0.1, 0.012), loc=(0.01 * (i % 2), 0.01 * (i % 3), i * 0.013), material=mat("paper" if i % 2 else "#e8dfc4"), rot_z=0.2 * ((i % 3) - 1)) for i in range(7)]
+    return _prop("prop_replyall_p2", envs)
+
+
+def p_delegation_p0():
+    # Loop In: a curly arrow sign.
+    return _prop("prop_delegation_p0", _sign("blue", "plastic_white"))
+
+
+def p_delegation_p1():
+    # Delegate: an in-tray with a folder.
+    tray = box("Tray", (0.2, 0.16, 0.012), material=mat("metal"))
+    walls = [box("Back", (0.2, 0.01, 0.05), loc=(0, 0.075, 0), material=mat("metal")),
+             box("SideL", (0.01, 0.16, 0.05), loc=(-0.095, 0, 0), material=mat("metal")),
+             box("SideR", (0.01, 0.16, 0.05), loc=(0.095, 0, 0), material=mat("metal"))]
+    folder = box("Folder", (0.17, 0.13, 0.02), loc=(0, 0, 0.012), material=mat("yellow"))
+    return _prop("prop_delegation_p1", [tray, folder] + walls)
+
+
+def p_delegation_p2():
+    # Wider Circle: a ring binder standing up.
+    return _prop("prop_delegation_p2", [box("Binder", (0.06, 0.2, 0.24), material=mat("teal"), bevel=0.006),
+                                        box("Label", (0.004, 0.04, 0.1), loc=(0.031, -0.04, 0.08), material=mat("paper")),
+                                        cyl("Ring", 0.012, 0.004, loc=(0.032, 0.05, 0.03), material=mat("metal_light"), verts=8, rot=(0, math.pi / 2, 0))])
+
+
+def p_pomodoro_p0():
+    # Shorter Sprints: a phone with a timer on it.
+    phone = box("Phone", (0.08, 0.02, 0.15), loc=(0, 0, 0.02), material=mat("plastic_black"), bevel=0.008)
+    screen = box("Screen", (0.065, 0.004, 0.12), loc=(0, -0.011, 0.035), material=mat("red", emit=1.0))
+    stand = box("Stand", (0.1, 0.07, 0.02), material=mat("metal"))
+    kit.tilt([phone, screen], rx=-0.2, pivot=(0, 0, 0.02))
+    return _prop("prop_pomodoro_p0", [stand, phone, screen])
+
+
+def p_pomodoro_p1():
+    # Do Not Disturb: a door hanger leaning on a block.
+    block = box("Block", (0.14, 0.06, 0.06), material=mat("wood"))
+    hanger = box("Hanger", (0.1, 0.006, 0.2), loc=(0, -0.035, 0.0), material=mat("red"))
+    kit.tilt(hanger, rx=0.2, pivot=(0, -0.035, 0))
+    word = box("Word", (0.07, 0.004, 0.025), loc=(0, -0.045, 0.08), material=mat("plastic_white"))
+    kit.tilt(word, rx=0.2, pivot=(0, -0.035, 0))
+    return _prop("prop_pomodoro_p1", [block, hanger, word])
+
+
+def p_pomodoro_p2():
+    # Bigger Bell: a reception bell.
+    return _prop("prop_pomodoro_p2", [cyl("Base", 0.08, 0.025, material=mat("plastic_black"), verts=16),
+                                      ball("Dome", 0.065, loc=(0, 0, 0.025), material=mat("yellow", metal=0.8, rough=0.25), subdiv=2, scale=(1, 1, 0.75)),
+                                      cyl("Knob", 0.012, 0.03, loc=(0, 0, 0.07), material=mat("metal", metal=0.8), verts=8)])
+
+
+def p_poster_p0():
+    # Hang In There: a rolled-up poster.
+    tube = cyl("Tube", 0.035, 0.22, loc=(0, 0.1, 0.035), material=mat("paper"), verts=12, rot=(math.pi / 2, 0, 0))
+    band = cyl("Band", 0.037, 0.02, loc=(0, 0.01, 0.035), material=mat("red"), verts=12, rot=(math.pi / 2, 0, 0))
+    return _prop("prop_poster_p0", [tube, band])
+
+
+def p_poster_p1():
+    # Framed Print: a small frame leaning on a block.
+    frame = box("Frame", (0.18, 0.02, 0.15), loc=(0, 0, 0.0), material=mat("wood_dark"), bevel=0.004)
+    pic = box("Pic", (0.14, 0.004, 0.11), loc=(0, -0.011, 0.02), material=mat("#8fb8d8"))
+    hill = box("Hill", (0.1, 0.004, 0.04), loc=(0.01, -0.013, 0.02), material=mat("plant"), taper=0.4)
+    kit.tilt([frame, pic, hill], rx=0.25, pivot=(0, 0, 0))
+    return _prop("prop_poster_p1", [frame, pic, hill])
+
+
+def p_poster_p2():
+    # Bigger Frame: an LED strip on its reel.
+    reel = cyl("Reel", 0.07, 0.03, loc=(0, 0.015, 0.075), material=mat("plastic_white"), verts=16, rot=(math.pi / 2, 0, 0))
+    strip = box("Strip", (0.14, 0.012, 0.006), loc=(-0.06, -0.04, 0.0), material=mat("#f2f2f2"), rot_z=0.3)
+    leds = [box(f"Led{i}", (0.012, 0.012, 0.004), loc=(-0.11 + i * 0.025, -0.055 + i * 0.007, 0.006), material=mat(["pink", "teal", "yellow"][i % 3], emit=2.0)) for i in range(5)]
+    hub = cyl("Hub", 0.025, 0.034, loc=(0, 0.017, 0.075), material=mat("charcoal"), verts=10, rot=(math.pi / 2, 0, 0))
+    return _prop("prop_poster_p2", [reel, hub, strip] + leds)
+
+
+PROP_BUILDERS = {f"prop_{t}_p{p}": globals()[f"p_{t}_p{p}"] for t in (
+    "coffee", "autoreply", "headphones", "artillery", "shredder", "quickreply", "thumbtacks", "selfservice",
+    "keyboardsmash", "chair", "replyall", "delegation", "pomodoro", "poster") for p in range(3)}
+
+
 BUILDERS = {
     "intern": b_intern,
     "newhire": b_newhire,
@@ -4644,6 +4990,7 @@ BUILDERS = {
     "pizza_boxes": b_pizza_boxes,
     "pizza": b_pizza,
 }
+BUILDERS.update(PROP_BUILDERS)
 
 
 def main():

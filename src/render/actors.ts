@@ -7,6 +7,7 @@ import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '.
 import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
 import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
+import { pathProps } from './props';
 import { tierDots } from './tierdots';
 import { PROJECTILE_LOOK, projectileFor, type ProjectileKind } from './projectiles';
 import { PAL } from './palette';
@@ -71,6 +72,8 @@ interface TowerView {
   /** Tier dots on its foot, rebuilt when an upgrade is bought. */
   dots: THREE.Group | null;
   dotsKey: string;
+  /** Path props on the floor beside it (src/render/props.ts). */
+  props: THREE.Group | null;
 }
 
 interface Shot {
@@ -199,6 +202,11 @@ export class Actors {
   }
 
   // ------------------------------------------------------------- placement preview
+
+  /** The tile under the ghost turns orange: it may stand here, but it would not reach the walkway. */
+  ghostOutOfReach(): void {
+    (this.ghostTile.material as THREE.MeshBasicMaterial).color.set(PAL.far);
+  }
 
   showGhost(model: string | null, tx: number, ty: number, ok: boolean, range: number, surface?: number, raise = 0): void {
     if (!model) {
@@ -679,7 +687,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface, dots: null, dotsKey: '' };
+    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface, dots: null, dotsKey: '', props: null };
     this.towers.set(t.id, v);
     return v;
   }
@@ -689,7 +697,9 @@ export class Actors {
 
   /**
    * One light per tier bought, in the path's colour, on the front of the cabinet: a row per path.
-   * A tower on a worktop has no cabinet; its lights lie on the counter in front of it.
+   * A tower on a worktop has no cabinet; its lights lie on the counter in front of it. A tower
+   * that stands on the floor by itself (the Shredder, Self-Service, the Chair) gets them on the
+   * floor, just clear of it on the side that faces the camera.
    */
   private placeDots(v: TowerView, t: Tower): void {
     const key = t.tiers.join('');
@@ -703,7 +713,17 @@ export class Actors {
     }
     const g = new THREE.Group();
     const onCounter = v.surface !== undefined;
-    const base = onCounter ? v.surface! - v.root.position.y + 0.02 : 0;
+    let cabinet = false;
+    v.model.traverse((o) => {
+      if (o.name.endsWith('_Desk')) cabinet = true;
+    });
+    // Turn the row to the side that faces the camera, whichever way the tower faces.
+    const toCam = Math.atan2(-this.camRight.z, this.camRight.x);
+    const side = Math.floor(toCam / (Math.PI / 2) + 0.5) * (Math.PI / 2);
+    const turn = side - v.root.rotation.y;
+    const onFloor = !onCounter && !cabinet;
+    const base = onCounter ? v.surface! - v.root.position.y + 0.02 : onFloor ? 0.015 - v.root.position.y : 0;
+    const front = onFloor ? Actors.reachTowards(v.model, turn) + 0.07 : 0;
     for (const d of dots) {
       let mat = this.dotMats.get(d.color);
       if (!mat) {
@@ -711,19 +731,63 @@ export class Actors {
         this.dotMats.set(d.color, mat);
       }
       const m = new THREE.Mesh(this.dotGeo, mat);
-      if (onCounter) {
+      if (onCounter || onFloor) {
         m.rotation.x = -Math.PI / 2;
-        m.position.set(d.x, base, 0.36 + d.row * 0.06);
+        m.position.set(d.x, base, onFloor ? front + d.row * 0.07 : 0.36 + d.row * 0.06);
         // Just outside the cabinet, which the model scales to 0.86 by 0.77: clear of it on every side.
       } else m.position.set(d.x, TOWER_CABINET_H - 0.08 - d.row * 0.08, 0.445);
       g.add(m);
     }
-    // Turn the row to the side of the cabinet that faces the camera, whichever way the tower faces.
-    const toCam = Math.atan2(-this.camRight.z, this.camRight.x);
-    const side = Math.floor(toCam / (Math.PI / 2) + 0.5) * (Math.PI / 2);
-    g.rotation.y = onCounter ? 0 : side - v.root.rotation.y;
+    g.rotation.y = onCounter ? 0 : turn;
     v.dots = g;
     v.root.add(g);
+    this.placeProps(v, t, side, onCounter ? v.surface! - v.root.position.y : -v.root.position.y);
+  }
+
+  /** The path props: on the floor (or the counter) at the tile's left and right corner, facing you. */
+  private placeProps(v: TowerView, t: Tower, facing: number, y: number): void {
+    if (v.props) v.root.remove(v.props);
+    v.props = null;
+    const props = pathProps(t.def, t.tiers);
+    if (props.length === 0) return;
+    const g = new THREE.Group();
+    // Corners in world terms, so the props sit beside the tower whichever way it is turned.
+    g.rotation.y = -v.root.rotation.y;
+    const r = new THREE.Vector3(this.camRight.x, 0, this.camRight.z).normalize().multiplyScalar(0.6);
+    for (const p of props) {
+      const m = this.assets.clone(p.model);
+      m.position.set(p.side === 'right' ? r.x : -r.x, y, p.side === 'right' ? r.z : -r.z);
+      m.rotation.y = facing;
+      // Built true to size they disappear next to a cabinet; a bit bigger reads at game zoom.
+      m.scale.setScalar(1.3);
+      g.add(m);
+    }
+    v.props = g;
+    v.root.add(g);
+  }
+
+  /** How far the model sticks out from its centre in the direction a group turned by `turn` faces. */
+  private static reachTowards(model: THREE.Object3D, turn: number): number {
+    const dx = Math.sin(turn);
+    const dz = Math.cos(turn);
+    const parent = model.parent;
+    model.updateMatrixWorld(true);
+    const toRoot = parent ? new THREE.Matrix4().copy(parent.matrixWorld).invert() : new THREE.Matrix4();
+    const p = new THREE.Vector3();
+    let most = 0;
+    model.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.visible) return;
+      const geo = mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const b = geo.boundingBox!;
+      const m = new THREE.Matrix4().multiplyMatrices(toRoot, mesh.matrixWorld);
+      for (const x of [b.min.x, b.max.x]) for (const z of [b.min.z, b.max.z]) {
+        p.set(x, b.min.y, z).applyMatrix4(m);
+        most = Math.max(most, p.x * dx + p.z * dz);
+      }
+    });
+    return Math.min(0.5, most);
   }
 
   private swapModel(v: TowerView, t: Tower): void {

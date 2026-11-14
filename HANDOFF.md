@@ -141,6 +141,22 @@ eist dat elke collega een counter in de winkel heeft waar hij voor het eerst kom
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.
 
+**Besluiten maker na de review (2026-11-14):**
+- Immuniteit zoals Bloons: nog maar twee eigenschappen. **Doos** (= lood): ja of nee, geen drempel
+  meer; alleen torens die dozen breken raken hem (Office Artillery en Keyboard Smash van zichzelf,
+  plus de upgrades die nu "gets through any shield" hebben); is de doos kapot, dan raakt iedereen
+  hem. **Verborgen** (= camo): alleen torens die verborgen zien; The Shredder en Brown Noise tonen
+  tijdelijk; 2-3 upgrades halen het voorgoed weg (bijv. Tracking Pixel, Paper Trail).
+  DIGITAL/PHYSICAL blijft voor de vloer (slechte wifi, geen internet), maar geen collega is er nog
+  immuun voor: de Cold Caller wordt verborgen ("nummer afgeschermd"), de Board Member krijgt een
+  doos ("zit achter zijn scherm").
+- Zijdeur voor boss-hulpjes: een vaste deur met een kort eigen pad, vanaf het begin zichtbaar en
+  dicht, open zodra de boss binnenkomt; zijn hulpjes komen daaruit. Alleen waar het bij het verhaal
+  past: Presenter (L3), Line Manager (L5, L10, L15: reviewers uit de vergaderzaal), Smoking
+  Colleague (L7: rookmaatjes uit het rookhok), HR Manager (L12: nieuwe mensen uit het HR-kantoor).
+  Lijfwacht-bosses (Head of Comms, Repair Guy, Cleaner, Consultant, Project Manager) houden hun
+  hulpjes naast zich.
+
 ### Level 15 Boardroom III (v0.31.0)
 - Kaart = L10 plus een achterdeur rechts (pad 2 voegt aan de rechterkant in, `splitPaths`) en een
   champagnebar; jaloezieën elke 20 s (`every: 10`, 10 s dicht). 22 golven van de Boardroom.

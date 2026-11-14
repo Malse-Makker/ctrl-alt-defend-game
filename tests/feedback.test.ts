@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import type { LevelDef } from '../src/sim/data/levels';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
-import { Game, IDLE_AFTER, type Enemy } from '../src/sim/game';
-import { colleagueBadges, idleNote, leakHint, towerBadge } from '../src/ui/badges';
+import { TOWERS as TOWER_DEFS } from '../src/sim/data/towers';
+import { Game, IDLE_AFTER, walkwayReach, type Enemy } from '../src/sim/game';
+import { colleagueBadges, idleNote, leakHint, towerBadge, towerStatus } from '../src/ui/badges';
+import { UI_TEXT } from '../src/ui/text';
 import { corridor } from './helpers';
 
 const TOWERS = ['coffee', 'autoreply', 'headphones', 'artillery', 'shredder'];
@@ -148,6 +150,28 @@ describe('icons over towers', () => {
     expect(towerBadge({ ...base, silenced: true, quiet: 'chat', idle: 'sight' })).toBe('chat');
   });
 
+  it('the panel line carries the same reason as the icon over the tower, with an icon of its own', () => {
+    const g = game();
+    const t = g.place('autoreply', 8, 1).tower!;
+    expect(towerStatus(g, t)).toBeNull();
+    const seen = new Set<string>();
+    for (const q of ['chat', 'cry', 'net', 'phone', 'audit'] as const) {
+      Object.assign(t, { silenced: true, quiet: q });
+      const st = towerStatus(g, t)!;
+      expect(st.tone).toBe('bad');
+      seen.add(st.icon);
+    }
+    Object.assign(t, { silenced: false, quiet: null, mopped: 3 });
+    seen.add(towerStatus(g, t)!.icon);
+    expect(seen.size).toBe(6);
+    Object.assign(t, { mopped: 0, idle: 'immune', idleWho: 'boardmember' });
+    const idle = towerStatus(g, t)!;
+    expect(idle).toEqual({ icon: 'laptop', tone: 'warn', text: idleNote('immune', 'digital', 'The Board Member') });
+    Object.assign(t, { idle: null });
+    const cold = towerStatus({ rangeFactor: () => 1, slowWifi: () => false, isCold: () => true, isLit: () => true }, t)!;
+    expect(cold.text).toBe(UI_TEXT.coldNote);
+  });
+
   it('the panel names the colleague', () => {
     expect(idleNote('immune', 'physical', 'The Board Member')).toContain('The Board Member');
     expect(idleNote('hidden', 'digital', 'The Impersonator')).toContain('The Impersonator');
@@ -213,5 +237,34 @@ describe('the walkway a tower would cover', () => {
 
   it('the whole floor for a tower that reaches everywhere and sees it all', () => {
     expect(game().walkwayCover(8.5, 1.5, Infinity, true, true).share).toBe(1);
+  });
+
+  it('the build grid marks a tile as out of reach exactly when the tower would cover nothing', () => {
+    const g = game({ decor: [{ model: 'plant', rect: { x: 6, y: 1, w: 5, h: 1 } }] });
+    for (const [x, y, r, sighted] of [[8.5, 1.5, 3, true], [8.5, 0.5, 3, true], [8.5, 0.5, 3, false], [8.5, 0.5, 1, false]] as const) {
+      expect(g.reachesWalkway(x, y, r, sighted), `${x},${y} r${r} ${sighted}`).toBe(g.walkwayCover(x, y, r, sighted).share > 0);
+    }
+    expect(g.reachesWalkway(8.5, 0.5, 3, true)).toBe(false);
+  });
+
+  it('the build grid refuses exactly the tiles that placing refuses as too far', () => {
+    const g = game();
+    let far = 0;
+    for (const def of TOWERS) {
+      for (let y = 0; y < 6; y++) {
+        for (let x = 0; x < 21; x++) {
+          const refused = g.canPlace(def, x, y).reason === 'Too far from the walkway to reach anyone.';
+          expect(g.tooFarFromWalkway(TOWER_DEFS[def], x, y), `${def} ${x},${y}`).toBe(refused);
+          if (refused) far++;
+        }
+      }
+    }
+    expect(far).toBeGreaterThan(0);
+  });
+
+  it('only towers that work on the walkway can be out of reach', () => {
+    expect(walkwayReach(TOWER_DEFS.autoreply)).toEqual({ range: TOWER_DEFS.autoreply.base.range, sighted: true });
+    expect(walkwayReach(TOWER_DEFS.shredder)?.sighted).toBe(false);
+    for (const id of ['coffee', 'chair', 'poster', 'artillery', 'pomodoro']) expect(walkwayReach(TOWER_DEFS[id]), id).toBeNull();
   });
 });

@@ -31,6 +31,51 @@ export function towerBadge(t: Pick<Tower, 'silenced' | 'quiet' | 'mopped' | 'idl
   return null;
 }
 
+/** The status line at the top of the tower panel: the same icon as over the tower, and why. */
+export interface TowerStatus {
+  icon: string;
+  tone: 'bad' | 'warn';
+  text: string;
+}
+
+/** Font Awesome names for the badges over towers (the glyphs in src/render/badges.ts). */
+const BADGE_ICON: Record<TowerBadge, string> = {
+  chat: 'comment-slash',
+  cry: 'droplet',
+  net: 'wifi',
+  phone: 'phone',
+  audit: 'clipboard-list',
+  mop: 'broom',
+  'idle-digital': 'laptop',
+  'idle-physical': 'hand',
+  'idle-hidden': 'eye-slash',
+  'idle-sight': 'road-barrier',
+};
+
+const QUIET_NOTE: Record<NonNullable<Tower['quiet']>, string> = {
+  chat: T.silencedNote,
+  cry: T.hushedNote,
+  net: T.offlineNote,
+  phone: T.phoneNote,
+  audit: T.auditNote,
+};
+
+/**
+ * Why this tower is not doing its job, most pressing first: stopped outright, hitting nothing,
+ * then the floor working against it (smoke, wifi, cold, dark). Null when it is fine.
+ */
+export function towerStatus(g: Pick<Game, 'rangeFactor' | 'slowWifi' | 'isCold' | 'isLit'>, t: Tower): TowerStatus | null {
+  const badge = towerBadge(t);
+  if (t.silenced) return { icon: BADGE_ICON[badge ?? 'chat'], tone: 'bad', text: QUIET_NOTE[t.quiet ?? 'chat'] };
+  if (t.mopped > 0) return { icon: BADGE_ICON.mop, tone: 'bad', text: T.moppedNote };
+  if (t.idle && badge) return { icon: BADGE_ICON[badge], tone: 'warn', text: idleNote(t.idle, t.def.damageClass, COLLEAGUES[t.idleWho ?? '']?.name ?? '') };
+  if (g.rangeFactor(t) < 1) return { icon: 'smog', tone: 'bad', text: T.smokedNote };
+  if (g.slowWifi(t)) return { icon: 'wifi', tone: 'bad', text: T.wifiNote };
+  if (g.isCold(t.tx, t.ty)) return { icon: 'snowflake', tone: 'bad', text: T.coldNote };
+  if (!g.isLit(t.tx, t.ty) && t.def.role !== 'economy' && !t.def.base.global) return { icon: 'moon', tone: 'bad', text: T.darkNote };
+  return null;
+}
+
 /** The line in the tower panel for a tower that hits nothing. */
 export function idleNote(reason: IdleReason, cls: DamageClass | undefined, name: string): string {
   if (reason === 'immune') return (cls === 'digital' ? T.idleDigital : T.idlePhysical).replace('{name}', name);

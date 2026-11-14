@@ -3,6 +3,17 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.46.0] - 2026-11-14
+
+### New
+- Every upgrade path leaves something on the floor next to the tower at tier 1 and 2: a tip jar for VENDING, a safety cone for HEALTH AND SAFETY, a record player for FOCUS MUSIC. At tier 3 the tower takes on its own look and the prop goes.
+
+### Changed
+- The build grid no longer shows green where the game would refuse the tower for being too far from the walkway. Orange marks a spot where you may build but the tower would see nothing of the walkway, because the furniture is in the way. The note by the mouse says so too.
+- The status line at the top of the tower panel carries the same icon as the one over the tower: a crossed-out speech bubble for a Chatterbox, a broom for a mopped floor, a snowflake for the cold.
+- Shop and panel icons show the thing itself, without the grey cabinet under it.
+- Towers without a cabinet (The Shredder, Self-Service, the Office Chair) have their tier lights on the floor in front of them instead of floating in the air.
+
 ## [0.45.0] - 2026-11-14
 
 ### Changed

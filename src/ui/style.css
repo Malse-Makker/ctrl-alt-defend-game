@@ -1547,6 +1547,19 @@ button:disabled {
   font-size: 13px;
 }
 
+/* The same icon as over the tower, so the panel and the floor say it the same way. */
+.status:has(.status-icon) {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.status-icon {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+}
+
 .status.ok {
   color: var(--ok);
 }

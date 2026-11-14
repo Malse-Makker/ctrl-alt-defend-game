@@ -112,6 +112,7 @@ export const UI_TEXT = {
   reload: 'Reload',
   coverSees: 'Sees {p}% of the walkway',
   coverReaches: 'Reaches {p}% of the walkway',
+  coverNone: 'Would not reach the walkway from here',
   boxes: 'Boxes',
   boxesHelp: 'The Old Guard\'s archive box and the Repair Guy\'s toolbox stop every hit under {n} damage. Other shields take any hit.',
   shopInfoGood: 'Good against',
