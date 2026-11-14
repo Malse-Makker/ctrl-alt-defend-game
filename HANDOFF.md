@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-6 klaar
+## Stand: v0.36.0 (2026-11-14); alle 15 levels staan erin; review stap 1-7 klaar
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -83,7 +83,12 @@ Stap 6 (0.36.0), keuzes van mij:
   van dit level met deze toren in `counters`); NEW-label tot je er een plaatst; meer dan 8 torens
   = drie kolommen met kleinere iconen.
 - NIET gedaan uit stap 6: iconen zonder kastje (moet via `art/blender/icons.py`, hoort bij stap 13)
-  en "alle statusredenen als iconen" in het paneel (nu nog een regel). Let op bij stap 8: de counters-test in `tests/explain.test.ts`
+  en "alle statusredenen als iconen" in het paneel (nu nog een regel).
+Stap 7 (0.37.0): `Game.walkwayCover(x, y, range, sighted, global)` (punten om de kwart tegel, plus
+aandeel); bij plaatsen en bij een geselecteerde richtende toren gele stippen op het gedekte pad, en
+een label bij de muis ("Sees 54% of the walkway"). De rode vloer (`showBlind`) is weg. Op vloeren
+met een Chatterbox een rode stippellijn op zijn oorsafstand (`showEarshot`). Niet gedaan: tegels
+die het pad niet halen niet groen kleuren. Let op bij stap 8: de counters-test in `tests/explain.test.ts`
 eist dat elke collega een counter in de winkel heeft waar hij voor het eerst komt.
 Uicheck: `SETUP` zet `tipsSeen` en `briefingsHidden` vol, zodat kaarten en briefings geen flow
 ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) de briefings.

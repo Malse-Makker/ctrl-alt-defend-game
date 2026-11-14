@@ -292,6 +292,12 @@ async function level2Flow(browser: import('puppeteer-core').Browser, errors: str
   await page.mouse.move(700, 330);
   await new Promise((r) => setTimeout(r, 400));
   total += await check(page, 'l2-blind-spots', size);
+  const note = await page.evaluate(() => {
+    const el = document.querySelector('.place-note') as HTMLElement | null;
+    return el && !el.hidden ? el.textContent : null;
+  });
+  if (!note || !/Sees \d+% of the walkway/.test(note)) errors.push(`l2: no walkway share next to the mouse while placing Office Artillery (${note})`);
+  else console.log(`  place note: ${note}`);
   await page.keyboard.press('Escape');
   const placed = await page.evaluate(() => {
     const s = (window as unknown as { cad: { session: { game: G; selected: number | null } } }).cad.session;

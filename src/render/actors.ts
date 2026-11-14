@@ -10,9 +10,6 @@ import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
 import { PAL } from './palette';
 import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
 
-/** Red blind-spot cells per tile, each way. */
-const BLIND_CELLS = 4;
-
 interface EnemyView {
   id: number;
   /** Position only. The body inside it turns; the HP bar must not. */
@@ -115,8 +112,10 @@ export class Actors {
   private readonly flapGeo = new THREE.BoxGeometry(0.2, 0.024, 0.04);
   private readonly flapMat = new THREE.MeshStandardMaterial({ color: PAL.envelopeFlap });
   readonly rangeRing: THREE.Mesh;
-  private blind: THREE.InstancedMesh | null = null;
-  private blindKey = '';
+  private cover: THREE.InstancedMesh | null = null;
+  private coverKey = '';
+  private earshot: THREE.InstancedMesh | null = null;
+  private earshotKey = '';
   /** The office chair's lane: a strip instead of a circle. */
   private readonly lane: THREE.Mesh;
   private barrierViews = new Map<number, THREE.Object3D>();
@@ -243,47 +242,71 @@ export class Actors {
    * Like Bloons: red over the part of its range a tower at (x, y) cannot see, because walls or
    * furniture are in the way (the whole floor for Office Artillery). Null hides it.
    */
-  showBlind(game: Game | null, x = 0, y = 0, range = 0): void {
-    const key = game ? `${x},${y},${range}` : '';
-    if (key === this.blindKey) return;
-    this.blindKey = key;
-    if (!game) {
-      if (this.blind) this.blind.visible = false;
+  /**
+   * The walkway a tower would reach from here, lit up: the bits it covers glow, the rest of the
+   * walkway stays as it is. Says "this is what it hits" instead of painting what it cannot see.
+   */
+  showCover(points: { x: number; y: number }[] | null, key = ''): void {
+    const k = points ? key || String(points.length) : '';
+    if (k === this.coverKey) return;
+    this.coverKey = k;
+    if (!points) {
+      if (this.cover) this.cover.visible = false;
       return;
     }
-    const { w, h } = game.level.size;
-    const cap = w * h * BLIND_CELLS * BLIND_CELLS;
-    if (!this.blind || this.blind.instanceMatrix.count < cap) {
-      if (this.blind) this.group.remove(this.blind);
-      const cell = 1 / BLIND_CELLS;
-      this.blind = new THREE.InstancedMesh(
-        new THREE.PlaneGeometry(cell, cell).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: PAL.bad, transparent: true, opacity: 0.38, depthWrite: false }),
-        cap,
+    if (!this.cover || this.cover.instanceMatrix.count < points.length) {
+      if (this.cover) this.group.remove(this.cover);
+      this.cover = new THREE.InstancedMesh(
+        new THREE.CircleGeometry(0.2, 12).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: '#ffd25a', transparent: true, opacity: 0.75, depthWrite: false }),
+        Math.max(points.length, 512),
       );
-      this.blind.renderOrder = 3;
-      this.blind.frustumCulled = false;
-      this.group.add(this.blind);
+      this.cover.renderOrder = 3;
+      this.cover.frustumCulled = false;
+      this.group.add(this.cover);
     }
     const m = new THREE.Matrix4();
-    let n = 0;
-    for (let ty = 0; ty < h; ty++) {
-      for (let tx = 0; tx < w; tx++) {
-        // The furniture itself needs no red: you can see it is in the way.
-        if (game.isWall(tx, ty)) continue;
-        for (let j = 0; j < BLIND_CELLS; j++) {
-          for (let i = 0; i < BLIND_CELLS; i++) {
-            const cx = tx + (i + 0.5) / BLIND_CELLS;
-            const cy = ty + (j + 0.5) / BLIND_CELLS;
-            if (Math.hypot(cx - x, cy - y) > range || game.lineOfSight(x, y, cx, cy)) continue;
-            this.blind.setMatrixAt(n++, m.makeTranslation(cx, 0.03, cy));
-          }
+    points.forEach((p, i) => this.cover!.setMatrixAt(i, m.makeTranslation(p.x, 0.035, p.y)));
+    this.cover.count = points.length;
+    this.cover.instanceMatrix.needsUpdate = true;
+    this.cover.visible = points.length > 0;
+  }
+
+  /**
+   * A dotted line along the walkway at a Chatterbox's earshot: build further out than this and
+   * he cannot silence the tower. Drawn once per floor.
+   */
+  showEarshot(game: Game | null, radius = 0): void {
+    if (!game || radius <= 0) {
+      if (this.earshot) this.earshot.visible = false;
+      return;
+    }
+    const key = `${game.level.id}:${radius}`;
+    if (key !== this.earshotKey) {
+      this.earshotKey = key;
+      if (this.earshot) this.group.remove(this.earshot);
+      const dots: { x: number; y: number }[] = [];
+      const { w, h } = game.level.size;
+      const step = 1 / 6;
+      for (let y = step / 2; y < h; y += step) {
+        for (let x = step / 2; x < w; x += step) {
+          const d = game.minPathDistance({ x, y });
+          if (Math.abs(d - radius) <= step * 0.5 && !game.isWall(Math.floor(x), Math.floor(y))) dots.push({ x, y });
         }
       }
+      this.earshot = new THREE.InstancedMesh(
+        new THREE.CircleGeometry(0.05, 6).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: '#e5534b', transparent: true, opacity: 0.8, depthWrite: false }),
+        Math.max(1, dots.length),
+      );
+      const m = new THREE.Matrix4();
+      dots.forEach((p, i) => this.earshot!.setMatrixAt(i, m.makeTranslation(p.x, 0.03, p.y)));
+      this.earshot.count = dots.length;
+      this.earshot.renderOrder = 3;
+      this.earshot.frustumCulled = false;
+      this.group.add(this.earshot);
     }
-    this.blind.count = n;
-    this.blind.instanceMatrix.needsUpdate = true;
-    this.blind.visible = n > 0;
+    if (this.earshot) this.earshot.visible = true;
   }
 
   showRange(x: number | null, y: number, r: number, color = '#ffffff'): void {

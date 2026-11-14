@@ -1886,6 +1886,23 @@ select {
   color: #1b1b1b;
 }
 
+/* Next to the mouse while placing. */
+.place-note {
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(22, 26, 36, 0.9);
+  border: 1px solid var(--line);
+  color: #ffd25a;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 30;
+}
+
 /* Under the shop: what the tower under the mouse does, and who it is good against. */
 .shop-info {
   display: flex;

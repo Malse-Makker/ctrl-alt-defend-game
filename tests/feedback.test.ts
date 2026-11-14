@@ -194,3 +194,24 @@ function findSpot(g: Game, def: string): { x: number; y: number } {
   for (let y = 0; y < g.level.size.h; y++) for (let x = 0; x < g.level.size.w; x++) if (g.canPlace(def, x, y).ok) return { x, y };
   throw new Error('no spot');
 }
+
+describe('the walkway a tower would cover', () => {
+  it('a circle on a straight corridor covers a chord of it', () => {
+    const g = game();
+    const c = g.walkwayCover(8.5, 1.5, 3, true);
+    // Walkway at y = 2.5, one tile away: a chord of 2 * sqrt(9 - 1) = 5.7 tiles out of 21.
+    expect(c.share).toBeGreaterThan(0.24);
+    expect(c.share).toBeLessThan(0.3);
+    for (const p of c.points) expect(Math.hypot(p.x - 8.5, p.y - 1.5)).toBeLessThanOrEqual(3);
+  });
+
+  it('furniture in the way: nothing for a tower that aims, all of it for one that does not', () => {
+    const g = game({ decor: [{ model: 'plant', rect: { x: 6, y: 1, w: 5, h: 1 } }] });
+    expect(g.walkwayCover(8.5, 0.5, 3, true).share).toBe(0);
+    expect(g.walkwayCover(8.5, 0.5, 3, false).share).toBeGreaterThan(0.1);
+  });
+
+  it('the whole floor for a tower that reaches everywhere and sees it all', () => {
+    expect(game().walkwayCover(8.5, 1.5, Infinity, true, true).share).toBe(1);
+  });
+});

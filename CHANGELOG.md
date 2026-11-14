@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.37.0] - 2026-11-14
+
+### Changed
+- While placing a tower, the bit of walkway it would reach lights up yellow, and a label next to the mouse says how much: "Sees 32% of the walkway". This replaces the red floor for what it cannot see.
+- On floors with a Chatterbox, a dotted red line along the walkway shows how far he talks while you place a tower. Build beyond it and he cannot silence it.
+- A selected tower that aims shows the walkway it covers the same way.
+
 ## [0.36.0] - 2026-11-14
 
 ### New

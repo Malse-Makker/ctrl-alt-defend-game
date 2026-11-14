@@ -486,6 +486,23 @@ export class Hud {
     else this.infoCard.hidden = true;
   }
 
+  private placeTag: HTMLElement | null = null;
+
+  /** A small label next to the mouse while placing: how much walkway the tower would cover. */
+  placeNote(text: string | null, x: number, y: number): void {
+    if (!text) {
+      if (this.placeTag) this.placeTag.hidden = true;
+      return;
+    }
+    if (!this.placeTag) {
+      this.placeTag = h('div', { class: 'place-note' });
+      this.root.append(this.placeTag);
+    }
+    this.placeTag.hidden = false;
+    setText(this.placeTag, text);
+    this.placeTag.style.transform = `translate(${Math.round(x + 18)}px, ${Math.round(y + 18)}px)`;
+  }
+
   private updateShopInfo(placing: string | null): void {
     const id = this.shopHover ?? placing;
     const g = this.game;

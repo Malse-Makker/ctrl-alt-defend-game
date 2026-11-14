@@ -1102,6 +1102,29 @@ export class Game {
     return this.cold !== null && this.inBounds(tx, ty) && this.cold[ty * this.level.size.w + tx] === 1;
   }
 
+  /**
+   * What a tower standing at (x, y) would cover of the walkway: points every quarter tile along
+   * every path, kept when it reaches them (range, sight for towers that aim, the closed Server
+   * Room), and the share of all walkway that is. For the preview while placing.
+   */
+  walkwayCover(x: number, y: number, range: number, sighted: boolean, global = false): { points: Vec2[]; share: number } {
+    const points: Vec2[] = [];
+    let total = 0;
+    const c = { x, y };
+    const z = this.level.closedZone;
+    for (const path of this.paths) {
+      for (let d = 0; d <= path.length; d += 0.25) {
+        const p = path.pointAt(d);
+        total++;
+        if (Math.hypot(p.x - x, p.y - y) > range) continue;
+        if (z && !global && this.inClosedZone(p) !== this.inClosedZone(c)) continue;
+        if (sighted && !this.lineOfSight(x, y, p.x, p.y)) continue;
+        points.push({ x: p.x, y: p.y });
+      }
+    }
+    return { points, share: total ? points.length / total : 0 };
+  }
+
   /** Server Room: is this point inside the closed room? */
   private inClosedZone(p: { x: number; y: number }): boolean {
     const z = this.level.closedZone!;

@@ -83,6 +83,14 @@ export class Session {
   private cardHold = false;
   /** Colleagues whose card this level already showed. */
   private readonly cardsShown = new Set<string>();
+  private mouse = { x: 0, y: 0 };
+  private coverCache: { key: string; points: { x: number; y: number }[]; share: number } | null = null;
+  /** How far a Chatterbox on this floor talks (0 when there is none): the dotted line while placing. */
+  private get earshot(): number {
+    this.earshotCache ??= Math.max(0, ...this.game.waves.flat().map((gr) => COLLEAGUES[gr.type]?.silence ?? 0));
+    return this.earshotCache;
+  }
+  private earshotCache: number | null = null;
   /** "BOUNCED OFF" popups per colleague: the first few say it, after that the bar says enough. */
   private readonly bounces = new Map<number, number>();
   /** Colleagues who already got the "nothing on your desk is made for him" hint this round. */
@@ -934,6 +942,14 @@ export class Session {
       return;
     }
     this.hover = this.tileAt(e.clientX, e.clientY);
+    this.mouse = { x: e.clientX, y: e.clientY };
+  }
+
+  /** The walkway a tower would cover from a spot. Cached: it is asked for every frame. */
+  private coverFor(x: number, y: number, range: number, sighted: boolean, global: boolean): { points: { x: number; y: number }[]; share: number; key: string } {
+    const key = `${x},${y},${range},${sighted ? 1 : 0},${this.game.blindsDown ? 1 : 0}`;
+    if (this.coverCache?.key !== key) this.coverCache = { key, ...this.game.walkwayCover(x, y, range, sighted, global) };
+    return this.coverCache;
   }
 
   private onDown(e: PointerEvent): void {
@@ -1045,8 +1061,16 @@ export class Session {
       const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
       this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty), raiseAt(this.game.level, this.hover.tx, this.hover.ty));
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
-      if (needsSight(def)) this.actors.showBlind(g, this.hover.tx + 0.5, this.hover.ty + 0.5, def.base.global ? Infinity : def.base.range);
-      else this.actors.showBlind(null);
+      if (range > 0 || def.base.global) {
+        const sighted = needsSight(def);
+        const c = this.coverFor(this.hover.tx + 0.5, this.hover.ty + 0.5, def.base.global ? Infinity : def.base.range, sighted, !!def.base.global);
+        this.actors.showCover(c.points, c.key);
+        this.hud?.placeNote((sighted ? T.coverSees : T.coverReaches).replace('{p}', String(Math.round(c.share * 100))), this.mouse.x, this.mouse.y);
+      } else {
+        this.actors.showCover(null);
+        this.hud?.placeNote(null, 0, 0);
+      }
+      this.actors.showEarshot(def.role === 'economy' ? null : g, this.earshot);
       if (chair) {
         // The lane it would take; turn it afterwards with the arrows.
         const lane = g.chairLaneAt(this.placing, this.hover.tx, this.hover.ty);
@@ -1056,7 +1080,9 @@ export class Session {
       return;
     }
     this.actors.showGhost(null, 0, 0, false, 0);
-    this.actors.showBlind(null);
+    this.actors.showCover(null);
+    this.actors.showEarshot(null);
+    this.hud?.placeNote(null, 0, 0);
     // Pomodoro Timer: where it lobs (or, while picking, where it would).
     const aimer = this.aiming !== null ? g.tower(this.aiming) : this.selected !== null ? g.tower(this.selected) : undefined;
     if (aimer && aimer.def.role === 'mortar') {
@@ -1075,7 +1101,10 @@ export class Session {
       return;
     }
     this.actors.showLane(null, 0, 0, 0, 0);
-    if (t && needsSight(t.def)) this.actors.showBlind(g, t.x, t.y, g.liveStats(t).range);
+    if (t && needsSight(t.def)) {
+      const c = this.coverFor(t.x, t.y, g.liveStats(t).range, true, !!t.def.base.global);
+      this.actors.showCover(c.points, c.key);
+    }
     if (t && (t.def.role !== 'economy' || tipRange)) this.actors.showRange(t.x, t.y, g.liveStats(t).range, tipRange ? '#6fcf7f' : '#ffffff');
     else this.actors.showRange(null, 0, 0);
   }
