@@ -2483,7 +2483,7 @@ def _espresso(x, y, z, s, body):
 
 
 # ---------------------------------------------------------------- Quick Reply looks per path
-QR_K, QR_S, QR_E = "#8fa0b4", "#7fb6e3", "#f2c641"
+QR_K, QR_S, QR_E = "#3fa7a0", "#3e7cc9", "#f2c641"
 
 
 # ---------------------------------------------------------------- Thumbtacks looks per path
@@ -3056,14 +3056,14 @@ def b_coffee_m0_1():
 
 
 def b_coffee_m0_2():
-    """Espresso Machine: a chrome block with an amber front, two piston levers and steam."""
+    """Espresso Machine: an amber block with a chrome front, two piston levers and steam."""
     root = empty("coffee_m0_2")
     amber = mat(CF_PATH[0], rough=0.5)
     steel = mat("metal_light", metal=0.6, rough=0.35)
     black = mat("plastic_black", rough=0.6)
     steam = mat("plastic_white", rough=0.5)
-    parts = [box("Block", (0.24, 0.30, 0.22), material=steel, bevel=0.02),
-             box("Front", (0.22, 0.012, 0.16), loc=(0, -0.153, 0.04), material=amber),
+    parts = [box("Block", (0.24, 0.30, 0.22), material=amber, bevel=0.02),
+             box("Front", (0.20, 0.012, 0.14), loc=(0, -0.153, 0.04), material=steel),
              box("Crown", (0.25, 0.31, 0.03), loc=(0, 0, 0.20), material=amber, bevel=0.008)]
     for i, x in enumerate((-0.06, 0.06)):
         lever = box(f"Lever{i}", (0.03, 0.03, 0.18), loc=(x, -0.13, 0.12), material=black)
@@ -5010,7 +5010,7 @@ for _p in range(3):
 # dock behind the phone: a clamp with a stick, the emoji up at about 1.2.
 
 QR_ACCENT = "#8fa0b4"
-QR_PATH = ("#8fa0b4", "#7fb6e3", "#f2c641")
+QR_PATH = ("#3fa7a0", "#3e7cc9", "#f2c641")
 QR_DOCK_H = 0.14
 QR_EMOJI_Z = 1.02
 # The screen is a lit mid blue, so the white and grey chat lines read from across the floor.
@@ -6781,8 +6781,8 @@ def b_keyboardsmash_m0_1():
     """Mechanical Keys: three tall red keys on the top row, a red impact star on the left."""
     root = empty("keyboardsmash_m0_1")
     red = mat(KS_PATH[0])
-    parts = [box(f"Mech{c}", (0.084, 0.084, 0.09), loc=(KS_COLS[c], KS_ROWS[2], -0.005), material=red, taper=0.85) for c in (3, 4, 5)]
-    parts += _ks_star("Hit", (-0.19, -0.03, 0.03), 0.10, red)
+    parts = [box(f"Mech{c}", (0.084, 0.084, 0.13), loc=(KS_COLS[c], KS_ROWS[2], -0.005), material=red, taper=0.85) for c in (3, 4, 5)]
+    parts += _ks_star("Hit", (-0.19, -0.03, 0.03), 0.14, red, t=0.03)
     parent(join("keyboardsmash_m0_1_mesh", parts), root)
     return root
 
@@ -6803,9 +6803,9 @@ def b_keyboardsmash_m0_2():
         kit.tilt(k, rx=r, ry=r * 0.6)
         parts.append(k)
     for j, (x, y, z) in enumerate(((-0.22, 0.10, 0.17), (0.20, 0.06, 0.21))):
-        parts += [ball(f"Puff{j}A", 0.065, loc=(x, y, z), material=red),
-                  ball(f"Puff{j}B", 0.05, loc=(x + 0.07, y, z + 0.03), material=red),
-                  ball(f"Puff{j}C", 0.045, loc=(x - 0.03, y, z + 0.07), material=red)]
+        parts += [ball(f"Puff{j}A", 0.085, loc=(x, y, z), material=red),
+                  ball(f"Puff{j}B", 0.065, loc=(x + 0.08, y, z + 0.04), material=red),
+                  ball(f"Puff{j}C", 0.06, loc=(x - 0.03, y, z + 0.09), material=red)]
     parent(join("keyboardsmash_m0_2_mesh", parts), root)
     return root
 

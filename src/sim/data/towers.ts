@@ -527,7 +527,7 @@ export const TOWERS: Record<string, TowerDef> = {
       {
         name: 'KEEP TYPING',
         quote: 'Typing...',
-        color: '#8fa0b4',
+        color: '#3fa7a0',
         tiers: [
           { name: '"OK"', desc: '+0.5 damage per reply.', cost: 16, effect: { damageAdd: 0.5 } },
           { name: 'Thumbs-Up', desc: '+0.5 damage per reply.', cost: 35, effect: { damageAdd: 0.5 } },
@@ -538,7 +538,7 @@ export const TOWERS: Record<string, TowerDef> = {
       {
         name: 'SHORTCUTS',
         quote: 'Ctrl+Enter. Sent.',
-        color: '#7fb6e3',
+        color: '#3e7cc9',
         tiers: [
           { name: 'Ctrl+Enter', desc: 'Replies 40% faster.', cost: 9, effect: { intervalMult: 0.7 } },
           { name: 'Text Expander', desc: 'Replies 40% faster again.', cost: 20, effect: { intervalMult: 0.7 } },

@@ -7,6 +7,7 @@ import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '.
 import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
 import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
+import { mirrorLook } from './mirror';
 import { tierDots } from './tierdots';
 import { PROJECTILE_LOOK, projectileFor, type ProjectileKind } from './projectiles';
 import { PAL } from './palette';
@@ -356,7 +357,7 @@ export class Actors {
       v.pop = Math.max(0, v.pop - dt * 4);
       v.recoil = Math.max(0, v.recoil - dt * 6);
       const s = 1 + Math.sin(v.pop * Math.PI) * 0.18;
-      v.model.scale.set(s, s * (1 - v.recoil * 0.06), s);
+      v.model.scale.set(Math.sign(v.model.scale.x) * s, s * (1 - v.recoil * 0.06), s);
       if (t.def.role === 'zone') {
         if (!v.zone) {
           v.zone = this.makeZone();
@@ -646,9 +647,6 @@ export class Actors {
   private addTower(t: Tower, game: Game): TowerView {
     const root = new THREE.Group();
     root.position.set(t.x, 0, t.y);
-    const modelKey = lookKey(t);
-    const model = this.buildLook(t);
-    root.add(model);
     const surface = surfaceAt(game.level, t.tx, t.ty);
     const lift = surface === undefined ? raiseAt(game.level, t.tx, t.ty) : 0;
     root.position.y = (surface ?? 0) + lift;
@@ -664,6 +662,9 @@ export class Actors {
     const angle = Math.atan2(best.x - t.x, best.y - t.y);
     // A chair turns with its lane (in sync); everything else faces the walkway.
     root.rotation.y = t.def.role === 'chair' ? 0 : Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
+    const modelKey = lookKey(t);
+    const model = this.buildLook(t, root.rotation.y);
+    root.add(model);
     const color = this.ownerColors[t.owner];
     // In multiplayer the ring says whose it is; that matters more there.
     if (!color && t.def.damageClass) {
@@ -735,12 +736,17 @@ export class Actors {
    * The tower as it looks with these upgrades: the core or the hero of the leading path, with the
    * module of every other path at tier 1 or 2 in its slot (Slot0..Slot2 in the model).
    */
-  private buildLook(t: Tower): THREE.Object3D {
+  private buildLook(t: Tower, rotY: number): THREE.Object3D {
     const model = this.assets.clone(modelFor(t.def, t.tiers));
-    for (const m of modulesFor(t.def, t.tiers)) {
+    const modules = modulesFor(t.def, t.tiers);
+    for (const m of modules) {
       const slot = model.getObjectByName(`Slot${m.path}`);
       if (slot) slot.add(this.assets.clone(m.model));
     }
+    // A lone module on the far flank would be hidden behind the tower: show the mirror image.
+    // With two modules one of them is always on the far side, so those stay as built.
+    const slot = modules.length === 1 ? model.getObjectByName(`Slot${modules[0].path}`) : undefined;
+    if (slot && mirrorLook(slot.position.x, rotY, -this.camRight.z, this.camRight.x)) model.scale.x *= -1;
     return model;
   }
 
@@ -771,7 +777,7 @@ export class Actors {
   private swapModel(v: TowerView, t: Tower): void {
     v.root.remove(v.model);
     v.modelKey = lookKey(t);
-    v.model = this.buildLook(t);
+    v.model = this.buildLook(t, v.root.rotation.y);
     v.root.add(v.model);
     v.root.position.y = (v.surface ?? 0) + v.lift;
     v.pop = 1;

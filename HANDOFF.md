@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.49.0 (2026-11-15); alle 15 levels staan erin; review stap 1-14 klaar, plus doos/verborgen en zijdeuren
+## Stand: v0.49.1 (2026-11-15); alle 15 levels staan erin; review stap 1-14 klaar, plus doos/verborgen en zijdeuren
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -176,9 +176,16 @@ ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) 
   (`towerParts()`), MODEL_NAMES genereert ze. Controlebladen: `art/blender/contactsheet.py -- <map>
   <toren> [--tile 40] [--sides]`. Geen `side_desk` en geen `_Desk`-truc meer; de tier-lampjes liggen
   op de vloer voor de toren. Gebouwd door een helper per toren met een vaste briefing; elke toren
-  binnen 2500 driehoeken en 12 materialen. Bekende zwakke plekken (voor een volgende ronde): het
-  tweede pad zit standaard rechts (+X), van de spelcamera af, waardoor 010 bij Reply All, Quick
-  Reply en Shredder 001 op afstand zwak leest; Quick Reply KEEP TYPING en SHORTCUTS zijn bleek.
+  binnen 2500 driehoeken en 12 materialen. Zwakke plekken
+  opgelost in 0.49.1: een losse module op een flank stond de helft van de tijd van de camera af
+  (torens draaien naar het looppad); `Actors.buildLook` spiegelt nu het hele model (`scale.x = -1`)
+  als er precies een module op zit en die aan de verre kant staat (`src/render/mirror.ts`, test
+  `tests/mirror.test.ts`). Met twee modules blijft het zoals gebouwd. Quick Reply KEEP TYPING is
+  teal (#3fa7a0) en SHORTCUTS #3e7cc9; Espresso Machine (koffie 200) is amber; Keyboard Smash 100
+  een grotere ster, 200 grotere wolkjes. Bewust gelaten: een paar tier-4-helden zijn 0.81-0.87 breed
+  (Auto-Reply, Coffee, Pomodoro, Poster; past nog ruim in een tegel) en modules bovenop (emoji,
+  poster, Auto-Reply READ RECEIPTS) maken een toren hoger dan de hoogteband van zijn tier: dat is
+  juist het afleesbare verschil.
 - Zijdeur voor boss-hulpjes: een vaste deur met een kort eigen pad, vanaf het begin zichtbaar en
   dicht, open zodra de boss binnenkomt; zijn hulpjes komen daaruit. Alleen waar het bij het verhaal
   past: Presenter (L3), Line Manager (L5, L10, L15: reviewers uit de vergaderzaal), Smoking

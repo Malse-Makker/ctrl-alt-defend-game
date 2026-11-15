@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.49.1] - 2026-11-15
+
+### Changed
+- A tower with one upgrade piece on its side now shows that piece on the side you can see, whichever way the tower faces. It used to hide round the back half the time.
+- Quick Reply's KEEP TYPING path is teal and SHORTCUTS a deeper blue, so their pieces no longer blend into the grey phone.
+- Tier 2 looks more like a step up: the Espresso Machine on the Coffee Machine is solid amber, and Keyboard Smash gets a bigger star at tier 1 and bigger puffs at tier 2.
+
 ## [0.49.0] - 2026-11-15
 
 ### New
