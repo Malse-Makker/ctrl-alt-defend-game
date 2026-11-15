@@ -2,23 +2,7 @@
 // Built once, then updated in place every frame (only changed text is written).
 
 import { COLLEAGUES, type ColleagueDef } from '../sim/data/colleagues';
-import {
-  MAX_TIER,
-  TARGET_HELP,
-  TARGET_LABELS,
-  TARGET_MODES,
-  TOWERS,
-  TRAP_TARGET_HELP,
-  TRAP_TARGET_LABELS,
-  TRAP_TARGET_MODES,
-  UPCOMING_TOWERS,
-  modelFor,
-  pathBlock,
-  type DamageClass,
-  type TargetMode,
-  type Tiers,
-  type TowerDef,
-} from '../sim/data/towers';
+import { coreModel, MAX_TIER, modelFor, pathBlock, TARGET_HELP, TARGET_LABELS, TARGET_MODES, TOWERS, TRAP_TARGET_HELP, TRAP_TARGET_LABELS, TRAP_TARGET_MODES, UPCOMING_TOWERS, type DamageClass, type TargetMode, type Tiers, type TowerDef } from '../sim/data/towers';
 import { DUPLICATE_SURCHARGE, earlyCallPoints } from '../sim/economy';
 import type { Game, LiveTowerStats, Tower } from '../sim/game';
 import type { Insets } from '../render/view';
@@ -269,7 +253,7 @@ export class Hud {
         },
         // Only 1 to 9 are keys; a number above that would promise a shortcut that does not exist.
         h('span', { class: 'hotkey', text: n <= 9 ? String(n) : '' }),
-        img(`icons/${def.models[0]}.png`, def.name),
+        img(`icons/${coreModel(def)}.png`, def.name),
         h('span', { class: 'name', text: def.name }),
         cost,
         h(

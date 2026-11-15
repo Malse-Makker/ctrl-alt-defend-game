@@ -7,18 +7,28 @@ import { SOUNDS, typingGain, typingRate } from '../src/audio/sfx';
 import { MODEL_NAMES } from '../src/render/assets';
 import { COLLEAGUES } from '../src/sim/data/colleagues';
 import { LEVELS } from '../src/sim/data/levels';
-import { TOWERS, modelFor, type TowerDef } from '../src/sim/data/towers';
+import { TOWERS, coreModel, modelFor, modulesFor, towerParts } from '../src/sim/data/towers';
 
 const loaded = new Set<string>(MODEL_NAMES);
-const towerModels = (def: TowerDef) => [...def.models, ...(def.pathModels ?? []).flat()];
 
 describe('assets', () => {
-  it('every tower model is loaded, built and has an icon', () => {
+  it('every part of every tower is loaded and built; the core and the heroes have an icon', () => {
     for (const def of Object.values(TOWERS)) {
-      for (const m of towerModels(def)) {
+      const parts = towerParts(def);
+      expect(parts.length, def.id).toBe(13);
+      for (const m of parts) {
         expect(loaded.has(m), `${def.id}: ${m} in MODEL_NAMES`).toBe(true);
         expect(existsSync(`public/models/${m}.glb`), `${m}.glb`).toBe(true);
-        expect(existsSync(`public/icons/${m}.png`), `${m}.png`).toBe(true);
+        if (!m.includes('_m')) expect(existsSync(`public/icons/${m}.png`), `${m}.png`).toBe(true);
+      }
+    }
+  });
+
+  it('the old models and floor props are gone', () => {
+    for (const def of Object.values(TOWERS)) {
+      for (const old of [`${def.id}_1`, `${def.id}_2`, `${def.id}_3`, `prop_${def.id}_p0`]) {
+        expect(loaded.has(old), old).toBe(false);
+        expect(existsSync(`public/models/${old}.glb`), `${old}.glb`).toBe(false);
       }
     }
   });
@@ -49,21 +59,34 @@ describe('assets', () => {
     for (const f of readdirSync('public/sfx').filter((x) => x.endsWith('.wav'))) expect(known.has(f.replace('.wav', '')), `${f} is not in SOUNDS`).toBe(true);
   });
 
-  it('a tower takes on the look of its leading path at tier 3 and 4', () => {
-    const def = {
-      ...TOWERS.shredder,
-      pathModels: [
-        ['a3', 'a4'],
-        ['b3', 'b4'],
-        ['c3', 'c4'],
-      ],
-    } as TowerDef;
-    expect(modelFor(def, [0, 0, 0])).toBe(def.models[0]);
-    expect(modelFor(def, [2, 1, 0])).toBe(def.models[1]);
-    expect(modelFor(def, [2, 3, 0])).toBe('b3');
-    expect(modelFor(def, [0, 2, 4])).toBe('c4');
-    // Below tier 3 a tower keeps the base / mid models.
-    expect(modelFor(TOWERS.delegation, [2, 2, 0])).toBe(TOWERS.delegation.models[1]);
+  it('every combination is put together from the parts: a hero at tier 3 and 4, modules for the rest', () => {
+    const def = TOWERS.headphones;
+    expect(modelFor(def, [0, 0, 0])).toBe(coreModel(def));
+    expect(modulesFor(def, [0, 0, 0])).toEqual([]);
+    // 1-2-0: the core, with the module of each path in its slot.
+    expect(modelFor(def, [1, 2, 0])).toBe('headphones_core');
+    expect(modulesFor(def, [1, 2, 0])).toEqual([
+      { path: 0, model: 'headphones_m0_1' },
+      { path: 1, model: 'headphones_m1_2' },
+    ]);
+    // 0-2-3: the hero of the third path; its own module goes, the second path's stays.
+    expect(modelFor(def, [0, 2, 3])).toBe('headphones_p2_3');
+    expect(modulesFor(def, [0, 2, 3])).toEqual([{ path: 1, model: 'headphones_m1_2' }]);
+    expect(modelFor(def, [4, 0, 0])).toBe('headphones_p0_4');
+    expect(modulesFor(def, [4, 0, 0])).toEqual([]);
+  });
+
+  it('all 49 combinations of the 4-2-0 rule look different', () => {
+    const looks = new Set<string>();
+    for (let a = 0; a <= 4; a++)
+      for (let b = 0; b <= 4; b++)
+        for (let c = 0; c <= 4; c++) {
+          const t = [a, b, c] as [number, number, number];
+          const used = t.filter((x) => x > 0).length;
+          if (used > 2 || t.filter((x) => x > 2).length > 1) continue;
+          looks.add(`${modelFor(TOWERS.coffee, t)}+${modulesFor(TOWERS.coffee, t).map((m) => m.model).join('+')}`);
+        }
+    expect(looks.size).toBe(49);
   });
 
   it('the typing in the background speeds up and gets louder as Focus runs out', () => {

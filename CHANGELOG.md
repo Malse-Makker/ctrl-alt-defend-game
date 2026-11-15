@@ -3,6 +3,13 @@
 All player-facing changes, newest first. This file is the only source: the game's What's new
 page is built from it.
 
+## [0.49.0] - 2026-11-15
+
+### New
+- Every tower has a new model, and none of them stands on the grey cabinet any more. Each is the thing itself, two or three times life size: a red bean machine, a laptop on a pole, a giant pair of headphones on a stand, a bunker of copier paper with a catapult, a phone as big as a door, a thumbtack as tall as an Intern, a teal kiosk with a queue post, a keyboard raised like a hammer over an old monitor, a pigeonhole cabinet, a mail cart, a tomato timer in a catapult, a roll-up banner.
+- You can see every combination of upgrades on the tower itself, all 49 of them: each path at tier 1 or 2 adds its own piece in the path's colour on its own spot, and at tier 3 and 4 the tower turns into something else entirely, with a light and a crown at tier 4.
+- The props on the floor next to a tower are gone: the pieces sit on the tower now.
+
 ## [0.48.1] - 2026-11-14
 
 ### Fixed

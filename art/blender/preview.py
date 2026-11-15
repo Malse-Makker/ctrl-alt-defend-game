@@ -76,12 +76,12 @@ def main():
         lineup = [bm.b_intern, bm.b_newhire, bm.b_requester, bm.b_chaser, bm.b_headofcomms]
         for i, b in enumerate(lineup):
             place(b, (0.6 + i * 1.15, 1.0), rot_z=math.radians(-20))
-        place(bm.b_coffee_1, (0.5, 0.0))
-        place(bm.b_coffee_2, (1.6, 0.0))
-        place(bm.b_coffee_3, (2.7, 0.0))
-        place(bm.b_autoreply_1, (3.8, 0.0))
-        place(bm.b_autoreply_2, (4.9, 0.0))
-        place(bm.b_autoreply_3, (6.0, 0.0))
+        place((lambda: bm.tower_coffee([0, 0, 0])), (0.5, 0.0))
+        place((lambda: bm.tower_coffee([2, 1, 0])), (1.6, 0.0))
+        place((lambda: bm.tower_coffee([4, 0, 0])), (2.7, 0.0))
+        place((lambda: bm.tower_autoreply([0, 0, 0])), (3.8, 0.0))
+        place((lambda: bm.tower_autoreply([2, 1, 0])), (4.9, 0.0))
+        place((lambda: bm.tower_autoreply([4, 0, 0])), (6.0, 0.0))
     else:
         floor(W, D)
         build_room(W, D)
@@ -94,10 +94,10 @@ def build_room(W, D):
     walls(W, D)
     # Door in the left wall, at the start of the walkway.
     place(bm.b_door, (-0.07, 4.5, 0), rot_z=-math.pi / 2)
-    place(bm.b_coffee_2, (2.5, 2.5))
-    place(bm.b_autoreply_1, (3.5, 5.5))
-    place(bm.b_autoreply_3, (5.5, 3.5))
-    place(bm.b_coffee_1, (6.5, 1.5))
+    place((lambda: bm.tower_coffee([2, 1, 0])), (2.5, 2.5))
+    place((lambda: bm.tower_autoreply([0, 0, 0])), (3.5, 5.5))
+    place((lambda: bm.tower_autoreply([4, 0, 0])), (5.5, 3.5))
+    place((lambda: bm.tower_coffee([0, 0, 0])), (6.5, 1.5))
     place(bm.b_plant, (0.5, 6.4))
     place(bm.b_cooler, (8.5, 6.5))
     place(bm.b_desk_pair, (6.8, 5.2))

@@ -2,16 +2,15 @@
 // simulation state every frame and turns simulation events into something you can see.
 
 import * as THREE from 'three';
-import { modelFor } from '../sim/data/towers';
+import { modelFor, modulesFor } from '../sim/data/towers';
 import { CHAIR_DIRS, type Enemy, type Game, type GameEvent, type Tower } from '../sim/game';
 import { colleagueBadges, towerBadge } from '../ui/badges';
 import { part, type Assets } from './assets';
 import { badgeMaterial, CLASS_COLOR, type BadgeKind } from './badges';
-import { pathProps } from './props';
 import { tierDots } from './tierdots';
 import { PROJECTILE_LOOK, projectileFor, type ProjectileKind } from './projectiles';
 import { PAL } from './palette';
-import { raiseAt, surfaceAt, TOWER_CABINET_H } from './world';
+import { raiseAt, surfaceAt } from './world';
 
 interface EnemyView {
   id: number;
@@ -72,8 +71,6 @@ interface TowerView {
   /** Tier dots on its foot, rebuilt when an upgrade is bought. */
   dots: THREE.Group | null;
   dotsKey: string;
-  /** Path props on the floor beside it (src/render/props.ts). */
-  props: THREE.Group | null;
 }
 
 interface Shot {
@@ -98,6 +95,11 @@ interface Scrap {
 const HP_W = 0.62;
 /** People are drawn a bit larger than a tile so they read on a busy floor. */
 const PERSON_SCALE = 1.25;
+
+/** What a tower looks like right now: changes when an upgrade changes the model or a module. */
+function lookKey(t: Tower): string {
+  return [modelFor(t.def, t.tiers), ...modulesFor(t.def, t.tiers).map((m) => m.model)].join('+');
+}
 
 export class Actors {
   readonly group = new THREE.Group();
@@ -222,11 +224,7 @@ export class Actors {
       this.group.add(this.ghost);
     }
     this.ghost!.visible = true;
-    // On a worktop, show it the way it will stand there: without its cabinet, on the top.
-    this.ghost!.traverse((o) => {
-      if (o.name.endsWith('_Desk')) o.visible = surface === undefined;
-    });
-    this.ghost!.position.set(tx + 0.5, surface === undefined ? raise : Actors.standOn(this.ghost!, surface), ty + 0.5);
+    this.ghost!.position.set(tx + 0.5, surface === undefined ? raise : surface, ty + 0.5);
     this.ghostTile.visible = true;
     this.ghostTile.position.set(tx + 0.5, (surface ?? 0) + 0.01, ty + 0.5);
     (this.ghostTile.material as THREE.MeshBasicMaterial).color.set(ok ? PAL.ok : PAL.bad);
@@ -354,7 +352,7 @@ export class Actors {
     for (const t of game.towers) {
       let v = this.towers.get(t.id);
       if (!v) v = this.addTower(t, game);
-      if (v.modelKey !== modelFor(t.def, t.tiers)) this.swapModel(v, t);
+      if (v.modelKey !== lookKey(t)) this.swapModel(v, t);
       v.pop = Math.max(0, v.pop - dt * 4);
       v.recoil = Math.max(0, v.recoil - dt * 6);
       const s = 1 + Math.sin(v.pop * Math.PI) * 0.18;
@@ -648,12 +646,12 @@ export class Actors {
   private addTower(t: Tower, game: Game): TowerView {
     const root = new THREE.Group();
     root.position.set(t.x, 0, t.y);
-    const modelKey = modelFor(t.def, t.tiers);
-    const model = this.assets.clone(modelKey);
+    const modelKey = lookKey(t);
+    const model = this.buildLook(t);
     root.add(model);
     const surface = surfaceAt(game.level, t.tx, t.ty);
     const lift = surface === undefined ? raiseAt(game.level, t.tx, t.ty) : 0;
-    root.position.y = Actors.standOn(model, surface) + lift;
+    root.position.y = (surface ?? 0) + lift;
     // Face the nearest bit of walkway, snapped to a quarter turn so desks line up with the grid.
     let best = { d: Infinity, x: t.x, y: t.y + 1 };
     for (const path of game.paths) {
@@ -687,7 +685,7 @@ export class Actors {
       root.add(ring);
     }
     this.group.add(root);
-    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface, dots: null, dotsKey: '', props: null };
+    const v: TowerView = { id: t.id, lift, root, model, modelKey, pop: 1, recoil: 0, zone: null, badge: null, badgeKind: null, wet: null, surface, dots: null, dotsKey: '' };
     this.towers.set(t.id, v);
     return v;
   }
@@ -696,10 +694,8 @@ export class Actors {
   private dotMats = new Map<string, THREE.MeshBasicMaterial>();
 
   /**
-   * One light per tier bought, in the path's colour, on the front of the cabinet: a row per path.
-   * A tower on a worktop has no cabinet; its lights lie on the counter in front of it. A tower
-   * that stands on the floor by itself (the Shredder, Self-Service, the Chair) gets them on the
-   * floor, just clear of it on the side that faces the camera.
+   * One light per tier bought, in the path's colour, a row per path, lying on the floor just in
+   * front of the tower: an extra read on top of the modules and heroes.
    */
   private placeDots(v: TowerView, t: Tower): void {
     const key = t.tiers.join('');
@@ -712,18 +708,13 @@ export class Actors {
       return;
     }
     const g = new THREE.Group();
-    const onCounter = v.surface !== undefined;
-    let cabinet = false;
-    v.model.traverse((o) => {
-      if (o.name.endsWith('_Desk')) cabinet = true;
-    });
-    // Turn the row to the side that faces the camera, whichever way the tower faces.
+    // On the floor (or the worktop) just in front of the tower, on the side that faces the camera,
+    // whichever way the tower faces.
     const toCam = Math.atan2(-this.camRight.z, this.camRight.x);
     const side = Math.floor(toCam / (Math.PI / 2) + 0.5) * (Math.PI / 2);
     const turn = side - v.root.rotation.y;
-    const onFloor = !onCounter && !cabinet;
-    const base = onCounter ? v.surface! - v.root.position.y + 0.02 : onFloor ? 0.015 - v.root.position.y : 0;
-    const front = onFloor ? Actors.reachTowards(v.model, turn) + 0.07 : 0;
+    const base = 0.015 - v.lift;
+    const front = Actors.reachTowards(v.model, turn) + 0.07;
     for (const d of dots) {
       let mat = this.dotMats.get(d.color);
       if (!mat) {
@@ -731,39 +722,26 @@ export class Actors {
         this.dotMats.set(d.color, mat);
       }
       const m = new THREE.Mesh(this.dotGeo, mat);
-      if (onCounter || onFloor) {
-        m.rotation.x = -Math.PI / 2;
-        m.position.set(d.x, base, onFloor ? front + d.row * 0.07 : 0.36 + d.row * 0.06);
-        // Just outside the cabinet, which the model scales to 0.86 by 0.77: clear of it on every side.
-      } else m.position.set(d.x, TOWER_CABINET_H - 0.08 - d.row * 0.08, 0.445);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(d.x, base, front + d.row * 0.07);
       g.add(m);
     }
-    g.rotation.y = onCounter ? 0 : turn;
+    g.rotation.y = turn;
     v.dots = g;
     v.root.add(g);
-    this.placeProps(v, t, side, onCounter ? v.surface! - v.root.position.y : -v.root.position.y);
   }
 
-  /** The path props: on the floor (or the counter) at the tile's left and right corner, facing you. */
-  private placeProps(v: TowerView, t: Tower, facing: number, y: number): void {
-    if (v.props) v.root.remove(v.props);
-    v.props = null;
-    const props = pathProps(t.def, t.tiers);
-    if (props.length === 0) return;
-    const g = new THREE.Group();
-    // Corners in world terms, so the props sit beside the tower whichever way it is turned.
-    g.rotation.y = -v.root.rotation.y;
-    const r = new THREE.Vector3(this.camRight.x, 0, this.camRight.z).normalize().multiplyScalar(0.6);
-    for (const p of props) {
-      const m = this.assets.clone(p.model);
-      m.position.set(p.side === 'right' ? r.x : -r.x, y, p.side === 'right' ? r.z : -r.z);
-      m.rotation.y = facing;
-      // Built true to size they disappear next to a cabinet; a bit bigger reads at game zoom.
-      m.scale.setScalar(1.3);
-      g.add(m);
+  /**
+   * The tower as it looks with these upgrades: the core or the hero of the leading path, with the
+   * module of every other path at tier 1 or 2 in its slot (Slot0..Slot2 in the model).
+   */
+  private buildLook(t: Tower): THREE.Object3D {
+    const model = this.assets.clone(modelFor(t.def, t.tiers));
+    for (const m of modulesFor(t.def, t.tiers)) {
+      const slot = model.getObjectByName(`Slot${m.path}`);
+      if (slot) slot.add(this.assets.clone(m.model));
     }
-    v.props = g;
-    v.root.add(g);
+    return model;
   }
 
   /** How far the model sticks out from its centre in the direction a group turned by `turn` faces. */
@@ -792,27 +770,11 @@ export class Actors {
 
   private swapModel(v: TowerView, t: Tower): void {
     v.root.remove(v.model);
-    v.modelKey = modelFor(t.def, t.tiers);
-    v.model = this.assets.clone(v.modelKey);
+    v.modelKey = lookKey(t);
+    v.model = this.buildLook(t);
     v.root.add(v.model);
-    v.root.position.y = Actors.standOn(v.model, v.surface) + v.lift;
+    v.root.position.y = (v.surface ?? 0) + v.lift;
     v.pop = 1;
-  }
-
-  /**
-   * On a worktop a tower leaves its cabinet behind: only the thing itself stands on the counter.
-   * Returns how high the tower has to sit.
-   */
-  private static standOn(model: THREE.Object3D, surface: number | undefined): number {
-    if (surface === undefined) return 0;
-    let cabinet = false;
-    model.traverse((o) => {
-      if (o.name.endsWith('_Desk')) {
-        o.visible = false;
-        cabinet = true;
-      }
-    });
-    return cabinet ? surface - TOWER_CABINET_H : surface;
   }
 
   // ------------------------------------------------------------- colleagues

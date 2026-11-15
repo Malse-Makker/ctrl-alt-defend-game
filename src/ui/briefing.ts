@@ -3,7 +3,7 @@
 
 import type { Briefing } from '../sim/briefing';
 import { COLLEAGUES } from '../sim/data/colleagues';
-import { TOWERS } from '../sim/data/towers';
+import { coreModel, TOWERS } from '../sim/data/towers';
 import { h, icon, img } from './dom';
 import { UI_TEXT as T } from './text';
 
@@ -34,7 +34,7 @@ export function briefingCard(levelName: string, b: Briefing, act: BriefingAction
     out.push(h('div', { class: 'brief-head', text: T.briefNewDesk }));
     for (const id of b.towers) {
       const d = TOWERS[id];
-      out.push(line(`icons/${d.models[0]}.png`, d.name, d.name, d.short));
+      out.push(line(`icons/${coreModel(d)}.png`, d.name, d.name, d.short));
     }
   }
   if (b.colleagues.length) {

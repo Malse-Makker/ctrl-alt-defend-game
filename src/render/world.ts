@@ -9,8 +9,6 @@ import { PAL } from './palette';
 
 const WALL_H = 1.6;
 const WALL_T = 0.16;
-/** Height of the cabinet every tower stands on (side_desk in the Blender script). */
-export const TOWER_CABINET_H = 0.42;
 
 /** How high a step on this tile lifts a tower that stands on it with its cabinet (the tribune). */
 export function raiseAt(level: LevelDef, tx: number, ty: number): number {

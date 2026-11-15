@@ -19,7 +19,7 @@ import { solidBot, type Bot } from './sim/bots';
 import { applyCommand, type Command } from './sim/commands';
 import { COLLEAGUES } from './sim/data/colleagues';
 import { LEVELS } from './sim/data/levels';
-import { TOWERS, type TargetMode } from './sim/data/towers';
+import { coreModel, TOWERS, type TargetMode } from './sim/data/towers';
 import { CHAIR_DIRS, Game, needsSight, TICK, walkwayReach, type GameEvent } from './sim/game';
 import { zoneMap } from './sim/zones';
 import { endScreen } from './ui/end';
@@ -1061,7 +1061,7 @@ export class Session {
       const placeable = check.ok || check.reason === 'Not enough Coffee.';
       const chair = def.role === 'chair';
       const range = def.role === 'economy' || def.base.global || chair ? 0 : def.base.range;
-      this.actors.showGhost(def.models[0], this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty), raiseAt(this.game.level, this.hover.tx, this.hover.ty));
+      this.actors.showGhost(coreModel(def), this.hover.tx, this.hover.ty, check.ok, range, surfaceAt(this.game.level, this.hover.tx, this.hover.ty), raiseAt(this.game.level, this.hover.tx, this.hover.ty));
       if (!placeable && range > 0) this.actors.showRange(this.hover.tx + 0.5, this.hover.ty + 0.5, range, '#e5534b');
       if (range > 0 || def.base.global) {
         const sighted = needsSight(def);

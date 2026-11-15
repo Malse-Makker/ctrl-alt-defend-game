@@ -4,7 +4,7 @@ Voor de volgende chat. Lees dit, dan `docs/BOUWPLAN.md`, dan de ontwerpbijbel
 (`/home/mick/projecten/CTRL-ALT-DEFEND/07_REMAKE_PROMPT.md`, deel 2; alleen lokaal, niet in git. De
 oude Godot-repo wordt gearchiveerd en privé).
 
-## Stand: v0.48.0 (2026-11-14); alle 15 levels staan erin; review stap 1-14 klaar, plus doos/verborgen en zijdeuren
+## Stand: v0.49.0 (2026-11-15); alle 15 levels staan erin; review stap 1-14 klaar, plus doos/verborgen en zijdeuren
 
 Fase 1 is af: level 1 speelbaar in de browser, twee torens, vier collega's plus boss, feedback en
 rondecijfers via de relay (naar Mattermost). v0.2.0: upgrades zoals Bloons TD 6. v0.3.0:
@@ -168,6 +168,17 @@ ophouden; `level2Flow` test de wachtende kaart, `briefingFlow` (`--brief-only`) 
   (`World.update`). Bots en de "Sees N%"-hint tellen het gedeelde stuk maar een keer. Balans (solid,
   seed 1, Focus zonder -> met deur): L3 100 -> 100, L5 100 -> 100, L7 92 -> 96, L10 100 -> 100, L12
   59 -> 59, L15 68 -> 100 (de reviewers komen nu ver van je bureau binnen).
+- **Gedaan in 0.49.0: nieuwe torenmodellen** (opdracht `CTRL-ALT-DEFEND/docs/review/TORENMODELLEN.md`).
+  Elke toren is 13 onderdelen: `<toren>_core`, modules `<toren>_m<pad>_<tier>` (tier 1-2) en
+  helden `<toren>_p<pad>_<tier>` (tier 3-4). De kern en elke held hebben lege objecten
+  `Slot0..Slot2`; het spel hangt de modules daarin (`modelFor`, `modulesFor`, `Actors.buildLook`),
+  Blender doet hetzelfde met `tower_parts()` / `tower_<toren>(tiers)`. Namen volgen uit de toren-id
+  (`towerParts()`), MODEL_NAMES genereert ze. Controlebladen: `art/blender/contactsheet.py -- <map>
+  <toren> [--tile 40] [--sides]`. Geen `side_desk` en geen `_Desk`-truc meer; de tier-lampjes liggen
+  op de vloer voor de toren. Gebouwd door een helper per toren met een vaste briefing; elke toren
+  binnen 2500 driehoeken en 12 materialen. Bekende zwakke plekken (voor een volgende ronde): het
+  tweede pad zit standaard rechts (+X), van de spelcamera af, waardoor 010 bij Reply All, Quick
+  Reply en Shredder 001 op afstand zwak leest; Quick Reply KEEP TYPING en SHORTCUTS zijn bleek.
 - Zijdeur voor boss-hulpjes: een vaste deur met een kort eigen pad, vanaf het begin zichtbaar en
   dicht, open zodra de boss binnenkomt; zijn hulpjes komen daaruit. Alleen waar het bij het verhaal
   past: Presenter (L3), Line Manager (L5, L10, L15: reviewers uit de vergaderzaal), Smoking

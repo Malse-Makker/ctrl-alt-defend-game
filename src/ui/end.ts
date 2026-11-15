@@ -2,7 +2,7 @@
 // and the feedback form with one button. Reached by winning, burning out, or Give up.
 
 import { COLLEAGUES } from '../sim/data/colleagues';
-import { TOWERS } from '../sim/data/towers';
+import { coreModel, TOWERS } from '../sim/data/towers';
 import type { Game } from '../sim/game';
 import type { LevelResult } from '../meta/save';
 import { sendFeedback, type RoundSummary } from '../net/api';
@@ -24,7 +24,7 @@ function counterLine(game: Game, type: string): HTMLElement | null {
   return h(
     'div',
     { class: 'card-towers' },
-    ...ids.map((id) => h('span', { class: 'card-tower', title: TOWERS[id].short }, img(`icons/${TOWERS[id].models[0]}.png`, TOWERS[id].name), h('span', { text: TOWERS[id].name }))),
+    ...ids.map((id) => h('span', { class: 'card-tower', title: TOWERS[id].short }, img(`icons/${coreModel(TOWERS[id])}.png`, TOWERS[id].name), h('span', { text: TOWERS[id].name }))),
     had ? null : h('span', { class: 'hurt-none', text: T.hurtNone }),
   );
 }

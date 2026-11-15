@@ -1,9 +1,9 @@
 """Render a 3/4 icon of every tower level and colleague into public/icons/<name>.png.
 
-    blender -b --python art/blender/icons.py -- [--only intern,coffee_1] [--size 160]
+    blender -b --python art/blender/icons.py -- [--only intern,coffee_core] [--size 160]
 
-Same models, same light as the game, transparent background, without the cabinet a tower stands
-on. Framed on the bounding box so every icon fills its square the same way.
+Same models, same light as the game, transparent background. Framed on the bounding box so every
+icon fills its square the same way.
 """
 
 import math
@@ -18,22 +18,11 @@ import build_models as bm  # noqa: E402
 import kit  # noqa: E402
 
 PEOPLE = ["intern", "newhire", "requester", "chaser", "headofcomms", "chatterbox", "oldguard", "boardmember", "repairguy", "presenter", "impersonator", "cleaner", "linemanager", "coldcaller", "baby", "phonecaller", "smoker", "consultant", "hrmanager", "projectmanager", "finalreview"]
-ICONS = PEOPLE + ["coffee_1", "coffee_2", "coffee_3",
-                  "coffee_p0_3", "coffee_p0_4", "coffee_p1_3", "coffee_p1_4", "coffee_p2_3", "coffee_p2_4", "autoreply_1", "autoreply_2", "autoreply_3",
-                  "autoreply_p0_3", "autoreply_p0_4", "autoreply_p1_3", "autoreply_p1_4", "autoreply_p2_3", "autoreply_p2_4",
-                  "headphones_1", "headphones_2", "headphones_3",
-                  "headphones_p0_3", "headphones_p0_4", "headphones_p1_3", "headphones_p1_4", "headphones_p2_3", "headphones_p2_4", "artillery_1", "artillery_2", "artillery_3",
-                  "artillery_p0_3", "artillery_p0_4", "artillery_p1_3", "artillery_p1_4", "artillery_p2_3", "artillery_p2_4",
-                  "shredder_1", "shredder_2", "shredder_3", "quickreply_1", "quickreply_2", "quickreply_3",
-                  "quickreply_p0_3", "quickreply_p0_4", "quickreply_p1_3", "quickreply_p1_4", "quickreply_p2_3", "quickreply_p2_4",
-                  "thumbtacks_1", "thumbtacks_2", "thumbtacks_3",
-                  "thumbtacks_p0_3", "thumbtacks_p0_4", "thumbtacks_p1_3", "thumbtacks_p1_4", "thumbtacks_p2_3", "thumbtacks_p2_4", "selfservice_1", "selfservice_2", "selfservice_3",
-                  "selfservice_p0_3", "selfservice_p0_4", "selfservice_p1_3", "selfservice_p1_4", "selfservice_p2_3", "selfservice_p2_4",
-                  "shredder_p0_3", "shredder_p0_4", "shredder_p1_3", "shredder_p1_4", "shredder_p2_3", "shredder_p2_4",
-                  "keyboardsmash_1", "keyboardsmash_2", "keyboardsmash_3", "keyboardsmash_p0_3", "keyboardsmash_p0_4", "keyboardsmash_p1_3", "keyboardsmash_p1_4", "keyboardsmash_p2_3", "keyboardsmash_p2_4", "chair_1", "chair_2", "chair_3", "chair_p0_3", "chair_p0_4", "chair_p1_3", "chair_p1_4", "chair_p2_3", "chair_p2_4",
-                  "replyall_1", "replyall_2", "replyall_3", "replyall_p0_3", "replyall_p0_4", "replyall_p1_3", "replyall_p1_4", "replyall_p2_3", "replyall_p2_4", "delegation_1", "delegation_2", "delegation_3", "delegation_p0_3", "delegation_p0_4", "delegation_p1_3", "delegation_p1_4", "delegation_p2_3", "delegation_p2_4",
-                  "pomodoro_1", "pomodoro_2", "pomodoro_3", "pomodoro_p0_3", "pomodoro_p0_4", "pomodoro_p1_3", "pomodoro_p1_4", "pomodoro_p2_3", "pomodoro_p2_4",
-                  "poster_1", "poster_2", "poster_3", "poster_p0_3", "poster_p0_4", "poster_p1_3", "poster_p1_4", "poster_p2_3", "poster_p2_4"]
+TOWERS = ["coffee", "autoreply", "headphones", "artillery", "shredder", "quickreply", "thumbtacks", "selfservice",
+          "keyboardsmash", "chair", "replyall", "delegation", "pomodoro", "poster"]
+# Per tower the core (the shop icon) and the six heroes (the panel at tier 3 and 4). Modules have
+# no icon: they only ever sit on a core or a hero.
+ICONS = PEOPLE + [n for t in TOWERS for n in [f"{t}_core"] + [f"{t}_p{p}_{k}" for p in range(3) for k in (3, 4)]]
 
 
 def render_icon(key, out_dir, size):
@@ -41,10 +30,6 @@ def render_icon(key, out_dir, size):
     root = bm.BUILDERS[key]()
     # Colleagues look a bit towards the camera.
     root.rotation_euler[2] = math.radians(-25) if key in PEOPLE else 0
-    # The icon is the thing itself: the grey cabinet every tower stands on would only make it
-    # smaller, and in the shop every icon would be the same box.
-    for o in [o for o in bpy.data.objects if o.name.endswith("_Desk")]:
-        bpy.data.objects.remove(o, do_unlink=True)
     bpy.context.view_layer.update()
     pts = []
     for o in bpy.data.objects:

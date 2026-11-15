@@ -2,7 +2,7 @@
 // helps, and the towers that help. The long text and the numbers sit behind "More".
 
 import type { ColleagueDef } from '../sim/data/colleagues';
-import { TOWERS } from '../sim/data/towers';
+import { coreModel, TOWERS } from '../sim/data/towers';
 import { h, icon, img } from './dom';
 import { UI_TEXT as T } from './text';
 
@@ -63,7 +63,7 @@ function buildCard(def: ColleagueDef, opt: CardOptions): (HTMLElement | null)[] 
       ? h(
           'div',
           { class: 'card-towers' },
-          ...towers.map((id) => h('span', { class: 'card-tower', title: TOWERS[id].verb }, img(`icons/${TOWERS[id].models[0]}.png`, TOWERS[id].name), h('span', { text: TOWERS[id].name }))),
+          ...towers.map((id) => h('span', { class: 'card-tower', title: TOWERS[id].verb }, img(`icons/${coreModel(TOWERS[id])}.png`, TOWERS[id].name), h('span', { text: TOWERS[id].name }))),
         )
       : null,
     details,

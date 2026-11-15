@@ -3,7 +3,7 @@
 
 import { COLLEAGUES, type ColleagueDef } from '../sim/data/colleagues';
 import { LEVELS } from '../sim/data/levels';
-import { TOWERS, type TowerDef } from '../sim/data/towers';
+import { coreModel, TOWERS, type TowerDef } from '../sim/data/towers';
 import { firstLevelOf, typesIn } from '../sim/briefing';
 import { colleagueBadges, type ColleagueBadge } from './badges';
 import { h, icon, img } from './dom';
@@ -66,7 +66,7 @@ export function badgeIcons(def: ColleagueDef): HTMLElement | null {
 }
 
 function towerChip(def: TowerDef): HTMLElement {
-  return h('span', { class: 'card-tower', title: def.short }, img(`icons/${def.models[0]}.png`, def.name), h('span', { text: def.name }));
+  return h('span', { class: 'card-tower', title: def.short }, img(`icons/${coreModel(def)}.png`, def.name), h('span', { text: def.name }));
 }
 
 function colleagueRow(e: ColleagueEntry): HTMLElement {
@@ -100,7 +100,7 @@ function towerRow(def: TowerDef, seen: readonly string[], open: boolean): HTMLEl
     return h(
       'div',
       { class: 'alm-row unseen' },
-      img(`icons/${def.models[0]}.png`, ''),
+      img(`icons/${coreModel(def)}.png`, ''),
       h('div', {}, h('div', { class: 'tp-name', text: def.name }), h('div', { class: 'faint', text: `${T.lockedAt} ${def.unlockLevel}` })),
     );
   }
@@ -108,7 +108,7 @@ function towerRow(def: TowerDef, seen: readonly string[], open: boolean): HTMLEl
   return h(
     'div',
     { class: 'alm-row' },
-    img(`icons/${def.models[0]}.png`, def.name),
+    img(`icons/${coreModel(def)}.png`, def.name),
     h(
       'div',
       { class: 'alm-body' },
