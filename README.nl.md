@@ -17,62 +17,68 @@ Dit is de remake van een eerdere Godot-versie van dezelfde game; alle ideeën ko
 > het automatisch testen en uitrollen (CI/CD via GitHub Actions) is onderdeel van dat leerproces.
 > Niet-commercieel, onderdeel van de makkers-collectie.
 
-## Wat er nu in zit (v0.17.1)
+## Wat er nu in zit (v0.49.0)
 
-- **Level 1, Reception**: 21 golven langs de receptiebalie en door de poortjes in een glazen
-  wand, waar iedereen even stilstaat om zijn pasje te scannen, en The Head of Comms.
-- **Level 2, Coffee Corner**: een klein kantoorkeukentje waar je alleen op de werkbladen bouwt,
-  22 golven en The Repair Guy (geen Coffee zolang hij er is). Gaat open als je level 1 haalt.
-- **Level 3, Meeting Room**: 21 golven, The Presenter (beamt Chasers naast je bureau) en de
-  projector-mini-game: kabels in de juiste poort, juiste beeldscherm-instelling, anders niet bouwen.
-- **Level 4, Canteen**: 22 golven over een spiraal rond de tafels, natte vloer waar je niet mag
-  bouwen, de lunchpauze (een stoet Interns en iedereen loopt even sneller) en The Cleaner.
-- **Level 5, Boardroom**: 22 golven in een lus rond de vergadertafel, de twee specials en Your
-  Line Manager.
-- **Level 6, Work From Home** (medior): 15 golven door je eigen huis, muren waar je torens niet
-  doorheen kijken, de No Internet-dino, Reply All, The Cold Caller en The Baby.
-- **Level 7, The Car Park** (medior): 15 golven tussen geparkeerde auto's, uitlaatgassen die het
-  bereik van je torens inkorten, Delegation, The Phone Caller en The Smoking Colleague.
-- **Torens**: Coffee Machine, Auto-Reply, Headphones (zet iedereen in een straal even stil),
-  Office Artillery (raakt de hele verdieping, breekt schilden), The Shredder (zone die schade
-  verdeelt en onzichtbaren laat zien; vertraagt alleen als je hem laat vastlopen), Quick Reply (bouwt schade op tegen hetzelfde doelwit), Thumbtacks
-  (punaise-hoopjes op het pad, zien ook onzichtbare collega's) en Self-Service (raakt iedereen in een
-  kleine cirkel).
-- **Reply All** (vanaf level 6): elke mail landt op iedereen rond het doelwit.
-- **Delegation** (vanaf level 7): schuift het door van collega naar collega, elke sprong harder.
-- **Specials** (één per speler): Keyboard Smash (slaat op het pad en laat het toetsenbord dwars
-  liggen) en de bureaustoel (rijdt een baan die jij kiest en ruilt zijn HP voor schade).
-- **Collega's**: Intern, New Hire, Requester, Chaser, Chatterbox (legt torens stil), Old Guard
-  (archiefdoos als schild, de Shredder mag er niet aan), Board Member (immuun voor in persoon) en
-  Impersonator (onzichtbaar tot een Shredder-zone hem laat zien).
-- **Upgrades zoals Bloons TD 6**: elke toren heeft drie paden van vier tiers. Eén pad mag naar
-  tier 4, een tweede naar tier 2, het derde blijft dicht (4-2-0). Tier 3 verandert wat de toren
-  doet, tier 4 is het paradepaardje.
-- **The Expense Claim** (Coffee Machine, pad 2): Coffee gaat in een pot met rente; jij kiest wanneer
-  je claimt. Te vroeg is zonde, te laat ook: een volle pot groeit niet meer.
-- **Bosses**: The Head of Comms (zijn Interns vangen je schoten op), The Repair Guy (blokkeert alle
-  inkomsten), The Presenter (laadscherm dat bij elke fase terugkomt, Chasers naast je bureau) en
-  The Cleaner (jaagt iedereen op, veegt punaises weg, dweilt Shredders).
-- **Eigen look per pad**: vanaf tier 3 ziet een toren eruit als het pad dat je koos (eerst de
-  Shredder, de rest volgt).
-- **Targeting** per toren (First, Last, Closest, Farthest, Most HP, Least HP).
-- **Bovenbalk**: welk level je speelt, Settings (geluid en de rest) en Go home, zonder het spel uit
-  te hoeven.
-- **Snelheden** 1x, 2x, 4x, 8x, pauze, en golven vroeg oproepen voor punten.
-- **Zichtbare feedback** op elke treffer: vliegende mails, schadegetallen, BLOCKED/IMMUNE.
-- **Nieuwe collega's stellen zich voor** met wat je ertegen bouwt.
-- **Eindscherm** met WHAT HURT YOU (gesorteerd op Focus-verlies), je torens met schade per
-  Coffee, en **feedback** (hoe leuk was het, 0-10, plus opmerking) met één knop.
-- **Give up** brengt je naar het eindscherm met je cijfers, niet terug naar het menu.
-- **Voortgang** (sterren, Recognition) wordt in je eigen browser bewaard.
-- **Recognition-winkel**: sterren leveren Recognition op; die geef je uit aan perks voor je eigen
-  spel (meer Coffee, meer Focus, goedkopere torens, Smoke Breaks). Haal level 5 en je wordt
-  gepromoveerd tot Medior.
+Vijftien verdiepingen in drie blokken (junior, medior, senior). Een verdieping gaat open zodra je de
+vorige haalt, brengt iets nieuws om te bouwen en eindigt met een boss.
+
+| Verdieping | Wat er bijzonder is | Nieuwe torens | Boss |
+|---|---|---|---|
+| 1 Reception | poortjes waar iedereen stopt om zijn pas te scannen | Coffee Machine, Auto-Reply | The Head of Comms |
+| 2 Coffee Corner | een klein keukentje vol meubels | Headphones, Office Artillery | The Repair Guy |
+| 3 Presentation Room | rijen tafels, een projector die uitvalt (kabels goed steken) | Quick Reply, Self-Service | The Presenter |
+| 4 Canteen | een spiraal om de tafels, een soeprij alleen voor Thumbtacks, de lunchpauze | The Shredder, Thumbtacks | The Cleaner |
+| 5 Boardroom | een rondje om de vergadertafel | Keyboard Smash, Office Chair (een per speler) | Your Line Manager |
+| 6 Work From Home | muren waar je niet doorheen kijkt, slechte wifi, het internet valt weg | Reply All | The Baby |
+| 7 The Car Park | alleen bouwen in lege vakken, uitlaatgassen verkorten je bereik | Delegation | The Smoking Colleague |
+| 8 Hot Desks | bouwen op flexplekken, elke golf een paar gereserveerd, de bureautelefoon | Pomodoro Timer | The Head of Comms |
+| 9 Town Hall | twee ingangen, een tribune die verder reikt, het brandalarm | Motivational Poster | The Repair Guy |
+| 10 Boardroom II | een glazen kamer waarvan de jaloezieen dichtgaan | | Your Line Manager |
+| 11 The Merger | links alleen DIGITAL torens, rechts alleen PHYSICAL, verhuisdozen | | The Consultant |
+| 12 HR Room | een doorkijkspiegel, formulieren waardoor je niet kunt upgraden | | The HR Manager |
+| 13 Server Room | de kou vertraagt het herladen, een dichte ruimte, de koeling valt uit | | The Cleaner |
+| 14 Release Night | donker kantoor, alleen bureaulampen geven licht, pizza | | The Project Manager |
+| 15 Boardroom III | twee ingangen, snellere jaloezieen, een 360-gradenbeoordeling | | Your Line Manager, 360 |
+
+**Torens** zijn spullen van je bureau, elk met een eigen kunstje: de Coffee Machine (Coffee, of een
+pot met rente), Auto-Reply, Headphones (iedereen in bereik staat even stil), Office Artillery (de
+hele vloer), The Shredder (een zone die verborgen collega's laat zien), Quick Reply (drie tegelijk),
+Thumbtacks (hoopjes op het looppad), Self-Service ("please hold"), Keyboard Smash en de Office
+Chair (specials, een per speler), Reply All (landt op een groep), Delegation (springt door, elke
+keer harder), de Pomodoro Timer (gooit over muren) en de Motivational Poster (maakt de torens
+eromheen beter). DIGITAL torens hebben internet nodig en worden traag op slechte wifi; PHYSICAL
+torens niet.
+
+**Upgrades zoals Bloons TD 6**: drie paden van vier tiers, een pad tot tier 4, een tweede tot tier
+2, het derde blijft dicht (4-2-0). Elke combinatie zie je aan de toren zelf: elk pad op tier 1 of 2
+zet er een eigen onderdeel in de padkleur op, en op tier 3 en 4 wordt de toren iets heel anders.
+Lampjes op de vloer ervoor tellen de tiers.
+
+**Collega's**: de Intern, de New Hire, de Chaser, de Requester (er komen twee Chasers uit), de
+Chatterbox (torens bij hem vallen stil), de Speakerphone Caller (alle aandacht), en twee dingen
+waar een collega zich niets van aantrekt, zoals lood en camo bij Bloons: een **doos** (het archief
+van de Old Guard, de laptop van de Board Member: alleen torens die dozen breken komen erdoor) en
+**verborgen** zijn (de Impersonator, de Cold Caller: alleen torens die verborgen collega's zien
+kunnen op ze mikken; Tracking Pixel en Paper Trail vinden ze voorgoed).
+
+**Bosses** vragen een andere aanpak, niet alleen meer HP: The Repair Guy stopt alle inkomsten, het
+laadscherm van The Presenter komt elke fase terug, The Baby trekt alle aandacht, The Consultant
+dekt de rest, The HR Manager doet audits op je favoriete toren, The Project Manager jaagt iedereen
+op. Op zes verdiepingen laat een zijdeur met een rood bordje zien waar de mensen van een boss
+binnenkomen.
+
+**Verder**
+
+- **Zeggen wat niet werkt**: icoontjes boven collega's en torens, "BOUNCED OFF", waarom een toren
+  stilstaat, een tip als er iemand doorkomt, en "Who is who" met elke collega en wat tegen hem helpt.
+- **Neerzetten**: het bouwraster laat zien waar een toren mag staan en waar hij niets zou zien, en
+  hoeveel van het looppad hij bestrijkt.
+- **Snelheden** 1x tot 8x, pauze, golven vroeg oproepen voor punten, doelkeuze per toren.
+- **Eindscherm** met wat je pijn deed, de schade per Coffee van je torens, en feedback in een klik.
+- **Voortgang en Recognition** in je eigen browser: sterren leveren perks op voor je volgende spel.
 - **Samen spelen** (tot 8 spelers): host een spel en deel de code of de link
-  (`game.makkers.net/?join=CODE`). De host kiest het level, het aantal spelers, gedeeld geld of
-  ieder eigen geld (inkomen gedeeld, Coffee aan elkaar geven), en waar je bouwt: overal, boven en
-  onder, links en rechts, vier kwarten of een eigen stuk. De server draait het spel; je browser
-  laat alleen zien wat er gebeurt.
+  (`game.makkers.net/?join=CODE`). Gedeeld geld of ieder zijn eigen, en waar iedereen bouwt. De
+  server draait het spel; je browser laat het alleen zien.
 
 ## Bediening
 
@@ -163,9 +169,15 @@ blender -b --python art/blender/build_models.py      # alle modellen naar public
 blender -b --python art/blender/icons.py             # icoontjes naar public/icons
 blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
 blender -b --python art/blender/projector_ui.py      # plaatjes en poortposities van de projector-minigame
+blender -b --python art/blender/contactsheet.py -- shots headphones   # alle 49 upgradecombinaties
 ```
 
-Met `-- --only intern,coffee_1` bouw je er een paar.
+Met `-- --only intern,coffee_core` bouw je er een paar. Elke toren bestaat uit 13 onderdelen: een
+kern, per pad een module voor tier 1 en 2 die in het slot van dat pad komt, en per pad een held
+voor tier 3 en 4. Het spel zet ze per combinatie van upgrades in elkaar (`modelFor` en
+`modulesFor` in `src/sim/data/towers.ts`); `tower_parts()` in `build_models.py` doet hetzelfde in
+Blender, en dat gebruikt het contactblad. Met `--tile 40` zie je het blad op speelafstand, met
+`--sides` de kern en de helden van alle vier kanten.
 
 ## Uitrollen
 

@@ -17,62 +17,69 @@ This is a remake of an earlier Godot version of the same game; all the ideas com
 > deployment (CI/CD with GitHub Actions) is part of that learning too. Non-commercial, part of
 > the makkers collection.
 
-## What is in it now (v0.17.1)
+## What is in it now (v0.49.0)
 
-- **Level 1, Reception**: 21 waves past the reception desk and through the speed gates in a
-  glass wall, where everyone stops to scan their pass, and The Head of Comms.
-- **Level 2, Coffee Corner**: a small office kitchen where you build on the worktops only, 22
-  waves and The Repair Guy (no Coffee while he is around). Opens once you finish level 1.
-- **Level 3, Meeting Room**: 21 waves, The Presenter (beams Chasers next to your desk) and the
-  projector mini-game: right cable in the right port, right display setting, or no building.
-- **Level 4, Canteen**: 22 waves on a spiral round the tables, wet floor where you cannot build,
-  the lunch break (a crowd of Interns, and everyone walks faster for a while) and The Cleaner.
-- **Level 5, Boardroom**: 22 waves on a loop round the boardroom table, the two specials and
-  Your Line Manager.
-- **Level 6, Work From Home** (medior): 15 waves through your house, walls your towers cannot see
-  through, the No Internet dinosaur, Reply All, The Cold Caller and The Baby.
-- **Level 7, The Car Park** (medior): 15 waves between parked cars, exhaust fumes that shorten
-  your towers' reach, Delegation, The Phone Caller and The Smoking Colleague.
-- **Towers**: Coffee Machine, Auto-Reply, Headphones (everyone in range stops for a moment),
-  Office Artillery (reaches the whole floor, breaks shields), The Shredder (a zone that shares its
-  damage and reveals hidden colleagues; it only slows if you jam it), Quick Reply (builds up
-  damage on the same target), Thumbtacks (piles of tacks on the walkway, they hit hidden
-  colleagues too) and Self-Service (hits everyone in a small circle).
-- **Reply All** (from level 6): every email lands on everyone near its target.
-- **Delegation** (from level 7): passes it on from colleague to colleague, harder with every jump.
-- **Specials** (one each): Keyboard Smash (slams the walkway and leaves the keyboard across it)
-  and the Office Chair (rolls down a lane you choose, trading its HP for damage).
-- **Colleagues**: Intern, New Hire, Requester, Chaser, Chatterbox (silences towers), Old Guard
-  (archive box as a shield, the Shredder may not touch it), Board Member (immune to anything in
-  person) and Impersonator (invisible until a Shredder zone shows him up).
-- **Upgrades like Bloons TD 6**: every tower has three paths of four tiers. One path may go to
-  tier 4, a second to tier 2, the third stays shut (4-2-0). Tier 3 changes what the tower does,
-  tier 4 is the showpiece.
-- **A look per path**: from tier 3 a tower looks like the path you chose (the Shredder first, the
-  rest follows).
-- **The Expense Claim** (Coffee Machine, path 2): Coffee goes into a pot with interest; you decide
-  when to claim. Too early is a waste, too late too: a full pot stops growing.
-- **Bosses**: The Head of Comms (his Interns soak up your shots), The Repair Guy (blocks all
-  income), The Presenter (a loading screen that comes back every phase, Chasers next to your
-  desk), The Cleaner (hurries everyone along, sweeps up tacks, mops Shredders) and Your Line
-  Manager (agenda shield, peer reviewers, slows your towers at the end).
-- **Targeting** per tower (First, Last, Closest, Farthest, Most HP, Least HP).
-- **Top bar**: which floor you are on, Settings (sound and the rest) and Go home, without leaving
-  the game.
-- **Speeds** 1x, 2x, 4x, 8x, pause, and calling waves early for points.
-- **Visible feedback** on every hit: flying mail, damage numbers, BLOCKED/IMMUNE.
-- **New colleagues introduce themselves** with what to build against them.
-- **End screen** with WHAT HURT YOU (sorted by Focus lost), your towers with damage per Coffee,
-  and **feedback** (how much fun was it, 0-10, plus a comment) in one click.
-- **Give up** takes you to the end screen with your numbers, not back to the menu.
-- **Progress** (stars, Recognition) is kept in your own browser.
-- **Recognition shop**: stars earn Recognition; spend it on perks for your own game (more Coffee,
-  more Focus, cheaper towers, Smoke Breaks). Finish level 5 and you get promoted to Medior.
+Fifteen floors in three blocks (junior, medior, senior). Each floor opens once you finish the one
+before, brings something new to build and ends with a boss.
+
+| Floor | What is special | New towers | Boss |
+|---|---|---|---|
+| 1 Reception | speed gates where everyone stops to scan their pass | Coffee Machine, Auto-Reply | The Head of Comms |
+| 2 Coffee Corner | a small kitchen full of furniture | Headphones, Office Artillery | The Repair Guy |
+| 3 Presentation Room | rows of tables, a projector that cuts out (fix the cables) | Quick Reply, Self-Service | The Presenter |
+| 4 Canteen | a spiral round the tables, a soup queue for Thumbtacks only, the lunch break | The Shredder, Thumbtacks | The Cleaner |
+| 5 Boardroom | a loop round the table | Keyboard Smash, Office Chair (one each) | Your Line Manager |
+| 6 Work From Home | walls that block sight, bad wifi, the internet drops out | Reply All | The Baby |
+| 7 The Car Park | build in empty bays only, exhaust fumes cut your range | Delegation | The Smoking Colleague |
+| 8 Hot Desks | build on flex desks, some reserved every wave, the desk phone | Pomodoro Timer | The Head of Comms |
+| 9 Town Hall | two entrances, a tribune that reaches further, the fire alarm | Motivational Poster | The Repair Guy |
+| 10 Boardroom II | a glass room whose blinds come down | | Your Line Manager |
+| 11 The Merger | DIGITAL towers on one side, PHYSICAL on the other, moving boxes | | The Consultant |
+| 12 HR Room | a one-way mirror, forms that stop you upgrading | | The HR Manager |
+| 13 Server Room | the cold slows reloading, a closed room, the cooling fails | | The Cleaner |
+| 14 Release Night | dark office, only the desk lamps light it, pizza | | The Project Manager |
+| 15 Boardroom III | two entrances, faster blinds, a 360-degree review | | Your Line Manager, 360 |
+
+**Towers** are things from your desk, each with its own trick: the Coffee Machine (Coffee, or a
+pot with interest), Auto-Reply, Headphones (everyone in range stops for a moment), Office
+Artillery (the whole floor), The Shredder (a zone that reveals hidden colleagues), Quick Reply
+(three at once), Thumbtacks (piles on the walkway), Self-Service ("please hold"), Keyboard Smash
+and the Office Chair (specials, one each), Reply All (lands on a crowd), Delegation (jumps on,
+harder every time), the Pomodoro Timer (lobs over walls) and the Motivational Poster (makes the
+towers round it better). DIGITAL towers need the internet and slow down on bad wifi; PHYSICAL ones
+do not.
+
+**Upgrades like Bloons TD 6**: three paths of four tiers, one path to tier 4, a second to tier 2,
+the third stays shut (4-2-0). You can see every combination on the tower itself: each path at tier
+1 or 2 adds its own piece in the path's colour, and at tier 3 and 4 the tower becomes something
+else entirely. Small lights on the floor in front of it count the tiers.
+
+**Colleagues**: the Intern, the New Hire, the Chaser, the Requester (two Chasers come out), the
+Chatterbox (towers near him stop), the Speakerphone Caller (all the attention), and two things a
+colleague can shrug off, like lead and camo: a **box** (the Old Guard's archive, the Board
+Member's laptop: only towers that break boxes get through) and being **hidden** (the
+Impersonator, the Cold Caller: only towers that see hidden colleagues can aim at them; Tracking
+Pixel and Paper Trail find them for good).
+
+**Bosses** force a different approach, not just more HP: The Repair Guy stops all income, The
+Presenter's loading screen comes back every phase, The Baby takes all the attention, The
+Consultant covers for everyone else, The HR Manager audits your favourite tower, The Project
+Manager speeds everyone up. On six floors a side door with a red sign shows where a boss's people
+will come in.
+
+**And further**
+
+- **Saying what does not work**: icons over colleagues and towers, "BOUNCED OFF", the reason a
+  tower is idle, a hint when a colleague gets through, and "Who is who" with every colleague and
+  what beats them.
+- **Placing**: the build grid shows where a tower may stand and where it would see nothing, and
+  how much of the walkway it covers.
+- **Speeds** 1x to 8x, pause, calling waves early for points, targeting per tower.
+- **End screen** with what hurt you, your towers' damage per Coffee, and feedback in one click.
+- **Progress and Recognition** in your own browser: stars earn perks for your next game.
 - **Play together** (up to 8 players): host a game and share the code or the link
-  (`game.makkers.net/?join=CODE`). The host picks the level, the number of players, shared money
-  or everyone their own (income split, give Coffee to each other), and where people build:
-  anywhere, top and bottom, left and right, four quarters or a patch each. The server runs the
-  game; your browser only shows what happens.
+  (`game.makkers.net/?join=CODE`). Shared money or everyone their own, and where everyone builds.
+  The server runs the game; your browser only shows it.
 
 ## Controls
 
@@ -162,9 +169,15 @@ blender -b --python art/blender/build_models.py      # every model into public/m
 blender -b --python art/blender/icons.py             # icons into public/icons
 blender -b --python art/blender/preview.py -- --out art/previews/diorama.png
 blender -b --python art/blender/projector_ui.py      # the projector mini-game pictures + port positions
+blender -b --python art/blender/contactsheet.py -- shots headphones   # all 49 upgrade combinations
 ```
 
-Add `-- --only intern,coffee_1` to build just a few.
+Add `-- --only intern,coffee_core` to build just a few. Every tower is 13 parts: a core, a module
+per path for tier 1 and 2 that sits in that path's slot, and a hero per path for tier 3 and 4. The
+game puts them together for each combination of upgrades (`modelFor` and `modulesFor` in
+`src/sim/data/towers.ts`); `tower_parts()` in `build_models.py` does the same in Blender, which is
+what the contact sheet uses. Add `--tile 40` to see the sheet at playing distance, or `--sides` to
+see the core and the heroes from all four sides.
 
 ## Deploying
 
