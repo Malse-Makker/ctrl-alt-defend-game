@@ -1,6 +1,6 @@
 # Feedback relay. python:alpine plus apk upgrade, same as the other images on this server:
 # a fix in an Alpine library lands at the next build instead of waiting for a new base image.
-FROM python:3.13-alpine
+FROM python:3.15-alpine
 RUN apk upgrade --no-cache
 WORKDIR /app
 COPY requirements.txt requirements-dev.txt ./
