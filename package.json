@@ -19,17 +19,17 @@
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fortawesome/fontawesome-free": "7.3.1",
     "three": "0.187.0",
-    "ws": "8.22.2"
+    "ws": "8.23.0"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
     "@types/three": "0.187.0",
     "@types/ws": "8.18.2",
     "esbuild": "0.28.2",
-    "puppeteer-core": "25.16.0",
+    "puppeteer-core": "25.17.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vite": "8.3.7",
+    "vite": "8.3.8",
     "vitest": "5.1.0"
   }
 }
